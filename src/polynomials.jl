@@ -1,15 +1,30 @@
 
 
-# module Polynomials
-
-
 using MacroTools
 using Combinatorics
 import FunctionWrappers
 import FunctionWrappers: FunctionWrapper
 F64fun = FunctionWrapper{Float64, Tuple{AbstractVector{Float64}}}
 
-export PermPolys, PermPolys_all
+export PermPolys, PermPolys_all, dict
+
+
+dict(::Val{:poly1}, n, rcut) =
+    ["x^$i * (x^(-1)-$(rcut^(-1))+$(rcut^(-2))*(x-$rcut)" for i = 0:n-1]
+
+dict(::Val{:poly2}, n, rcut) =
+    ["(x*$(1/rcut)-1.0)^$(2+i)" for i = 0:n-1]
+
+dict(::Val{:inv1}, n, rcut) =
+    ["x^$(-i) - $(rcut^(-i)) + $(i * rcut^(-i-1)) * (x - $rcut)" for i = 1:n]
+
+dict(::Val{:inv2}, n, rcut) =
+    ["x^$(-i) * (x*$(1/rcut)-1.0)^2" for i = 0:n-1]
+
+dict(sym, args...) = dict(Val(sym), args...)
+
+
+
 
 
 struct PermPolys
@@ -22,8 +37,9 @@ struct PermPolys_all
 	polys::Array{F64fun}
 end
 
-
-# Function which returns a list of all the unique permutations of a vector alpha.
+"""
+Function which returns a list of all the unique permutations of a vector alpha.
+"""
 function uniqueperms(alpha::Vector{Int64})
     size = length(alpha)
     sort!(alpha)
@@ -65,12 +81,18 @@ function uniqueperms(alpha::Vector{Int64})
     return perms
 end
 
-# Function to construct the symbol expression and a wrapped function for the
-# monomial symmetric polynomial corresponding to the vector alpha.
-# We replace x[i]^1 by x[i], which may be pointless/slow.
-# Do not replace x[i]^0 by 1, :(1) is not treated as an expression.
-#Check that the letter used for the variable is not used elsewhere
-#(e.g x in exp) as the variable is automatically replaced.
+"""
+Function to construct the symbol expression and a wrapped function for the
+monomial symmetric polynomial corresponding to the vector alpha.
+We replace x[i]^1 by x[i], which may be pointless/slow.
+Do not replace x[i]^0 by 1, :(1) is not treated as an expression.
+Check that the letter used for the variable is not used elsewhere
+(e.g x in exp) as the variable is automatically replaced.
+Example
+MSP = MonSymPol([0,1,1], ["y^0","y^1","y^2"], "y")
+MSP = MonSymPol([0,1,1], ["x^0","x^1","x^2"], "x")
+MSP[2]([1., 2., 3.])
+"""
 function MonSymPol(alpha, BasisFcts = ["y^0","y^1","y^2"], variable = "y")
 	perms = uniqueperms(alpha)
 	for j in 1:length(perms)
@@ -93,14 +115,15 @@ function MonSymPol(alpha, BasisFcts = ["y^0","y^1","y^2"], variable = "y")
 	f = F64fun(eval(ex2))
 	return [ex, f]
 end
-#Example
-# MSP = MonSymPol([0,1,1], ["y^0","y^1","y^2"], "y")
-# MSP = MonSymPol([0,1,1], ["x^0","x^1","x^2"], "x")
-# MSP[2]([1., 2., 3.])
 
-
-# Function which collects all permutation invariant polynomials up to degree deg
-# in dimension dim.
+"""
+Function which collects all permutation invariant polynomials up to degree deg
+in dimension dim.
+Example
+PermP = PermPolys(3,["y^0","y^1","y^2"],"y")
+PermPP = PermP.polys
+PermPP[1]([1., 2., 3.])
+"""
 function PermPolys(dim::Int64, Basis_fct = ["y^0","y^1","y^2"], variable = "y")
     deg = length(Basis_fct)-1
     display(deg)
@@ -122,14 +145,14 @@ function PermPolys(dim::Int64, Basis_fct = ["y^0","y^1","y^2"], variable = "y")
 	end
 	return PermPolys(polys1, polys2)
 end
-#Example
-#PermP = PermPolys(3,["y^0","y^1","y^2"],"y")
-#PermPP = PermP.polys
-#PermPP[1]([1., 2., 3.])
 
-# Function which collects all permutation invariant polynomials
-#based on all the one-variable Basis_fct
-# in dimension dim.
+"""
+Function which collects all permutation invariant polynomials
+based on all the one-variable Basis_fct
+in dimension dim.
+Example
+PermPolys_all(3, ["y^0","y^1","y^2"],"y")
+"""
 function PermPolys_all(dim::Int64, Basis_fct = ["y^0","y^1","y^2"], variable = "y")
 	polys1 = [MonSymPol([0],Basis_fct,variable)[1]]
 	polys2 = [MonSymPol([0],Basis_fct,variable)[2]]
@@ -150,8 +173,3 @@ function PermPolys_all(dim::Int64, Basis_fct = ["y^0","y^1","y^2"], variable = "
 	end
 	return PermPolys_all(polys1, polys2)
 end
-#Example
-#PermPolys_all(3, ["y^0","y^1","y^2"],"y")
-
-
-# end
