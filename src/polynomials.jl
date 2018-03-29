@@ -1,44 +1,34 @@
 
 
-using MacroTools
-using Combinatorics
-import FunctionWrappers
-import FunctionWrappers: FunctionWrapper
-F64fun = FunctionWrapper{Float64, Tuple{AbstractVector{Float64}}}
+using MacroTools, Espresso, Combinatorics, FunctionWrappers
 
-export PermPolys, PermPolys_all, dict
+using FunctionWrappers: FunctionWrapper
+const F64fun = FunctionWrapper{Float64, Tuple{AbstractVector{Float64}}}
 
+export psym_polys, psym_polys_tot, dict
+
+@simple_rule (x^0) 1
+
+dict(::Val{:poly}, n) =
+    ["r^$i" for i = 0:n-1], "r"
 
 dict(::Val{:poly1}, n, rcut) =
-    ["x^$i * (x^(-1)-$(rcut^(-1))+$(rcut^(-2))*(x-$rcut)" for i = 0:n-1]
+    ["x^$i * (x^(-1)-$(rcut^(-1))+$(rcut^(-2))*(x-$rcut)" for i = 0:n-1], "x"
 
 dict(::Val{:poly2}, n, rcut) =
-    ["(x*$(1/rcut)-1.0)^$(2+i)" for i = 0:n-1]
+    ["(x*$(1/rcut)-1.0)^$(2+i)" for i = 0:n-1], "x"
 
 dict(::Val{:inv1}, n, rcut) =
-    ["x^$(-i) - $(rcut^(-i)) + $(i * rcut^(-i-1)) * (x - $rcut)" for i = 1:n]
+    ["x^$(-i) - $(rcut^(-i)) + $(i * rcut^(-i-1)) * (x - $rcut)" for i = 1:n], "x"
 
 dict(::Val{:inv2}, n, rcut) =
-    ["x^$(-i) * (x*$(1/rcut)-1.0)^2" for i = 0:n-1]
+    ["x^$(-i) * (x*$(1/rcut)-1.0)^2" for i = 0:n-1], "x"
 
 dict(sym, args...) = dict(Val(sym), args...)
 
 
-
-
-
-struct PermPolys
-	polysSymbol::Array{Expr}
-	polys::Array{F64fun}
-end
-
-struct PermPolys_all
-	polysSymbol::Array{Expr}
-	polys::Array{F64fun}
-end
-
 """
-Function which returns a list of all the unique permutations of a vector alpha.
+return a list of all the unique permutations of a vector alpha
 """
 function uniqueperms(alpha::Vector{Int64})
     size = length(alpha)
@@ -82,26 +72,29 @@ function uniqueperms(alpha::Vector{Int64})
 end
 
 """
+`psym_monomial(alpha, dict, var) -> Expr, Function`
+
 Function to construct the symbol expression and a wrapped function for the
-monomial symmetric polynomial corresponding to the vector alpha.
-We replace x[i]^1 by x[i], which may be pointless/slow.
-Do not replace x[i]^0 by 1, :(1) is not treated as an expression.
-Check that the letter used for the variable is not used elsewhere
-(e.g x in exp) as the variable is automatically replaced.
-Example
-MSP = MonSymPol([0,1,1], ["y^0","y^1","y^2"], "y")
-MSP = MonSymPol([0,1,1], ["x^0","x^1","x^2"], "x")
-MSP[2]([1., 2., 3.])
+monomial symmetric polynomial corresponding to the vector alpha. We replace
+`x[i]^1` by `x[i]`, which may be pointless/slow. Do not replace `x[i]^0` by `1`,
+`:(1)` is not treated as an expression. Check that the letter used for the
+variable is not used elsewhere (e.g x in exp) as the variable is automatically
+replaced.
+
+### Example
+```
+ex, f = psym_monomial([0,1,1], ["y^0","y^1","y^2"], "y")
+f([1., 2., 3.])
+```
 """
-function MonSymPol(alpha, BasisFcts = ["y^0","y^1","y^2"], variable = "y")
+function psym_monomial(alpha, dict = ["y^0","y^1","y^2"], sym = "y";
+                        simplify = false)
 	perms = uniqueperms(alpha)
 	for j in 1:length(perms)
 		ext = :()
-
-		ext = replace(BasisFcts[perms[j][1]+1], variable, "(x[1])")
-
+		ext = replace(dict[perms[j][1]+1], sym, "(x[1])")
 		for i = 2:length(alpha)
-			ext = "$ext*" * replace(BasisFcts[perms[j][i]+1], variable, "(x[$i])")
+			ext = "$ext*" * replace(dict[perms[j][i]+1], sym, "(x[$i])")
 		end
 		if j == 1
 			ex = "$ext"
@@ -110,66 +103,81 @@ function MonSymPol(alpha, BasisFcts = ["y^0","y^1","y^2"], variable = "y")
 		end
 	end
 	ex = parse(ex)
-	ex2 = ex
-	ex2 = :(x -> $(ex2))
-	f = F64fun(eval(ex2))
+
+    if simplify
+        # two simplification passes (still doesn't catch everything)
+        ex = Espresso.simplify(ex)
+        ex = Espresso.simplify(ex)
+    end
+	f = F64fun(eval(:(x -> $(ex))))
+
 	return [ex, f]
 end
 
 """
-Function which collects all permutation invariant polynomials up to degree deg
-in dimension dim.
-Example
-PermP = PermPolys(3,["y^0","y^1","y^2"],"y")
-PermPP = PermP.polys
-PermPP[1]([1., 2., 3.])
+`psym_polys(dim, dict, sym):`
+
+collect all permutation invariant polynomials up to degree `deg`
+in dimension dim. This assembles up to
+
+### Example
+```
+exs, fs = PermPolys(3, ["y^0","y^1","y^2"], "y")
+fs[1]([1., 2., 3.])
+```
 """
-function PermPolys(dim::Int64, Basis_fct = ["y^0","y^1","y^2"], variable = "y")
-    deg = length(Basis_fct)-1
+function psym_polys(dim::Integer, dict, sym; simplify = false)
+    deg = length(dict)-1
     display(deg)
-	polys1 = [MonSymPol([0],Basis_fct,variable)[1]]
-	polys2 = [MonSymPol([0],Basis_fct,variable)[2]]
+    mex, mf = psym_monomial([0], dict, sym; simplify=simplify)
+	polys_ex = [mex]
+	polys_f = [mf]
 	for i in 1:deg
 		for alpha in collect(partitions(i))
             if length(alpha) == dim
-                push!(polys1, MonSymPol(alpha,Basis_fct,variable)[1])
-				push!(polys2, MonSymPol(alpha,Basis_fct,variable)[2])
+                mex, mf = psym_monomial(alpha, dict, sym; simplify=simplify)
+                push!(polys_ex, mex)
+				push!(polys_f, mf)
             elseif length(alpha) < dim
                 add = zeros(Int64, dim - length(alpha))
                 append!(alpha, add)
-                push!(polys1, MonSymPol(alpha,Basis_fct,variable)[1])
-				push!(polys2, MonSymPol(alpha,Basis_fct,variable)[2])
+                mex, mf = psym_monomial(alpha, dict, sym; simplify=simplify)
+                push!(polys_ex, mex)
+				push!(polys_f, mf)
             end
         end
-
 	end
-	return PermPolys(polys1, polys2)
+	return polys_ex, polys_f
 end
 
 """
-Function which collects all permutation invariant polynomials
-based on all the one-variable Basis_fct
-in dimension dim.
-Example
-PermPolys_all(3, ["y^0","y^1","y^2"],"y")
+`psym_polys_tot(dim::Integer, dict, sym)
+
+collects all permutation invariant polynomials
+based on all the one-variable Basis_fct in dimension dim.
+
+### Example
+```
+psym_polys_tot(3, ["y^0","y^1","y^2"], "y")
+```
 """
-function PermPolys_all(dim::Int64, Basis_fct = ["y^0","y^1","y^2"], variable = "y")
-	polys1 = [MonSymPol([0],Basis_fct,variable)[1]]
-	polys2 = [MonSymPol([0],Basis_fct,variable)[2]]
-	for i in 1:(dim*(length(Basis_fct)))
+function psym_polys_tot(dim::Integer, dict, sym; simplify = false)
+	polys_ex = [psym_monomial([0], dict, sym)[1]]
+	polys_f = [psym_monomial([0], dict, sym)[2]]
+	for i in 1:(dim*(length(dict)))
 		for alpha in collect(partitions(i))
-			if maximum(alpha)<=(length(Basis_fct)-1)
+			if maximum(alpha)<=(length(dict)-1)
 	            if length(alpha) == dim
-	                push!(polys1, MonSymPol(alpha,Basis_fct,variable)[1])
-					push!(polys2, MonSymPol(alpha,Basis_fct,variable)[2])
+	                push!(polys_ex, psym_monomial(alpha, dict, sym)[1])
+					push!(polys_f, psym_monomial(alpha, dict, sym)[2])
 	            elseif length(alpha) < dim
 	                add = zeros(Int64, dim - length(alpha))
 	                append!(alpha, add)
-	                push!(polys1, MonSymPol(alpha,Basis_fct,variable)[1])
-					push!(polys2, MonSymPol(alpha,Basis_fct,variable)[2])
+	                push!(polys_ex, psym_monomial(alpha, dict, sym)[1])
+					push!(polys_f, psym_monomial(alpha, dict, sym)[2])
 	            end
 			end
         end
 	end
-	return PermPolys_all(polys1, polys2)
+	return polys_ex, polys_f
 end
