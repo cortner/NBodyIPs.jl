@@ -14,6 +14,8 @@ export psym_polys, psym_polys_tot, dict
 dict(::Val{:poly}, n) =
     ["r^$i" for i = 0:n-1], "r"
 
+dict(v::Val{:poly}, n, rcut) = dict(v, n)
+
 dict(::Val{:poly1}, n, rcut) =
     ["x^$i * (x^(-1)-$(rcut^(-1))+$(rcut^(-2))*(x-$rcut)" for i = 0:n-1], "x"
 
@@ -197,6 +199,8 @@ function psym_polys(dim::Integer, dict, sym; simplify = false)
 	return polys_ex, polys_f
 end
 
+
+# TODO: psym_polys_tot   has been neglected a bit, needs to be updated!
 """
 `psym_polys_tot(dim::Integer, dict, sym)
 
@@ -227,42 +231,4 @@ function psym_polys_tot(dim::Integer, dict, sym; simplify = false)
       end
 	end
 	return polys_ex, polys_f
-end
-
-
-# ------- Derivative of a monomial -------
-
-Base.circshift(R::SVector{N, T}) where {N, T} = [shift(R); SVector{1,T}(R[1])]
-
-function psym_grad!(temp::MVector{N,T}, R::SVector{N, T}, df1) where {N, T}
-    temp[1] = df1(R)
-    for n = 2:N
-        R = circshift(R)
-        temp[n] = df1(R)
-    end
-    return SVector(temp)
-end
-
-
-function psym_grad(R::SVector{N, T}, df1) where {N, T}
-    z = zero(SVector{N-1, T})
-    g = [SVector{1,T}(df1(R)); z]
-    for n = 2:N
-        R = circshift(R)
-        g = circshift(g) + [SVector{1,T}(df1(R)); z]
-    end
-    return circshift(g)
-end
-
-
-function gen_psym_grad(dim, ex::Expr, sym)
-   # substitute
-   dex = differentiate(ex, Symbol("$(sym)1"))
-   # vectorise the expression
-   dex = ind2vec(dex, dim, sym)
-   # create the first partial derivative function
-   s = Symbol(sym)
-   df1 = eval( :( $s -> $dex ) )
-   # create a function that generates all the partial derivatives
-   return R -> ManyBodyIPs.psym_grad(R, df1)
 end
