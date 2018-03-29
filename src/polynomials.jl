@@ -1,13 +1,15 @@
 
 
-using MacroTools, Espresso, Combinatorics, FunctionWrappers
+using MacroTools,  Combinatorics, FunctionWrappers, Calculus, ForwardDiff,
+      StaticArrays
 
+# TODO: rewrite the functionwrappers - these are not type-stable
 using FunctionWrappers: FunctionWrapper
 const F64fun = FunctionWrapper{Float64, Tuple{AbstractVector{Float64}}}
 
 export psym_polys, psym_polys_tot, dict
 
-@simple_rule (x^0) 1
+# @simple_rule (x^0) 1   # REVISIT Espresso
 
 dict(::Val{:poly}, n) =
     ["r^$i" for i = 0:n-1], "r"
@@ -25,6 +27,46 @@ dict(::Val{:inv2}, n, rcut) =
     ["x^$(-i) * (x*$(1/rcut)-1.0)^2" for i = 0:n-1], "x"
 
 dict(sym, args...) = dict(Val(sym), args...)
+
+"""
+`vec2ind(exorstr)`
+
+take an expression, such as,
+```
+:( x[1]^2 * x[2]^3 * x[3] + x[1] * x[2] * x[3] + . . . )
+```
+and convert it to
+```
+:( x1^2 * x2^3 * x3 + x1 * x2 * x3 + . . . )
+```
+"""
+function vec2ind(ex, dim, sym)
+   str = string(ex)
+   for n = 1:dim
+      str = replace(str, "$sym[$n]", "$sym$n")
+   end
+   return parse(str)
+end
+
+"""
+`ind2vec(exorstr)`
+
+take an expression, such as,
+```
+:( x1^2 * x2^3 * x3 + x1 * x2 * x3 + . . . )
+```
+and convert it to
+```
+:( x[1]^2 * x[2]^3 * x[3] + x[1] * x[2] * x[3] + . . . )
+```
+"""
+function ind2vec(ex, dim, sym)
+   str = string(ex)
+   for n = 1:dim
+      str = replace(str, "$sym$n", "$sym[$n]")
+   end
+   return parse(str)
+end
 
 
 """
@@ -87,14 +129,14 @@ ex, f = psym_monomial([0,1,1], ["y^0","y^1","y^2"], "y")
 f([1., 2., 3.])
 ```
 """
-function psym_monomial(alpha, dict = ["y^0","y^1","y^2"], sym = "y";
-                        simplify = false)
+function psym_monomial(alpha, dict, sym; simplify = true)
+   dim = length(alpha)
 	perms = uniqueperms(alpha)
 	for j in 1:length(perms)
 		ext = :()
-		ext = replace(dict[perms[j][1]+1], sym, "(x[1])")
-		for i = 2:length(alpha)
-			ext = "$ext*" * replace(dict[perms[j][i]+1], sym, "(x[$i])")
+		ext = replace(dict[perms[j][1]+1], sym, "$(sym)1")
+		for i = 2:dim
+			ext = "$ext*" * replace(dict[perms[j][i]+1], sym, "$(sym)$i")
 		end
 		if j == 1
 			ex = "$ext"
@@ -104,15 +146,20 @@ function psym_monomial(alpha, dict = ["y^0","y^1","y^2"], sym = "y";
 	end
 	ex = parse(ex)
 
-    if simplify
-        # two simplification passes (still doesn't catch everything)
-        ex = Espresso.simplify(ex)
-        ex = Espresso.simplify(ex)
-    end
-	f = F64fun(eval(:(x -> $(ex))))
+   if simplify
+      exs = Calculus.simplify(ex)
+   else
+      exs = ex
+   end
+   s = Symbol(sym)
+   f = eval(:($s -> $(ind2vec(exs, dim, sym))))
+   df = x -> ForwardDiff.gradient(f, x)
 
-	return [ex, f]
+	return ex, f, df
 end
+
+psym_monomial(alpha, t::Tuple; kwargs...) =
+      psym_monomial(alpha, t[1], t[2]; kwargs...)
 
 """
 `psym_polys(dim, dict, sym):`
@@ -127,25 +174,25 @@ fs[1]([1., 2., 3.])
 ```
 """
 function psym_polys(dim::Integer, dict, sym; simplify = false)
-    deg = length(dict)-1
-    display(deg)
-    mex, mf = psym_monomial([0], dict, sym; simplify=simplify)
+   deg = length(dict)-1
+   display(deg)
+   mex, mf, mdf = psym_monomial([0], dict, sym; simplify=simplify)
 	polys_ex = [mex]
 	polys_f = [mf]
+	polys_df = [mdf]
 	for i in 1:deg
-		for alpha in collect(partitions(i))
-            if length(alpha) == dim
-                mex, mf = psym_monomial(alpha, dict, sym; simplify=simplify)
-                push!(polys_ex, mex)
-				push!(polys_f, mf)
-            elseif length(alpha) < dim
-                add = zeros(Int64, dim - length(alpha))
-                append!(alpha, add)
-                mex, mf = psym_monomial(alpha, dict, sym; simplify=simplify)
-                push!(polys_ex, mex)
-				push!(polys_f, mf)
-            end
-        end
+		for alpha in partitions(i)
+         if length(alpha) > dim
+            continue
+         elseif length(alpha) < dim
+            add = zeros(Int64, dim - length(alpha))
+            append!(alpha, add)
+         end
+         mex, mf, mdf = psym_monomial(alpha, dict, sym; simplify=simplify)
+         push!(polys_ex, mex)
+         push!(polys_f, mf)
+         push!(polys_df, mdf)
+      end
 	end
 	return polys_ex, polys_f
 end
@@ -167,17 +214,55 @@ function psym_polys_tot(dim::Integer, dict, sym; simplify = false)
 	for i in 1:(dim*(length(dict)))
 		for alpha in collect(partitions(i))
 			if maximum(alpha)<=(length(dict)-1)
-	            if length(alpha) == dim
-	                push!(polys_ex, psym_monomial(alpha, dict, sym)[1])
-					push!(polys_f, psym_monomial(alpha, dict, sym)[2])
-	            elseif length(alpha) < dim
-	                add = zeros(Int64, dim - length(alpha))
-	                append!(alpha, add)
-	                push!(polys_ex, psym_monomial(alpha, dict, sym)[1])
-					push!(polys_f, psym_monomial(alpha, dict, sym)[2])
-	            end
+	         if length(alpha) == dim
+	            push!(polys_ex, psym_monomial(alpha, dict, sym)[1])
+		         push!(polys_f, psym_monomial(alpha, dict, sym)[2])
+	         elseif length(alpha) < dim
+	            add = zeros(Int64, dim - length(alpha))
+	            append!(alpha, add)
+	            push!(polys_ex, psym_monomial(alpha, dict, sym)[1])
+               push!(polys_f, psym_monomial(alpha, dict, sym)[2])
+	         end
 			end
-        end
+      end
 	end
 	return polys_ex, polys_f
+end
+
+
+# ------- Derivative of a monomial -------
+
+Base.circshift(R::SVector{N, T}) where {N, T} = [shift(R); SVector{1,T}(R[1])]
+
+function psym_grad!(temp::MVector{N,T}, R::SVector{N, T}, df1) where {N, T}
+    temp[1] = df1(R)
+    for n = 2:N
+        R = circshift(R)
+        temp[n] = df1(R)
+    end
+    return SVector(temp)
+end
+
+
+function psym_grad(R::SVector{N, T}, df1) where {N, T}
+    z = zero(SVector{N-1, T})
+    g = [SVector{1,T}(df1(R)); z]
+    for n = 2:N
+        R = circshift(R)
+        g = circshift(g) + [SVector{1,T}(df1(R)); z]
+    end
+    return circshift(g)
+end
+
+
+function gen_psym_grad(dim, ex::Expr, sym)
+   # substitute
+   dex = differentiate(ex, Symbol("$(sym)1"))
+   # vectorise the expression
+   dex = ind2vec(dex, dim, sym)
+   # create the first partial derivative function
+   s = Symbol(sym)
+   df1 = eval( :( $s -> $dex ) )
+   # create a function that generates all the partial derivatives
+   return R -> ManyBodyIPs.psym_grad(R, df1)
 end
