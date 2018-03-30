@@ -3,9 +3,9 @@
 using MacroTools,  Combinatorics, FunctionWrappers, Calculus, ForwardDiff,
       StaticArrays
 
-# TODO: rewrite the functionwrappers - these are not type-stable
 using FunctionWrappers: FunctionWrapper
-const F64fun = FunctionWrapper{Float64, Tuple{AbstractVector{Float64}}}
+const FWrap{N, T} = FunctionWrapper{Float64, Tuple{SVector{N,T}}}
+const GWrap{N, T} = FunctionWrapper{SVector{N,T}, Tuple{SVector{N,T}}}
 
 export psym_polys, psym_polys_tot, dict
 
@@ -132,21 +132,17 @@ f([1., 2., 3.])
 ```
 """
 function psym_monomial(alpha, dict, sym; simplify = true)
+   dict = ["1"; dict]
    dim = length(alpha)
-	perms = uniqueperms(alpha)
-	for j in 1:length(perms)
-		ext = :()
-		ext = replace(dict[perms[j][1]+1], sym, "$(sym)1")
-		for i = 2:dim
-			ext = "$ext*" * replace(dict[perms[j][i]+1], sym, "$(sym)$i")
+   ex = ""
+	for p in uniqueperms(alpha)
+      ext = ""
+      for i = 1:dim
+			ext = "$ext*" * replace(dict[p[i]+1], sym, "$(sym)$i")
 		end
-		if j == 1
-			ex = "$ext"
-		else
-			ex = "$ex+$ext"
-		end
+      ex = ex * "+$(ext[2:end])"
 	end
-	ex = parse(ex)
+	ex = parse(ex[2:end])
 
    if simplify
       exs = Calculus.simplify(ex)
@@ -156,7 +152,6 @@ function psym_monomial(alpha, dict, sym; simplify = true)
    s = Symbol(sym)
    f = eval(:($s -> $(ind2vec(exs, dim, sym))))
    df = x -> ForwardDiff.gradient(f, x)
-
 	return ex, f, df
 end
 
@@ -175,28 +170,31 @@ exs, fs = PermPolys(3, ["y^0","y^1","y^2"], "y")
 fs[1]([1., 2., 3.])
 ```
 """
-function psym_polys(dim::Integer, dict, sym; simplify = false)
+function psym_polys(dim::Integer, dict, sym; simplify = true)
    deg = length(dict)-1
-   display(deg)
+   @show deg
    mex, mf, mdf = psym_monomial([0], dict, sym; simplify=simplify)
-	polys_ex = [mex]
-	polys_f = [mf]
-	polys_df = [mdf]
+	polys_ex = Expr[mex]
+	polys_f = Function[mf]
+	polys_df = Function[mdf]
+   @show deg, dim
 	for i in 1:deg
-		for alpha in partitions(i)
-         if length(alpha) > dim
-            continue
-         elseif length(alpha) < dim
-            add = zeros(Int64, dim - length(alpha))
-            append!(alpha, add)
-         end
-         mex, mf, mdf = psym_monomial(alpha, dict, sym; simplify=simplify)
-         push!(polys_ex, mex)
-         push!(polys_f, mf)
-         push!(polys_df, mdf)
+		for m = 1:dim, alpha in partitions(i, m)
+         @show alpha
+         # if length(alpha) > dim
+         #    @show length(alpha) > dim
+         #    continue
+         # elseif length(alpha) < dim
+         #    append!(alpha, zeros(Int64, dim - length(alpha)))
+         # end
+         # mex, mf, mdf = psym_monomial(alpha, dict, sym; simplify=simplify)
+         # # @show mex
+         # push!(polys_ex, mex)
+         # push!(polys_f, mf)
+         # push!(polys_df, mdf)
       end
 	end
-	return polys_ex, polys_f
+	return polys_ex, polys_f, polys_df
 end
 
 

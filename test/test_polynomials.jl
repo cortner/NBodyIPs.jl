@@ -21,7 +21,7 @@ for n = 2:5 # dimension / body-order
          print("✓")
       else
          print("x")
-      end 
+      end
       @test issym
    end
 end
