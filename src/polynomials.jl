@@ -171,27 +171,16 @@ fs[1]([1., 2., 3.])
 ```
 """
 function psym_polys(dim::Integer, dict, sym; simplify = true)
-   deg = length(dict)-1
-   @show deg
-   mex, mf, mdf = psym_monomial([0], dict, sym; simplify=simplify)
-	polys_ex = Expr[mex]
-	polys_f = Function[mf]
-	polys_df = Function[mdf]
-   @show deg, dim
-	for i in 1:deg
-		for m = 1:dim, alpha in partitions(i, m)
-         @show alpha
-         # if length(alpha) > dim
-         #    @show length(alpha) > dim
-         #    continue
-         # elseif length(alpha) < dim
-         #    append!(alpha, zeros(Int64, dim - length(alpha)))
-         # end
-         # mex, mf, mdf = psym_monomial(alpha, dict, sym; simplify=simplify)
-         # # @show mex
-         # push!(polys_ex, mex)
-         # push!(polys_f, mf)
-         # push!(polys_df, mdf)
+	polys_ex = Expr[]
+	polys_f = Function[]
+	polys_df = Function[]
+	for i in 1:length(dict)
+		for m = 1:dim, alpha in collect(partitions(i, m))
+         append!(alpha, zeros(Int, dim - length(alpha)))
+         mex, mf, mdf = psym_monomial(alpha, dict, sym; simplify=simplify)
+         push!(polys_ex, mex)
+         push!(polys_f, mf)
+         push!(polys_df, mdf)
       end
 	end
 	return polys_ex, polys_f, polys_df
