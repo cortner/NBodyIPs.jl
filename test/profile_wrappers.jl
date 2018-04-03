@@ -31,7 +31,7 @@ r = rand()
 @btime g($r)
 @btime gwrap($r)
 
-function Ncalls(f, N, x)
+function Ncalls(f::F, N, x) where F
    s = 0.0
    for n = 1:N
       s += f(x)

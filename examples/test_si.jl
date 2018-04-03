@@ -11,19 +11,39 @@ function load_json(fname)
    return data
 end
 
+basis(ndict::Integer, bord::Integer)  =
+   get_basis(bord, dict(:inv2, ndict, rcut)..., rcut)
+
 data = load_json(si_data)
 length(data)
 
 r0 = rnn(:Si)
 rcut = 3.2 * r0
-D = dict(:inv2, 10, rcut)
-B = get_basis(4, D..., rcut)
-@show length(B)
-c = ManyBodyIPs.regression(B, data[1:400])
 
-# at = data[1][1]::Atoms
-# b = B[23]
-# @show  b(at)
+# test_params =
+#       [ (8, 3), (10, 3), (12, 3), (7, 4), (8, 4), (6, 5) ]
+#
+# for (ndict, bord) in test_params
+#    @show (ndict, bord)
+#    @show length(basis(ndict, bord))
+# end
+
+
+
+test_params =
+      [ (8, 3), (10, 3), (12, 3), (7, 4), (8, 4) ]
+
+for (ndict, bord) in test_params
+   B = basis(ndict, bord)
+   @show (ndict, bord, length(B))
+   c = ManyBodyIPs.regression(B, data[1:400])
+end
+
+at = data[1][1]::Atoms
+for b in basis(8, 4)
+   @time b(at)
+end
+
 # ENV["JULIA_NUM_THREADS"] = 1
 # NeighbourLists.set_maxthreads!(1)
 # NeighbourLists.MAX_THREADS

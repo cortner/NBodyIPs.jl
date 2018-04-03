@@ -9,7 +9,6 @@ const GWrap{N, T} = FunctionWrapper{SVector{N,T}, Tuple{SVector{N,T}}}
 
 export psym_polys, psym_polys_tot, dict
 
-# @simple_rule (x^0) 1   # REVISIT Espresso
 
 dict(::Val{:poly}, n) =
     ["r^$i" for i = 0:n-1], "r"
@@ -17,7 +16,7 @@ dict(::Val{:poly}, n) =
 dict(v::Val{:poly}, n, rcut) = dict(v, n)
 
 dict(::Val{:poly1}, n, rcut) =
-    ["x^$i * (x^(-1)-$(rcut^(-1))+$(rcut^(-2))*(x-$rcut)" for i = 0:n-1], "x"
+    ["x^$i * (x^(-1) - $(1/rcut) + $(1/rcut^2) * (x-$rcut)" for i = 0:n-1], "x"
 
 dict(::Val{:poly2}, n, rcut) =
     ["(x*$(1/rcut)-1.0)^$(2+i)" for i = 0:n-1], "x"
@@ -27,6 +26,9 @@ dict(::Val{:inv1}, n, rcut) =
 
 dict(::Val{:inv2}, n, rcut) =
     ["x^$(-i) * (x*$(1/rcut)-1.0)^2" for i = 0:n-1], "x"
+
+dict(::Val{:exp1}, n, rcut) =
+    ["exp(-$i * x) - $(exp(-i*rcut)) + $(i * exp(-i*rcut)) * (x-$rcut)" for i = 1:n], "x"
 
 dict(sym, args...) = dict(Val(sym), args...)
 
@@ -64,7 +66,7 @@ and convert it to
 """
 function ind2vec(ex, dim, sym)
    str = string(ex)
-   for n = 1:dim
+   for n = dim:-1:1
       str = replace(str, "$sym$n", "$sym[$n]")
    end
    return parse(str)
