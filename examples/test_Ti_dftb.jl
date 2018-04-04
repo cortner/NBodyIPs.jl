@@ -57,9 +57,11 @@ for (in, ndict) = enumerate(NDICT), (ir, rcut) in enumerate(RCUT)
    nbasis[in] = length(B)
    # standard least squares (see ManyBodyIPs/src/fitting.jl)
    c = regression(B, train_data)
-   # check error
-   errors[in, ir] = ManyBodyIPs.rms(c, B, test_data)
-   println("rms on testset = ", errors[in])
+   # check error => the normalisation 54 / 300 = natoms / typical total energy
+   # that is, the errors stored are roughly the relative error per atom
+   # if this is not what you are after, then we can discuss.
+   errors[in, ir] = ManyBodyIPs.rms(c, B, test_data) * sqrt(54 / 300)
+   println("rms on testset = ", errors[in, ir])
 end
 
 
