@@ -1,36 +1,44 @@
 
 using JuLIP, ManyBodyIPs, NeighbourLists
 
-# generate data
+
+function gen_data(N, rnd=0.1)
+   sw = StillingerWeber()
+   r0 = rnn(:Si)
+   rcut = cutoff(sw)
+   data = Tuple{typeof(bulk(:Si)), Float64}[]
+   for n = 1:N
+      at = bulk(:Si, cubic=true) * 2
+      rattle!(at, rnd * r0)
+      push!(data, (at, energy(sw, at)))
+   end
+   return data
+end
+
+train_data = gen_data(1_000, 0.1)
+test_data =  gen_data(100, 0.1)
+
 sw = StillingerWeber()
 r0 = rnn(:Si)
 rcut = cutoff(sw)
-data = Tuple{typeof(bulk(:Si)), Float64}[]
-for n = 1:1_000
-   at = bulk(:Si, cubic=true) * 2
-   rattle!(at, 0.2 * r0)
-   push!(data, (at, energy(sw, at)))
-end
-
-ManyBodyIPs.dict(n) =
-   ["r^$n * (exp(-4*(r/$r0-1)) - $(exp(-4*(rcut/r0-1))) + $(4/r0 * exp(-4*(rcut/r0-1))) * (r-$rcut)"
-      for n = 0:(n-1)], "r"
-
-# basis(ndict::Integer)  =
-#    get_basis(3, dict(ndict)..., rcut)
+rcutN = 2 * rcut
 
 basis(ndict::Integer)  =
-   get_basis(3, dict(:inv1, ndict, rcut)..., rcut)
+   get_basis(3, dict(:inv2, ndict, rcutN)..., rcutN)
 
-for ndict = 6:14
+NDICT = 4:10
+err = zeros(length(NDICT))
+nbasis = zeros(Int, length(NDICT))
+
+for (in, ndict) in enumerate(NDICT)
    B = basis(ndict)
+   nbasis[in] = length(B)
    @show (ndict, length(B))
-   c = ManyBodyIPs.regression(B, data[1:3*length(B)])
-   println("rms on testset = ", ManyBodyIPs.rms(c, B, data[801:900]))
+   c = ManyBodyIPs.regression(B, train_data[1:5*length(B)])
+   err[in] = ManyBodyIPs.rms(c, B, test_data)
+   println("rms on testset = ", err[in])
 end
 
-
-# at = data[1][1]::Atoms
-# for b in basis(12)
-#    @time b(at)
-# end
+using DataFrames
+df = DataFrame(:nbasis => nbasis, :err_inv2 => err)
+println(df)

@@ -16,7 +16,7 @@ dict(::Val{:poly}, n) =
 dict(v::Val{:poly}, n, rcut) = dict(v, n)
 
 dict(::Val{:poly1}, n, rcut) =
-    ["x^$i * (x^(-1) - $(1/rcut) + $(1/rcut^2) * (x-$rcut)" for i = 0:n-1], "x"
+    ["x^$i * (x^(-1) - $(1/rcut) + $(1/rcut^2) * (x-$rcut))" for i = 0:n-1], "x"
 
 dict(::Val{:poly2}, n, rcut) =
     ["(x*$(1/rcut)-1.0)^$(2+i)" for i = 0:n-1], "x"
