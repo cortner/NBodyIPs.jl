@@ -1,5 +1,5 @@
 
-using JuLIP, ManyBodyIPs, NeighbourLists
+using JuLIP, NBodyIPs, NeighbourLists
 
 
 function gen_data(N, rnd=0.1)
@@ -34,8 +34,8 @@ for (in, ndict) in enumerate(NDICT)
    B = basis(ndict)
    nbasis[in] = length(B)
    @show (ndict, length(B))
-   c = ManyBodyIPs.regression(B, train_data[1:5*length(B)])
-   err[in] = ManyBodyIPs.rms(c, B, test_data)
+   c = NBodyIPs.regression(B, train_data[1:5*length(B)])
+   err[in] = NBodyIPs.rms(c, B, test_data)
    println("rms on testset = ", err[in])
 end
 

@@ -1,5 +1,5 @@
 
-using JuLIP, ManyBodyIPs, PyCall, ProgressMeter, ASE
+using JuLIP, NBodyIPs, PyCall, ProgressMeter, ASE
 
 function load_data()
    fname = "/Users/ortner/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_T2000.xyz"
@@ -55,12 +55,12 @@ for (in, ndict) = enumerate(NDICT), (ir, rcut) in enumerate(RCUT)
    B = basis(ndict, BORD, rcut, DICTTYPE)
    @show ndict, length(B)
    nbasis[in] = length(B)
-   # standard least squares (see ManyBodyIPs/src/fitting.jl)
+   # standard least squares (see NBodyIPs/src/fitting.jl)
    c = regression(B, train_data)
    # check error => the normalisation 54 / 300 = natoms / typical total energy
    # that is, the errors stored are roughly the relative error per atom
    # if this is not what you are after, then we can discuss.
-   errors[in, ir] = ManyBodyIPs.rms(c, B, test_data) * sqrt(54 / 300)
+   errors[in, ir] = NBodyIPs.rms(c, B, test_data) * sqrt(54 / 300)
    println("rms on testset = ", errors[in, ir])
 end
 

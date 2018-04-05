@@ -1,11 +1,11 @@
-using ManyBodyIPs
+using NBodyIPs
 using JuLIP, Base.Test, StaticArrays
 using BenchmarkTools
 using FunctionWrappers: FunctionWrapper
 const FWrap{N, T} = FunctionWrapper{Float64, Tuple{SVector{N,T}}}
 const F64Wrap = FunctionWrapper{Float64, Tuple{Float64}}
 
-ex, f, df = ManyBodyIPs.psym_monomial([2,1,2], dict(:inv2, 5, 3.0))
+ex, f, df = NBodyIPs.psym_monomial([2,1,2], dict(:inv2, 5, 3.0))
 b = NBody(3, f, df, 3.0)
 R = 1.0 + @SVector rand(3)
 @btime f($R)
@@ -18,7 +18,7 @@ R = 1.0 + @SVector rand(3)
 using Calculus
 simplify(ex)
 
-ex, f, df = ManyBodyIPs.psym_monomial([2,3,1,2,1], dict(:inv1, 8, 3.0))
+ex, f, df = NBodyIPs.psym_monomial([2,3,1,2,1], dict(:inv1, 8, 3.0))
 simplify(ex)
 R = 1.0 + @SVector rand(5)
 @btime f(R)

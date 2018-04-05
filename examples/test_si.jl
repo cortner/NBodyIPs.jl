@@ -1,5 +1,5 @@
 
-using JuLIP, ManyBodyIPs, JSON, NeighbourLists
+using JuLIP, NBodyIPs, JSON, NeighbourLists
 
 si_data = "/Users/ortner/Dropbox/PIBmat/si_data.json"
 
@@ -36,7 +36,7 @@ test_params =
 for (ndict, bord) in test_params
    B = basis(ndict, bord)
    @show (ndict, bord, length(B))
-   c = ManyBodyIPs.regression(B, data[1:400])
+   c = NBodyIPs.regression(B, data[1:400])
 end
 
 at = data[1][1]::Atoms

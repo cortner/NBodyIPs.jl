@@ -1,5 +1,5 @@
 
-using JuLIP, ManyBodyIPs, NeighbourLists, ForwardDiff, StaticArrays
+using JuLIP, NBodyIPs, NeighbourLists, ForwardDiff, StaticArrays
 
 Base.isvalid(r) = ( (r[1] + r[2] > r[3]) &&
                     (r[2] + r[3] > r[1]) &&
@@ -61,8 +61,8 @@ for (is, dsym) in enumerate(DSYM), (in, ndict) in enumerate(NDICT)
    nbasis[in] = length(B)
    @show (dsym, ndict, length(B))
    BB = [b.f for b in B]
-   c = ManyBodyIPs.regression(BB, train_data; verbose=false)
-   err_rms[is, in] = ManyBodyIPs.rms(c, BB, test_data) * sqrt(3) / Eavg
+   c = NBodyIPs.regression(BB, train_data; verbose=false)
+   err_rms[is, in] = NBodyIPs.rms(c, BB, test_data) * sqrt(3) / Eavg
    println(" => rms(testset) = ", err_rms[is, in])
 end
 

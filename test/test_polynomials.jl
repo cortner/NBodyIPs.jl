@@ -1,4 +1,4 @@
-using ManyBodyIPs
+using NBodyIPs
 using JuLIP, Base.Test, StaticArrays, Combinatorics
 using BenchmarkTools
 
@@ -7,7 +7,7 @@ ndict = 6
 for n = 2:5 # dimension / body-order
    for _ = 1:2 # number of random tests
       alpha = rand(0:(ndict-1), n)
-      ex, f, df = ManyBodyIPs.psym_monomial(alpha, dict(:inv2, ndict, 3.0))
+      ex, f, df = NBodyIPs.psym_monomial(alpha, dict(:inv2, ndict, 3.0))
       R = 1.0 + @SVector rand(n)
       f_ = f(R)
       issym = true
@@ -30,7 +30,7 @@ for dict_sym in [:poly, :poly1, :poly2, :inv1, :inv2]
    println("testing `psym_monomial` with $dict_sym dictionary")
    α = [2,1,3,1]
    dim = length(α)
-   ex, f, df = ManyBodyIPs.psym_monomial(α, dict(:inv2, 8, 3.0));
+   ex, f, df = NBodyIPs.psym_monomial(α, dict(:inv2, 8, 3.0));
    R = 1.0 + @SVector rand(4)
    # @btime f($R)
    # @btime df($R)
