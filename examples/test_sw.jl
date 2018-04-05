@@ -6,16 +6,16 @@ function gen_data(N, rnd=0.1)
    sw = StillingerWeber()
    r0 = rnn(:Si)
    rcut = cutoff(sw)
-   data = Tuple{typeof(bulk(:Si)), Float64}[]
+   data = Tuple{Atoms{Float64, Int}, Float64, JVecsF}[]
    for n = 1:N
       at = bulk(:Si, cubic=true) * 2
       rattle!(at, rnd * r0)
-      push!(data, (at, energy(sw, at)))
+      push!(data, (at, energy(sw, at), forces(sw, at)) )
    end
    return data
 end
 
-train_data = gen_data(1_000, 0.1)
+train_data = gen_data(200, 0.1)
 test_data =  gen_data(100, 0.1)
 
 sw = StillingerWeber()
@@ -34,7 +34,7 @@ for (in, ndict) in enumerate(NDICT)
    B = basis(ndict)
    nbasis[in] = length(B)
    @show (ndict, length(B))
-   c = NBodyIPs.regression(B, train_data[1:5*length(B)])
+   c = NBodyIPs.regression(B, train_data[1:5*length(B)], nforces = 10)
    err[in] = NBodyIPs.rms(c, B, test_data)
    println("rms on testset = ", err[in])
 end
