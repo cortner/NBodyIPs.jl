@@ -26,7 +26,7 @@ rcutN = 2 * rcut
 basis(ndict::Integer)  =
    get_basis(3, dict(:inv2, ndict, rcutN)..., rcutN)
 
-NDICT = 4:10
+NDICT = 4:2:12
 err = zeros(length(NDICT))
 nbasis = zeros(Int, length(NDICT))
 

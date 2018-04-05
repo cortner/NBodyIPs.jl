@@ -60,7 +60,7 @@ for (is, dsym) in enumerate(DSYM), (in, ndict) in enumerate(NDICT)
    B = get_basis(3, dict(dsym, ndict, rcutN)..., rcutN)
    nbasis[in] = length(B)
    @show (dsym, ndict, length(B))
-   BB = [b.f for b in B]
+   BB = [b.f[1] for b in B]
    c = NBodyIPs.regression(BB, train_data; verbose=false)
    err_rms[is, in] = NBodyIPs.rms(c, BB, test_data) * sqrt(3) / Eavg
    println(" => rms(testset) = ", err_rms[is, in])

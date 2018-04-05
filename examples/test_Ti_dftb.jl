@@ -37,10 +37,10 @@ basis(ndict::Integer, bord::Integer, rcut, sym=:inv2)  =
 DICTTYPE = :inv2
 # [2] RCUT : obviously the cut-off radius, I found for Si a good rule of
 # thumb is to use twice the site-energy cutoff!
-RCUT = [2.1, 3.1, 4.1] * rnn(:Ti)
+RCUT = [2.1, 3.1] * rnn(:Ti) # [2.1, 3.1, 4.1] * rnn(:Ti)
 # [3] NICT : how many entries in the 1D basis (=dictionary), essentially
 # the polynomial degree
-NDICT = 4:2:10
+NDICT = [4, 6]   # 4:2:10
 # [4] BORD : just 3 for now, 4 is very slow, 5 is impossible. we need
 # some optimisations first!
 BORD = 3
