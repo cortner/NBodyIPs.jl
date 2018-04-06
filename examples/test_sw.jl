@@ -10,13 +10,13 @@ function gen_data(N, rnd=0.1)
    for n = 1:N
       at = bulk(:Si, cubic=true) * 2
       rattle!(at, rnd * r0)
-      push!(data, (at, energy(sw, at), forces(sw, at)) )
+      push!(data, (at, energy(sw, at), forces(sw, at)))
    end
    return data
 end
 
-train_data = gen_data(200, 0.1)
-test_data =  gen_data(100, 0.1)
+train_data = gen_data(50, 0.1)
+test_data =  gen_data(20, 0.1)
 
 sw = StillingerWeber()
 r0 = rnn(:Si)
@@ -35,11 +35,11 @@ for (in, ndict) in enumerate(NDICT)
    B = basis(ndict)
    nbasis[in] = length(B)
    @show (ndict, length(B))
-   c = regression(B, train_data, nforces = 0)
+   c = regression(B, train_data, nforces = 5)
    IP = NBodyIP(B, c)
    errE[in], errF[in] = rms(IP, test_data)
-   println("E-rms on testset = ", errE[in])
-   println("F-rms on testset = ", errF[in])
+   println("   E-rms on testset = ", errE[in])
+   println("   F-rms on testset = ", errF[in])
 end
 
 using DataFrames

@@ -16,7 +16,7 @@ function gen_data(N, rnd=0.1)
 end
 
 train_data = gen_data(50, 0.1)
-test_data =  gen_data(50, 0.1)
+test_data =  gen_data(20, 0.1)
 
 sw = StillingerWeber()
 r0 = rnn(:Si)
@@ -27,12 +27,6 @@ basis(ndict::Integer)  =
    get_basis(3, dict(:inv2, ndict, rcutN)..., rcutN)
 
 B = basis(4)
-c = NBodyIPs.regression(B, train_data, nforces = 0)
+c = NBodyIPs.regression(B, train_data, nforces = 5)
 IP = NBodyIP(B, c)
-
-at = bulk(:Si, cubic=true) * 3
-energy(IP, at)
-
 errE, errF = rms(IP, test_data)
-println("E-rms on testset = ", errE[in])
-println("F-rms on testset = ", errF[in])

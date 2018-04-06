@@ -1,9 +1,9 @@
 
 using JuLIP, NBodyIPs, PyCall, ProgressMeter, ASE
 
-function load_data()
+function load_data(Nconfig = 411)
    fname = "/Users/ortner/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_T2000.xyz"
-   Nconfig = 411  # (how can I load this?)
+   Nconfig = min(411, Nconfig)  # (how can I load 411?)
    @pyimport ase.io as ase_io
    data = Tuple{Atoms{Float64, Int}, Float64, JVecsF}[]
    @showprogress 0.1 "Loading Ti data ..." for n = 1:Nconfig
@@ -21,10 +21,10 @@ function load_data()
    return data
 end
 
-data = load_data()
+data = load_data(150)
 @show length(data)
-train_data = data[1:350]
-test_data = data[351:end]
+train_data = data[1:100]
+test_data = data[101:150]
 
 basis(ndict::Integer, bord::Integer, rcut, sym=:inv2)  =
    get_basis(bord, dict(sym, ndict, rcut)..., rcut)
@@ -37,15 +37,16 @@ basis(ndict::Integer, bord::Integer, rcut, sym=:inv2)  =
 DICTTYPE = :inv2
 # [2] RCUT : obviously the cut-off radius, I found for Si a good rule of
 # thumb is to use twice the site-energy cutoff!
-RCUT = [2.1, 3.1] * rnn(:Ti) # [2.1, 3.1, 4.1] * rnn(:Ti)
+RCUT = [2.1, 3.1] * rnn(:Ti)   # [2.1, 3.1, 4.1]
 # [3] NICT : how many entries in the 1D basis (=dictionary), essentially
 # the polynomial degree
-NDICT = [4, 6]   # 4:2:10
+NDICT = 4:2:8    # 4:2:12
 # [4] BORD : just 3 for now, 4 is very slow, 5 is impossible. we need
 # some optimisations first!
 BORD = 3
 
-errors = zeros(length(NDICT), length(RCUT))
+errE = zeros(length(NDICT), length(RCUT))
+errF = zeros(length(NDICT), length(RCUT))
 nbasis = zeros(Int, length(NDICT))
 
 for (in, ndict) = enumerate(NDICT), (ir, rcut) in enumerate(RCUT)
@@ -56,19 +57,24 @@ for (in, ndict) = enumerate(NDICT), (ir, rcut) in enumerate(RCUT)
    @show ndict, length(B)
    nbasis[in] = length(B)
    # standard least squares (see NBodyIPs/src/fitting.jl)
-   c = regression(B, train_data)
-   # check error => the normalisation 54 / 300 = natoms / typical total energy
-   # that is, the errors stored are roughly the relative error per atom
-   # if this is not what you are after, then we can discuss.
-   errors[in, ir] = NBodyIPs.rms(c, B, test_data) * sqrt(54 / 300)
-   println("rms on testset = ", errors[in, ir])
+   # nforces = number of (randomly chosen) forces per configuration added
+   #           to the LSQ problem
+   c = regression(B, train_data, nforces = 5)
+   # construct an IP from the the basis and the weights
+   IP = NBodyIP(B, c)
+   # check error => the normalisation is w.r.t. natoms, not a genuine
+   # relative error; we can discuss
+   errE[in, ir], errF[in, ir] = rms(IP, test_data)
+   println("   E-rms on testset = ", errE[in, ir])
+   println("   F-rms on testset = ", errF[in, ir])
 end
 
 
 using DataFrames
 df = DataFrame(:nbasis => nbasis)
 for (ir, rcut) in enumerate(RCUT)
-   df[Symbol("$(round(rcut,2))")] = errors[:, ir]
+   df[Symbol("E($(round(rcut,2)))")] = errE[:, ir]
+   df[Symbol("F($(round(rcut,2)))")] = errF[:, ir]
 end
-println("Errors: (float numbers are the cut-offs)")
+println("Energy and Force Errors: (float numbers are the cut-offs)")
 println(df)
