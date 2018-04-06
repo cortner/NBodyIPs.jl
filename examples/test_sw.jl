@@ -24,22 +24,24 @@ rcut = cutoff(sw)
 rcutN = 2 * rcut
 
 basis(ndict::Integer)  =
-   get_basis(3, dict(:poly, ndict, rcutN)..., rcutN)
+   get_basis(3, dict(:inv2, ndict, rcutN)..., rcutN)
 
 NDICT = 4:2:12
-err = zeros(length(NDICT))
+errE = zeros(length(NDICT))
+errF = zeros(length(NDICT))
 nbasis = zeros(Int, length(NDICT))
 
 for (in, ndict) in enumerate(NDICT)
    B = basis(ndict)
    nbasis[in] = length(B)
    @show (ndict, length(B))
-   c = NBodyIPs.regression(B, train_data, nforces = 5)
-   IP = NBodyIP([NBodies(3, c, [b.f for b in B], [b.d_f for b in B], rcutN)])
-   err[in] = NBodyIPs.rms(c, B, test_data)
-   println("rms on testset = ", err[in])
+   c = regression(B, train_data, nforces = 0)
+   IP = NBodyIP(B, c)
+   errE[in], errF[in] = rms(IP, test_data)
+   println("E-rms on testset = ", errE[in])
+   println("F-rms on testset = ", errF[in])
 end
 
 using DataFrames
-df = DataFrame(:nbasis => nbasis, :err_inv2 => err)
+df = DataFrame(:nbasis => nbasis, :errE => errE, :errF => errF)
 println(df)
