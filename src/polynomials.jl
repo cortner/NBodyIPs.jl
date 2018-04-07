@@ -11,7 +11,7 @@ export psym_polys, psym_polys_tot, dict
 
 
 dict(::Val{:poly}, n) =
-    ["r^$i" for i = 0:n-1], "r"
+    ["r^$i" for i = 1:n], "r"
 
 dict(v::Val{:poly}, n, rcut) = dict(v, n)
 
@@ -160,6 +160,7 @@ end
 psym_monomial(alpha, t::Tuple; kwargs...) =
       psym_monomial(alpha, t[1], t[2]; kwargs...)
 
+
 """
 `psym_polys(dim, dict, sym):`
 
@@ -187,6 +188,42 @@ function psym_polys(dim::Integer, dict, sym; simplify = true)
 	end
 	return polys_ex, polys_f, polys_df
 end
+
+
+"""
+which dimensionality corresponds to a body-order
+"""
+nbody_dim(bo::Integer) = (bo * (bo-1)) ÷ 2
+
+"""
+`psym_polys_nbody(bo::Integer, dict, sym)`
+
+* `bo` : body order
+* `dict` : 1D dictionary
+* `sym` : symbol used in the dictionary
+"""
+function psym_polys_nbody(N::Integer, dict, sym; simplify = true)
+	polys_ex = Expr[]
+	polys_f = Function[]
+	polys_df = Function[]
+   # get the lower and upper dimensionality for genuine N-body terms
+   dim_lo = nbody_dim(N-1)+1
+   dim_hi = nbody_dim(N)
+   if length(dict) < dim_lo
+      warn("the length of the dictionary is too short for $N-body terms")
+   end
+	for i in dim_lo:length(dict)
+		for m = dim_lo:dim_hi, alpha in collect(partitions(i, m))
+         append!(alpha, zeros(Int, dim_hi - length(alpha)))
+         mex, mf, mdf = psym_monomial(alpha, dict, sym; simplify=simplify)
+         push!(polys_ex, mex)
+         push!(polys_f, mf)
+         push!(polys_df, mdf)
+      end
+	end
+	return polys_ex, polys_f, polys_df
+end
+
 
 
 # TODO: psym_polys_tot   has been neglected a bit, needs to be updated!
