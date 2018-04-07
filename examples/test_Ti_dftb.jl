@@ -2,7 +2,7 @@
 using JuLIP, NBodyIPs, PyCall, ProgressMeter, ASE
 
 function load_data(Nconfig = 411)   # (how can I load 411?)
-   fname = "/Users/ortner/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_T2000.xyz"
+   fname = "~/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_T2000.xyz"
    @pyimport ase.io as ase_io
    data = Tuple{Atoms{Float64, Int}, Float64, JVecsF}[]
    @showprogress 0.1 "Loading Ti data ..." for n = 1:Nconfig
