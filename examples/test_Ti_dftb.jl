@@ -53,7 +53,7 @@ for (in, ndict) = enumerate(NDICT), (ir, rcut) in enumerate(RCUT)
    # wraps them into calculators that represent the actual basis functions
    # for total energies
    B = basis(ndict, BORD, rcut, DICTTYPE)
-   @show ndict, length(B)
+   @show ndict, length(B), rcut
    nbasis[in] = length(B)
    # standard least squares (see NBodyIPs/src/fitting.jl)
    # nforces = number of (randomly chosen) forces per configuration added

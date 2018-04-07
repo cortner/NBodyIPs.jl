@@ -77,44 +77,44 @@ end
 return a list of all the unique permutations of a vector alpha
 """
 function uniqueperms(alpha::Vector{Int64})
-    size = length(alpha)
-    sort!(alpha)
-    isFinished = 0
-    perms = Vector{Int64}[]
-    it = 0
-    while isFinished == 0
-        push!(perms, copy(alpha))
-        k = -1
-        for i = (size-1):-1:1
-            if alpha[i] < alpha[i+1]
-                k = i
-                break
-            end
-        end
-        if k == -1
-            isFinished = 1
+   size = length(alpha)
+   sort!(alpha)
+   isFinished = 0
+   perms = Vector{Int64}[]
+   it = 0
+   while isFinished == 0
+      push!(perms, copy(alpha))
+      k = -1
+      for i = (size-1):-1:1
+         if alpha[i] < alpha[i+1]
+            k = i
             break
-        else
-            ceilIndex = k + 1
-            for i = k + 2:size
-                if alpha[ceilIndex] > alpha[i] && alpha[i] > alpha[k]
-                    ceilIndex = i
-                end
+         end
+      end
+      if k == -1
+         isFinished = 1
+         break
+      else
+         ceilIndex = k + 1
+         for i = k + 2:size
+            if alpha[ceilIndex] > alpha[i] && alpha[i] > alpha[k]
+               ceilIndex = i
             end
-            t = alpha[ceilIndex]
-            alpha[ceilIndex] = alpha[k]
-            alpha[k] = t
-        end
-        temp = zeros(Int64,size-k)
-        for i = 1:(size-k)
-            temp[i] = alpha[i + k]
-        end
-        sort!(temp)
-        for i = 1:(size-k)
-            alpha[i + k] = temp[i]
-        end
-    end
-    return perms
+         end
+         t = alpha[ceilIndex]
+         alpha[ceilIndex] = alpha[k]
+         alpha[k] = t
+      end
+      temp = zeros(Int64,size-k)
+      for i = 1:(size-k)
+         temp[i] = alpha[i + k]
+      end
+      sort!(temp)
+      for i = 1:(size-k)
+         alpha[i + k] = temp[i]
+      end
+   end
+   return perms
 end
 
 """
