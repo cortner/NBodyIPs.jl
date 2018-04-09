@@ -339,3 +339,32 @@ function polys_fourbody(dict, sym; simplify = true)
 	# return polys_ex, polys_f, polys_df
    return basis
 end
+
+
+function gen_fun(A::Vector{Vector{Int}}, dict, sym; simplify=true)
+   dict = ["1"; dict]
+   dim = length(A[1])
+
+   # generate a string
+   fstr = ""
+   for α ∈ A
+      α .+= 1
+      fstr = fstr * " + " * replace(dict[α[1]], sym, "$(sym)1")
+      for i = 2:length(α)
+         fstr = fstr * " * " * replace(dict[α[i]], sym, "$(sym)$i")
+      end
+   end
+
+   # generate an expression function
+   fex = parse(fstr)
+   if simplify
+      fex = Calculus.simplify(fex)
+   end
+
+   # generate a function
+   s = Symbol(sym)
+   f = eval(:($s -> $(ind2vec(fex, dim, sym))))
+   df = x -> ForwardDiff.gradient(f, x)
+
+   return fex, f, df
+end
