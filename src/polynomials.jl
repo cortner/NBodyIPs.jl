@@ -258,3 +258,84 @@ function psym_polys_tot(dim::Integer, dict, sym; simplify = false)
 	end
 	return polys_ex, polys_f
 end
+
+
+# ================== hacked-together four-body terms ============
+
+# 4-body = 4-simplex has 4 corners (atom positions) and 6 edges  rᵢⱼ
+#
+# edge index : A[1]  A[2]  A[3]  A[4]  A[5]  A[6]
+# edge length: r12   r13   r14   r23   r24   r34
+# (where rij = |xᵢ - xⱼ| with xᵢ the corner positions)
+
+const b4_e_inds = [0 1 2 3
+                   1 0 4 5
+                   2 4 0 6
+                   3 5 6 0]
+
+"""
+convert a permutation of simplex corners into a permutation of
+simplex edges
+"""
+S4_to_S6(π::Vector{Int}, b4_e_inds=NBodyIPs.b4_e_inds) = Int[
+   b4_e_inds[π[1], π[2]], b4_e_inds[π[1], π[3]], b4_e_inds[π[1], π[4]],
+   b4_e_inds[π[2], π[3]], b4_e_inds[π[2], π[4]], b4_e_inds[π[3], π[4]] ]
+
+"""
+generate all permutations of A that correspond to permutations of corners,
+then keep only the unique ones so that we don't double-count.
+"""
+fourbody_permutations(A::Vector{Int}) =
+   unique(  [ A[S4_to_S6(πX)]
+              for πX in permutations(1:4) ]  )
+
+
+function polys_fourbody(dict, sym; simplify = true)
+	# polys_ex = Expr[]
+	# polys_f = Function[]
+	# polys_df = Function[]
+   basis = Vector{Vector{Int}}[]  # representation of the basis functions
+   # get the lower and upper dimensionality for genuine N-body terms
+   N = 4
+   dim_lo = nbody_dim(N-1)+1   # 4
+   dim_hi = nbody_dim(N)       # 6
+   if length(dict) < dim_lo
+      warn("the length of the dictionary is too short for $N-body terms")
+   end
+
+   # generate all partitions of `i` from m integers where
+   # dim_lo=4 ≦ m ≦ dim_hi=6. Fewer terms means it is an (N-1)-body term.
+   # More are not allowed since that would involve at least (N+1)-bodies;
+   #    `i` runs from dim_lo to length(dict); this gives all possible
+   #    ordered tuples ⇔ multi-variate polynomials of sum-degree between
+   #    dim_lo and length(dict)
+	for      i in dim_lo:length(dict),
+            m = dim_lo:dim_hi,
+            α in collect(partitions(i, m))
+      # any terms not included get zeros appended
+      append!(α, zeros(Int, dim_hi - length(α)))
+      # store which tuples we've already covered
+      alldone = Vector{Int}[]
+      # look at all permutations of α that actually modify α
+      for A in uniqueperms(α)
+         if !(A ∈ alldone)   # (not yet encountered)
+            # not need to generate 4! = 24 (unique) permutations of A
+            # that correspond to permutations of the corners
+            P = fourbody_permutations(A)
+            # then add all of these to `alldone` so that we don't generate that
+            # basis function a second time!
+            append!(alldone, P)
+            # the vector of tuples P represents a basis function
+            push!(basis, P)
+            # construct an expression and the corresponding functions
+            # and add them to the arrays
+            # mex, mf, mdf = fourbody_monomial(P, dict, sym; simplify=simplify)
+            # push!(polys_ex, mex)
+            # push!(polys_f, mf)
+            # push!(polys_df, mdf)
+         end
+      end
+	end
+	# return polys_ex, polys_f, polys_df
+   return basis
+end
