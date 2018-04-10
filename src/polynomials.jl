@@ -9,6 +9,9 @@ const GWrap{N, T} = FunctionWrapper{SVector{N,T}, Tuple{SVector{N,T}}}
 
 export psym_polys, psym_polys_tot, dict
 
+const CRg = CartesianRange
+const CInd = CartesianIndex
+
 
 dict(::Val{:poly}, n) =
     ["r^$i" for i = 1:n], "r"
@@ -303,32 +306,32 @@ function polys_fourbody(dict_len::Integer)
    #    warn("the length of the dictionary is too short for $N-body terms")
    # end
 
-   alldone = Vector{Int}[]
-
-   # add the strange deg-2 terms
-   for i = 1:dict_len, j = i:dict_len
-      α = zeros(Int, 6)
-      α[b4_e_inds[1,2]] = i
-      α[b4_e_inds[3,4]] = j
-      if !(α ∈ alldone)
-         A = fourbody_permutations(α)
-         append!(alldone, A)
-         push!(basis, A)
-      end
-   end
-
-   # add the strange deg-3 terms
-   for i1 = 1:dict_len, i2 = 1:dict_len, i3 = 1:dict_len
-      α = zeros(Int, 6)
-      α[b4_e_inds[1,2]] = i1
-      α[b4_e_inds[2,3]] = i2
-      α[b4_e_inds[3,4]] = i3
-      if !(α ∈ alldone)
-         A = fourbody_permutations(α)
-         append!(alldone, A)
-         push!(basis, A)
-      end
-   end
+   # alldone = Vector{Int}[]
+   #
+   # # add the strange deg-2 terms
+   # for i = 1:dict_len, j = i:dict_len
+   #    α = zeros(Int, 6)
+   #    α[b4_e_inds[1,2]] = i
+   #    α[b4_e_inds[3,4]] = j
+   #    if !(α ∈ alldone)
+   #       A = fourbody_permutations(α)
+   #       append!(alldone, A)
+   #       push!(basis, A)
+   #    end
+   # end
+   #
+   # # add the strange deg-3 terms
+   # for i1 = 1:dict_len, i2 = 1:dict_len, i3 = 1:dict_len
+   #    α = zeros(Int, 6)
+   #    α[b4_e_inds[1,2]] = i1
+   #    α[b4_e_inds[2,3]] = i2
+   #    α[b4_e_inds[3,4]] = i3
+   #    if !(α ∈ alldone)
+   #       A = fourbody_permutations(α)
+   #       append!(alldone, A)
+   #       push!(basis, A)
+   #    end
+   # end
 
    # generate all partitions of `i` from m integers where
    # dim_lo=4 ≦ m ≦ dim_hi=6. Fewer terms means it is an (N-1)-body term.
@@ -336,15 +339,15 @@ function polys_fourbody(dict_len::Integer)
    #    `i` runs from dim_lo to length(dict); this gives all possible
    #    ordered tuples ⇔ multi-variate polynomials of sum-degree between
    #    dim_lo and length(dict)
-	for      i in dim_lo:dict_len,
-            m = dim_lo:dim_hi,
+	for      i in 1:dict_len,
+            m = 1:dim_hi,
             α in collect(partitions(i, m))
       # any terms not included get zeros appended
       append!(α, zeros(Int, dim_hi - length(α)))
       # store which tuples we've already covered
       alldone = Vector{Int}[]
       # look at all permutations of α that actually modify α
-      for A in uniqueperms(α)
+      for A in permutations(α)
          if !(A ∈ alldone)   # (not yet encountered)
             # not need to generate 4! = 24 (unique) permutations of A
             # that correspond to permutations of the corners
@@ -364,6 +367,26 @@ function polys_fourbody(dict_len::Integer)
       end
 	end
 	# return polys_ex, polys_f, polys_df
+   return basis
+end
+
+Base.Vector(I::CartesianIndex) = Int[I.I...]
+
+# len = length of dictionary, not including f(x) = 1
+function polys_fourbody2(len::Integer)
+   # representation of the basis functions and Lists of Tuples
+   basis = Vector{Vector{Int}}[]
+   # store all the tuples that are already in a basis function
+   alldone = Vector{Int}[]
+   # for i1 = 0:len, i2 = 0:len, ..., i6 = 0:len
+   for I in CRg(CInd{6}(0,0,0,0,0,0), CInd{6}(ntuple(_->len, 6)))
+      A = Vector(I)
+      if !(A ∈ alldone)
+         P = fourbody_permutations(A)
+         append!(alldone, P)
+         push!(basis, P)
+      end
+	end
    return basis
 end
 
