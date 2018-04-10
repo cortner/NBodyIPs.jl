@@ -294,53 +294,55 @@ fourbody_permutations(A::Vector{Int}) =
 
 
 function polys_fourbody(dict_len::Integer)
-	# polys_ex = Expr[]
-	# polys_f = Function[]
-	# polys_df = Function[]
    basis = Vector{Vector{Int}}[]  # representation of the basis functions
    # get the lower and upper dimensionality for genuine N-body terms
    N = 4
    dim_lo = nbody_dim(N-1)+1   # 4
    dim_hi = nbody_dim(N)       # 6
-   # if length(dict) < dim_lo
-   #    warn("the length of the dictionary is too short for $N-body terms")
-   # end
 
-   # alldone = Vector{Int}[]
-   #
-   # # add the strange deg-2 terms
-   # for i = 1:dict_len, j = i:dict_len
-   #    α = zeros(Int, 6)
-   #    α[b4_e_inds[1,2]] = i
-   #    α[b4_e_inds[3,4]] = j
-   #    if !(α ∈ alldone)
-   #       A = fourbody_permutations(α)
-   #       append!(alldone, A)
-   #       push!(basis, A)
-   #    end
-   # end
-   #
-   # # add the strange deg-3 terms
-   # for i1 = 1:dict_len, i2 = 1:dict_len, i3 = 1:dict_len
-   #    α = zeros(Int, 6)
-   #    α[b4_e_inds[1,2]] = i1
-   #    α[b4_e_inds[2,3]] = i2
-   #    α[b4_e_inds[3,4]] = i3
-   #    if !(α ∈ alldone)
-   #       A = fourbody_permutations(α)
-   #       append!(alldone, A)
-   #       push!(basis, A)
-   #    end
-   # end
+   alldone = Vector{Int}[]
 
+   # add the strange deg-2 terms
+   for i = 1:dict_len, j = i:dict_len
+      if i + j > dict_len
+         continue
+      end
+      α = zeros(Int, 6)
+      α[b4_e_inds[1,2]] = i
+      α[b4_e_inds[3,4]] = j
+      if !(α ∈ alldone)
+         A = fourbody_permutations(α)
+         append!(alldone, A)
+         push!(basis, A)
+      end
+   end
+
+   # add the strange deg-3 terms
+   for i1 = 1:dict_len, i2 = 1:dict_len, i3 = 1:dict_len
+      if i1+i2+i3 > dict_len
+         continue
+      end
+      α = zeros(Int, 6)
+      α[b4_e_inds[1,2]] = i1
+      α[b4_e_inds[2,3]] = i2
+      α[b4_e_inds[3,4]] = i3
+      if !(α ∈ alldone)
+         A = fourbody_permutations(α)
+         append!(alldone, A)
+         push!(basis, A)
+      end
+   end
+
+   # partitions(deg, m) -> all tuples of length m summing to deg
+   #
    # generate all partitions of `i` from m integers where
    # dim_lo=4 ≦ m ≦ dim_hi=6. Fewer terms means it is an (N-1)-body term.
    # More are not allowed since that would involve at least (N+1)-bodies;
    #    `i` runs from dim_lo to length(dict); this gives all possible
    #    ordered tuples ⇔ multi-variate polynomials of sum-degree between
    #    dim_lo and length(dict)
-	for      i in 1:dict_len,
-            m = 1:dim_hi,
+	for      i in 4:dict_len,     # (sum of tuple is between 4 and dict_len)
+            m = dim_lo:dim_hi,   # (length of tuple is between 4 and 6)
             α in collect(partitions(i, m))
       # any terms not included get zeros appended
       append!(α, zeros(Int, dim_hi - length(α)))
@@ -357,16 +359,9 @@ function polys_fourbody(dict_len::Integer)
             append!(alldone, P)
             # the vector of tuples P represents a basis function
             push!(basis, P)
-            # construct an expression and the corresponding functions
-            # and add them to the arrays
-            # mex, mf, mdf = fourbody_monomial(P, dict, sym; simplify=simplify)
-            # push!(polys_ex, mex)
-            # push!(polys_f, mf)
-            # push!(polys_df, mdf)
          end
       end
 	end
-	# return polys_ex, polys_f, polys_df
    return basis
 end
 
@@ -377,12 +372,16 @@ function polys_fourbody2(len::Integer)
    # representation of the basis functions and Lists of Tuples
    basis = Vector{Vector{Int}}[]
    # store all the tuples that are already in a basis function
-   alldone = Vector{Int}[]
+   alldone = Vector{Int}[ [0,0,0,0,0,0] ]
    # for i1 = 0:len, i2 = 0:len, ..., i6 = 0:len
+   #   (len+1)^6
    for I in CRg(CInd{6}(0,0,0,0,0,0), CInd{6}(ntuple(_->len, 6)))
       A = Vector(I)
+      if sum(A) > len
+         continue
+      end
       if !(A ∈ alldone)
-         P = fourbody_permutations(A)
+         P = fourbody_permutations(A)  # P::Vector{Vector{Int}}
          append!(alldone, P)
          push!(basis, P)
       end
