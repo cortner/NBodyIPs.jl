@@ -241,6 +241,7 @@ based on all the one-variable Basis_fct in dimension dim.
 psym_polys_tot(3, ["y^0","y^1","y^2"], "y")
 ```
 """
+
 function psym_polys_tot(dim::Integer, dict, sym; simplify = false)
 	polys_ex = [psym_monomial([0], dict, sym)[1]]
 	polys_f = [psym_monomial([0], dict, sym)[2]]
@@ -288,6 +289,7 @@ S4_to_S6(π::Vector{Int}, b4_e_inds=NBodyIPs.b4_e_inds) = Int[
 generate all permutations of A that correspond to permutations of corners,
 then keep only the unique ones so that we don't double-count.
 """
+
 fourbody_permutations(A::Vector{Int}) =
    unique(  [ A[S4_to_S6(πX)]
               for πX in permutations(1:4) ]  )
