@@ -431,6 +431,8 @@ end
 B = NBodyIPs.polys_fourbody(1) |> display
 B = NBodyIPs.polys_fourbody2(4) |> display
 
+
+#some tests to count the number of monomials in polys_fourbody2
 Deg_max = 2:8
 
 Check_nb_basis_fct = zeros(length(Deg_max),2)
