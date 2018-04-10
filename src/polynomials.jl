@@ -303,13 +303,18 @@ function polys_fourbody(dict_len::Integer)
    #    warn("the length of the dictionary is too short for $N-body terms")
    # end
 
+   alldone = Vector{Int}[]
+
    # add the strange deg-2 terms
    for i = 1:dict_len, j = i:dict_len
       α = zeros(Int, 6)
       α[b4_e_inds[1,2]] = i
       α[b4_e_inds[3,4]] = j
-      A = fourbody_permutations(α)
-      push!(basis, A)
+      if !(α ∈ alldone)
+         A = fourbody_permutations(α)
+         append!(alldone, A)
+         push!(basis, A)
+      end
    end
 
    # add the strange deg-3 terms
@@ -318,8 +323,11 @@ function polys_fourbody(dict_len::Integer)
       α[b4_e_inds[1,2]] = i1
       α[b4_e_inds[2,3]] = i2
       α[b4_e_inds[3,4]] = i3
-      A = fourbody_permutations(α)
-      push!(basis, A)
+      if !(α ∈ alldone)
+         A = fourbody_permutations(α)
+         append!(alldone, A)
+         push!(basis, A)
+      end
    end
 
    # generate all partitions of `i` from m integers where
