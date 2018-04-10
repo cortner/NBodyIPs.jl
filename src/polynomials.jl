@@ -290,7 +290,7 @@ fourbody_permutations(A::Vector{Int}) =
               for πX in permutations(1:4) ]  )
 
 
-function polys_fourbody(dict, sym; simplify = true)
+function polys_fourbody(dict_len::Integer)
 	# polys_ex = Expr[]
 	# polys_f = Function[]
 	# polys_df = Function[]
@@ -299,8 +299,27 @@ function polys_fourbody(dict, sym; simplify = true)
    N = 4
    dim_lo = nbody_dim(N-1)+1   # 4
    dim_hi = nbody_dim(N)       # 6
-   if length(dict) < dim_lo
-      warn("the length of the dictionary is too short for $N-body terms")
+   # if length(dict) < dim_lo
+   #    warn("the length of the dictionary is too short for $N-body terms")
+   # end
+
+   # add the strange deg-2 terms
+   for i = 1:dict_len, j = i:dict_len
+      α = zeros(Int, 6)
+      α[b4_e_inds[1,2]] = i
+      α[b4_e_inds[3,4]] = j
+      A = fourbody_permutations(α)
+      push!(basis, A)
+   end
+
+   # add the strange deg-3 terms
+   for i1 = 1:dict_len, i2 = 1:dict_len, i3 = 1:dict_len
+      α = zeros(Int, 6)
+      α[b4_e_inds[1,2]] = i1
+      α[b4_e_inds[2,3]] = i2
+      α[b4_e_inds[3,4]] = i3
+      A = fourbody_permutations(α)
+      push!(basis, A)
    end
 
    # generate all partitions of `i` from m integers where
@@ -309,7 +328,7 @@ function polys_fourbody(dict, sym; simplify = true)
    #    `i` runs from dim_lo to length(dict); this gives all possible
    #    ordered tuples ⇔ multi-variate polynomials of sum-degree between
    #    dim_lo and length(dict)
-	for      i in dim_lo:length(dict),
+	for      i in dim_lo:dict_len,
             m = dim_lo:dim_hi,
             α in collect(partitions(i, m))
       # any terms not included get zeros appended
@@ -367,4 +386,10 @@ function gen_fun(A::Vector{Vector{Int}}, dict, sym; simplify=true)
    df = x -> ForwardDiff.gradient(f, x)
 
    return fex, f, df
+end
+
+
+function polys_fourbody(dict, sym; simplify=true)
+   A = polys_fourbody(length(dict))
+   return gen_fun(A, dict, sym; simplify=simplify)
 end
