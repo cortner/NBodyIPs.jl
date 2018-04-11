@@ -15,7 +15,7 @@ function gen_data(N, rnd=0.1)
    return data
 end
 
-train_data = gen_data(50, 0.1)
+train_data = gen_data(100, 0.1)
 test_data =  gen_data(20, 0.1)
 
 sw = StillingerWeber()
@@ -24,7 +24,7 @@ rcut = cutoff(sw)
 rcutN = 2 * rcut
 
 basis(ndict::Integer)  =
-   get_basis(3, dict(:inv2, ndict, rcutN)..., rcutN)
+   vcat( get_basis(:inv2, [ndict, ndict], [rcutN, rcutN])... )
 
 NDICT = 4:2:12
 errE = zeros(length(NDICT))

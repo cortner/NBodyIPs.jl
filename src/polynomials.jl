@@ -1,18 +1,25 @@
 
 
-using MacroTools,  Combinatorics, FunctionWrappers, Calculus, ForwardDiff,
-      StaticArrays
+using MacroTools,  Combinatorics, Calculus, ForwardDiff, StaticArrays
 
-using FunctionWrappers: FunctionWrapper
-const FWrap{N, T} = FunctionWrapper{Float64, Tuple{SVector{N,T}}}
-const GWrap{N, T} = FunctionWrapper{SVector{N,T}, Tuple{SVector{N,T}}}
-
+import Base.parse
 
 export nbody_tuples, nbody_alltuples
 
-
 const CRg = CartesianRange
 const CInd = CartesianIndex
+const Tup{M} = NTuple{M, Int}
+const VecTup{M} = Vector{NTuple{M, Int}}
+
+using FunctionWrappers: FunctionWrapper
+const FWrap{N, T} = FunctionWrapper{T, Tuple{SVector{N,T}}}
+const GWrap{N, T} = FunctionWrapper{SVector{N,T}, Tuple{SVector{N,T}}}
+
+dim(::FWrap{DIM}) where DIM = DIM
+dim(::GWrap{DIM}) where DIM = DIM
+bodyorder(::FWrap{DIM}) where DIM = ceil(Int, sqrt(2*DIM))    # DIM = N * (N-1) / 2
+bodyorder(::GWrap{DIM}) where DIM = ceil(Int, sqrt(2*DIM))
+
 
 
 """
@@ -103,9 +110,9 @@ Base.ntuple(n::Integer, ::Val{M}) where {M} = ntuple(_->n, M)
 
 function nbody_alltuples(vN::Val{N}, vM::Val{M}, len::Integer) where {N, M}
    # representation of the basis functions and Lists of Tuples
-   basis = Vector{NTuple{M, Int}}[]
+   basis = VecTup{M}[]
    # store all the tuples that are already in a basis function
-   alldone = NTuple{M, Int}[ ntuple(0, vM) ]
+   alldone = Tup{M}[ ntuple(0, vM) ]
    # for i1 = 0:len, i2 = 0:len, ..., iM = 0:len
    #   (len+1)^M
    for I in CRg(CInd(ntuple(0, vM)), CInd(ntuple(len, vM)))
@@ -131,7 +138,7 @@ nbody_tuples(::Val{2}, ::Val{1}, len::Integer) =
       [ [ntuple(i, Val(1))] for i = 1:len ]
 
 function nbody_tuples(::Val{3}, ::Val{3}, len::Integer)
-   B = Vector{NTuple{3, Int}}[]
+   B = VecTup{3}[]
 	for i in 2:len, m in 2:3, α in collect(partitions(i, m))
       append!(α, zeros(Int, 3 - length(α)))
       push!(B, simplex_permutations(Val(3), tuple(α...)))
@@ -141,9 +148,9 @@ end
 
 function nbody_tuples(vN::Val{4}, vM::Val{6}, len::Integer)
    # representation of the basis functions
-   basis = Vector{NTuple{6,Int}}[]
+   basis = VecTup{6}[]
 
-   alldone = NTuple{6,Int}[]
+   alldone = Tup{6}[]
    # add the strange deg-2 terms
    for i = 1:len, j = i:len
       if i + j > len
@@ -154,14 +161,14 @@ function nbody_tuples(vN::Val{4}, vM::Val{6}, len::Integer)
       α[b4_e_inds[3,4]] = j
       αt = tuple(α...)
       if !(αt ∈ alldone)
-         P = fourbody_permutations(αt)
+         P = simplex_permutations(Val(4), αt)
          append!(alldone, P)
          push!(basis, P)
       end
    end
 
    # add the strange deg-3 terms
-   alldone = NTuple{6,Int}[]
+   alldone = Tup{6}[]
    for i1 = 1:len, i2 = 1:len, i3 = 1:len
       if i1+i2+i3 > len
          continue
@@ -174,7 +181,7 @@ function nbody_tuples(vN::Val{4}, vM::Val{6}, len::Integer)
       α[b4_e_inds[3,4]] = i3
       αt = tuple(α...)
       if !(αt ∈ alldone)
-         A = fourbody_permutations(αt)
+         A = simplex_permutations(Val(4), αt)
          append!(alldone, A)
          push!(basis, A)
       end
@@ -186,7 +193,7 @@ function nbody_tuples(vN::Val{4}, vM::Val{6}, len::Integer)
       α[b4_e_inds[1,4]] = i3
       αt = tuple(α...)
       if !(αt ∈ alldone)
-         A = fourbody_permutations(αt)
+         A = simplex_permutations(Val(4), αt)
          append!(alldone, A)
          push!(basis, A)
       end
@@ -207,14 +214,14 @@ function nbody_tuples(vN::Val{4}, vM::Val{6}, len::Integer)
       # any terms not included get zeros appended
       append!(α, zeros(Int, 6 - length(α)))
       # store which tuples we've already covered
-      alldone = NTuple{6,Int}[]
+      alldone = Tup{6}[]
       # look at all permutations of α that actually modify α
       for A in permutations(α)
          At = tuple(A...)
          if !(At ∈ alldone)   # (not yet encountered)
             # not need to generate 4! = 24 (unique) permutations of A
             # that correspond to permutations of the corners
-            P = fourbody_permutations(At)
+            P = simplex_permutations(Val(4), At)
             # then add all of these to `alldone` so that we don't generate that
             # basis function a second time!
             append!(alldone, P)
@@ -229,7 +236,7 @@ end
 
 # ============= Generate Functions from Tuples ============
 
-function gen_fun(A::Vector{NTuple{M, Int}}, dict, sym; simplify=true) where {M}
+function parse(A::VecTup{M}, dict, sym; simplify=true, wrap=false) where {M}
 
    # add a `1` to the dictionary which corresponds to zero-entries in the
    # tuples
@@ -256,5 +263,28 @@ function gen_fun(A::Vector{NTuple{M, Int}}, dict, sym; simplify=true) where {M}
    f = eval(:($s -> $(ind2vec(fex, M, sym))))
    df = x -> ForwardDiff.gradient(f, x)
 
+   if wrap
+      f = FWrap{M, Float64}(f)
+      df = GWrap{M, Float64}(df)
+   end
+
    return fex, f, df
+end
+
+function parse(B::Vector{VecTup{M}}, dict, sym; wrap = false, kwargs...) where M
+   exs = Expr[]
+   if wrap
+      fs = FWrap{M, Float64}[]
+      dfs = GWrap{M, Float64}[]
+   else
+      fs = Function[]
+      dfs = Function[]
+   end
+   for b in B
+      ex, f, df = parse(b, dict, sym; kwargs...)
+      push!(exs, ex)
+      push!(fs, f)
+      push!(dfs, df)
+   end
+   return exs, fs, dfs
 end
