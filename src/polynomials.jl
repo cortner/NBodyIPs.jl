@@ -4,7 +4,7 @@ using MacroTools,  Combinatorics, Calculus, ForwardDiff, StaticArrays
 
 import Base.parse
 
-export nbody_tuples, nbody_alltuples
+export nbody_tuples, nbody_alltuples, nbody_onlytuples
 
 const CRg = CartesianRange
 const CInd = CartesianIndex
@@ -80,20 +80,57 @@ const b4_e_inds = [0 1 2 3
                    2 4 0 6
                    3 5 6 0]
 
+const b4_e_proj = [1 1 1 0 0 0
+                   1 0 0 1 1 0
+                   0 1 0 1 0 1
+                   0 0 1 0 1 1]
+
+# 5-body = 5-simplex has 5 corners (atom positions) and 10 edges  rᵢⱼ
+#
+# edge index : A[1]  A[2]  A[3]  A[4]  A[5]  A[6] A[7]  A[8]  A[9]  A[10]
+# edge length: r12   r13   r14   r15   r23   r24  r25   r34   r35   r45
+# (where rij = |xᵢ - xⱼ| with xᵢ the corner positions)
+
+const b5_e_inds = [0 1 2 3 4
+                   1 0 5 6 7
+                   2 5 0 8 9
+                   3 6 8 0 10
+                   4 7 9 10 0]
+
+const b5_e_proj = [1 1 1 1 0 0 0 0 0 0
+                   1 0 0 0 1 1 1 0 0 0
+                   0 1 0 0 1 0 0 1 1 0
+                   0 0 1 0 0 1 0 1 0 1
+                   0 0 0 1 0 0 1 0 1 1]
+
 const πb3 = collect(permutations(1:3))
 
 """
 convert a permutation of simplex corners into a permutation of
-simplex edges
+simplex edges (for 4 body)
 """
 S4_to_S6(π::Vector{Int}, b4_e_inds=NBodyIPs.b4_e_inds) = Int[
    b4_e_inds[π[1], π[2]], b4_e_inds[π[1], π[3]], b4_e_inds[π[1], π[4]],
    b4_e_inds[π[2], π[3]], b4_e_inds[π[2], π[4]], b4_e_inds[π[3], π[4]] ]
 
 """
+convert a permutation of simplex corners into a permutation of
+simplex edges (for 5 body)
+"""
+S5_to_S10(π::Vector{Int}, b5_e_inds=NBodyIPs.b5_e_inds) = Int[
+   b5_e_inds[π[1], π[2]], b5_e_inds[π[1], π[3]], b5_e_inds[π[1], π[4]],
+   b5_e_inds[π[1], π[5]], b5_e_inds[π[2], π[3]], b5_e_inds[π[2], π[4]],
+   b5_e_inds[π[2], π[5]], b5_e_inds[π[3], π[4]], b5_e_inds[π[3], π[5]],
+   b5_e_inds[π[4], π[5]] ]
+
+
+"""
 generate all permutations of A that correspond to permutations of corners,
 then keep only the unique ones so that we don't double-count.
 """
+simplex_permutations(::Val{5}, A) =
+   unique(  [ A[S5_to_S10(πX)]
+              for πX in permutations(1:5) ]  )
 simplex_permutations(::Val{4}, A) =
    unique(  [ A[S4_to_S6(πX)]
               for πX in permutations(1:4) ]  )
@@ -128,6 +165,47 @@ function nbody_alltuples(vN::Val{N}, vM::Val{M}, len::Integer) where {N, M}
 	end
    return basis
 end
+
+# #Select only Nbody tuples
+nbody_onlytuples(N::Integer, len::Integer) =
+      nbody_onlytuples(Val(N), Val((N*(N-1))÷2), len)
+
+function nbody_onlytuples(vN::Val{N}, vM::Val{M}, len::Integer) where {N, M}
+   # representation of the basis functions and Lists of Tuples
+   basis = VecTup{M}[]
+   # store all the tuples that are already in a basis function
+   alldone = Tup{M}[ ntuple(0, vM) ]
+   # for i1 = 0:len, i2 = 0:len, ..., iM = 0:len
+   #   (len+1)^M
+   for I in CRg(CInd(ntuple(0, vM)), CInd(ntuple(len, vM)))
+      A = I.I
+      if sum(A) > len
+         continue
+      end
+      if !(A ∈ alldone)
+         P = simplex_permutations(vN, A)
+         append!(alldone, P)
+           if trueNbody(A)
+            push!(basis, P)
+           end
+      end
+	end
+   return basis
+end
+
+ function trueNbody(A)
+    if length(A)==6
+       S = sum((A.*b4_e_proj[i,:]) == [0,0,0,0,0,0] for i=1:4)
+       return (S == 0)
+    elseif length(A)==10
+       S = sum((A.*b5_e_proj[i,:]) == [0,0,0,0,0,0] for i=1:5)
+       return (S == 0)
+     else
+        error("pb: not implemented in trueNbody")
+     end
+ end
+
+trueNbody((1,1,1,1,1,1,1,1,1,1))
 
 
 nbody_tuples(N::Integer, len::Integer) =
