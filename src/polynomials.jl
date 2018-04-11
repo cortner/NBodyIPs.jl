@@ -80,10 +80,7 @@ const b4_e_inds = [0 1 2 3
                    2 4 0 6
                    3 5 6 0]
 
-const b4_e_proj = [1 1 1 0 0 0
-                   1 0 0 1 1 0
-                   0 1 0 1 0 1
-                   0 0 1 0 1 1]
+
 
 # 5-body = 5-simplex has 5 corners (atom positions) and 10 edges  rᵢⱼ
 #
@@ -97,11 +94,23 @@ const b5_e_inds = [0 1 2 3 4
                    3 6 8 0 10
                    4 7 9 10 0]
 
+
+# preparation for true n-body terms only
+ #for 3-body
+ const b3_e_proj = [1 1 0
+                    1 0 1
+                    0 1 1]
+#for 4-body
+ const b4_e_proj = [1 1 1 0 0 0
+                    1 0 0 1 1 0
+                    0 1 0 1 0 1
+                    0 0 1 0 1 1]
+#for 5-body
 const b5_e_proj = [1 1 1 1 0 0 0 0 0 0
-                   1 0 0 0 1 1 1 0 0 0
-                   0 1 0 0 1 0 0 1 1 0
-                   0 0 1 0 0 1 0 1 0 1
-                   0 0 0 1 0 0 1 0 1 1]
+                  1 0 0 0 1 1 1 0 0 0
+                  0 1 0 0 1 0 0 1 1 0
+                  0 0 1 0 0 1 0 1 0 1
+                  0 0 0 1 0 0 1 0 1 1]
 
 const πb3 = collect(permutations(1:3))
 
@@ -194,11 +203,14 @@ function nbody_onlytuples(vN::Val{N}, vM::Val{M}, len::Integer) where {N, M}
 end
 
  function trueNbody(A)
-    if length(A)==6
+    if length(A)== 3
+      S = sum((A.*b3_e_proj[i,:]) == [0,0,0] for i=1:3)
+      return (S == 0)
+    elseif length(A)==6
        S = sum((A.*b4_e_proj[i,:]) == [0,0,0,0,0,0] for i=1:4)
        return (S == 0)
     elseif length(A)==10
-       S = sum((A.*b5_e_proj[i,:]) == [0,0,0,0,0,0] for i=1:5)
+       S = sum((A.*b5_e_proj[i,:]) == [0,0,0,0,0,0,0,0,0,0,0] for i=1:5)
        return (S == 0)
      else
         error("pb: not implemented in trueNbody")
