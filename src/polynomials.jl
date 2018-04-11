@@ -205,7 +205,6 @@ end
      end
  end
 
-trueNbody((1,1,1,1,1,1,1,1,1,1))
 
 
 nbody_tuples(N::Integer, len::Integer) =
