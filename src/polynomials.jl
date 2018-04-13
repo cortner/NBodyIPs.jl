@@ -1,8 +1,10 @@
 
+module SymmetricPolynomials
 
 using MacroTools,  Combinatorics, Calculus, ForwardDiff, StaticArrays
 
 import Base.parse
+import NBodyIPs: bodyorder
 
 export nbody_tuples, nbody_alltuples, nbody_onlytuples
 
@@ -376,4 +378,12 @@ function parse(B::Vector{VecTup{M}}, dict, sym; wrap = false, kwargs...) where M
       push!(dfs, df)
    end
    return exs, fs, dfs
+end
+
+
+# code to combine the many-body terms from "polynomials.jl" into
+# objects that can evaluate total energies and forces
+include("assembly.jl")
+
+
 end
