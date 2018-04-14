@@ -49,8 +49,9 @@ D = Dictionary(InvInvariants, rcut)
 n = 10
 println("[1] Quick profiling for a 3-body with $n basis functions")
 at = rattle!(bulk(:Cu, cubic=true) * 2, 0.02)
+@show length(at)
 r = 1.0 + rand(SVector{3, Float64})
-V3 = NBody( [tuple(rand(1:5, 3)...) for n = 1:n], rand(n), D )
+V3 = NBody( [tuple(rand(0:4, 3)...) for n = 1:n], rand(n), D )
 print("     V3: "); @btime evaluate($V3, $r)
 print("  @D V3: "); @btime evaluate_d($V3, $r)
 print("  nlist: "); @btime neighbourlist(at, rcut)
@@ -72,3 +73,20 @@ for n in [1, 3]
    V3 = NBody( [tuple(rand(0:3, 3)...) for n = 1:n], 0.01 * rand(n), D )
    @test JuLIP.Testing.fdtest(V3, at)
 end
+
+
+
+
+# using NBodyIPs
+# using JuLIP, Base.Test, StaticArrays, ForwardDiff, Combinatorics
+# using BenchmarkTools
+# using NBodyIPs.Invariants
+#
+# using NBodyIPs.Invariants: invariants, grad_invariants
+# using JuLIP.Potentials: evaluate, evaluate_d
+#
+# r0 = rnn(:Cu)
+# rcut = 3.1 * r0
+# D = Dictionary(InvInvariants, rcut)
+# B = gen_basis(3, D, 12)
+# at = rattle!(bulk(:Cu, cubic=true) * 2, 0.02)

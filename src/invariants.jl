@@ -7,7 +7,13 @@ import Base: length
 import JuLIP: cutoff, energy, forces
 import JuLIP.Potentials: evaluate, evaluate_d
 
-export NBody, NBodyIP, PolyInvariants, InvInvariants, Dictionary
+const CRg = CartesianRange
+const CInd = CartesianIndex
+const Tup{M} = NTuple{M, Int}
+const VecTup{M} = Vector{NTuple{M, Int}}
+
+export NBody, NBodyIP, PolyInvariants, InvInvariants, Dictionary,
+      gen_tuples, gen_basis
 
 # ==================================================================
 #           INVARIANTS
@@ -126,8 +132,8 @@ Dictionary(T::Type, rcut) = Dictionary(T(), rcut)
 # ==================================================================
 
 
-@pot struct NBody{N, M, T, TI, TINV} <: AbstractCalculator
-   t::Vector{NTuple{M, TI}}   # tuples
+@pot struct NBody{N, M, T, TINV} <: AbstractCalculator
+   t::VecTup{M}               # tuples
    c::Vector{T}               # coefficients
    D::Dictionary{TINV, T}
    valN::Val{N}
@@ -154,10 +160,13 @@ e.g., if M = 3, α = t[1] is a 3-vector then this corresponds to the basis funct
 """
 NBody
 
-NBody(t::Vector{NTuple{3, TI}}, c, D) where {TI} = NBody(t, c, D, Val(3))
-NBody(t::Vector{NTuple{6, TI}}, c, D) where {TI} = NBody(t, c, D, Val(6))
-NBody(t::Vector{NTuple{10, TI}}, c, D) where {TI} = NBody(t, c, D, Val(10))
 
+edges2bo(M) = ceil(Int, sqrt(2*M))
+
+NBody(t::VecTup{M}, c, D) where {M} =
+      NBody(t, c, D, Val(edges2bo(M)))
+
+NBody(t::Tup, c, D) = NBody([t], [c], D)
 
 length(V::NBody) = length(V.t)
 cutoff(V::NBody) = cutoff(V.D)
@@ -198,23 +207,25 @@ function evaluate_d(V::NBody{3, M, T}, r::AbstractVector{T}) where {M, T}
    dfc1, dfc2, dfc3 = fcut_d(D, r[1]), fcut_d(D, r[2]), fcut_d(D, r[3])
    fc = fc1 * fc2 * fc3
    fc_d = SVector{3, Float64}(
-      dfc1 * fc2 * fc3, fc1 * dfc2 * fc3, fc1 * fc2 * dfc3) 
+      dfc1 * fc2 * fc3, fc1 * dfc2 * fc3, fc1 * fc2 * dfc3)
    return dE * fc + E * fc_d
 end
 
 
-function energy(V::NBody{3, M, T}, at::Atoms{T}) where {M, T}
+function energy(V::NBody{N, M, T}, at::Atoms{T}) where {N, M, T}
    nlist = neighbourlist(at, cutoff(V))
    Es = maptosites!(r -> V(r), zeros(length(at)), nbodies(3, nlist))
    return sum_kbn(Es)
 end
 
-function forces(V::NBody{3, M, T}, at::Atoms{T}) where {M, T}
+function forces(V::NBody{N, M, T}, at::Atoms{T}) where {N, M, T}
    nlist = neighbourlist(at, cutoff(V))
    return scale!(maptosites_d!(r -> (@D V(r)),
-                               zeros(SVector{3, T}, length(at)),
-                               nbodies(3, nlist)), -1)
+                 zeros(SVector{M, T}, length(at)),
+                 nbodies(N, nlist)), -1)
 end
+
+
 
 # ==================================================================
 #           The Final Interatomic Potential
@@ -244,5 +255,51 @@ function NBodyIP(basis, coeffs, D::Dictionary)
    return NBodyIP(orders)
 end
 
+
+
+
+# ==================================================================
+#           Generate a Basis
+# ==================================================================
+
+tuple_length(::Val{2}) = 1
+tuple_length(::Val{3}) = 3
+
+degree(α::Tup{3}) = α[1] + 2 * α[2] + 3 * α[3]
+
+"""
+`gen_tuples(N, deg; tuplebound = ...)` : generates a list of tuples, where
+each tuple defines a basis function. Use `gen_basis` to convert the tuples
+into a basis, or use `gen_basis` directly.
+
+* `N` : body order
+* `deg` : maximal degree
+* `tuplebound` : a function that takes a tuple as an argument and returns
+`true` if that tuple should be in the basis and `false` if not. The default is
+`α -> (degree(α) <= deg)` i.e. the standard monomial degree. (note this is
+the degree w.r.t. lengths, not w.r.t. invariants!)
+"""
+gen_tuples(N, deg; tuplebound = (α -> (degree(α) <= deg))) =
+   gen_tuples(Val(N), Val(tuple_length(Val(N))), deg, tuplebound)
+
+
+function gen_tuples(vN::Val{N}, vK::Val{K}, deg, tuplebound) where {N, K}
+   t = Tup{K}[]
+   for I in CRg(CInd(ntuple(0, vK)), CInd(ntuple(deg, vK)))
+      if tuplebound(I.I)
+         push!(t, I.I)
+      end
+   end
+   return t
+end
+
+"""
+`gen_basis(N, D, deg; tuplebound = ...)` : generates a basis set of
+`N`-body functions, with dictionary `D`, maximal degree `deg`; the precise
+set of basis functions constructed depends on `tuplebound` (see `?gen_tuples`)
+"""
+gen_basis(N, D, deg; kwargs...) = gen_basis(gen_tuples(N, deg; kwargs...), D)
+
+gen_basis(ts::VecTup, D::Dictionary) = [NBody(t, 1.0, D) for t in ts]
 
 end

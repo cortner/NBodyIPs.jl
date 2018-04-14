@@ -23,8 +23,6 @@ r0 = rnn(:Si)
 rcut = cutoff(sw)
 rcutN = 2 * rcut
 
-basis(ndict::Integer)  =
-   vcat( get_basis(:inv2, [ndict, ndict], [rcutN, rcutN])... )
 
 NDICT = 4:2:12
 errE = zeros(length(NDICT))
