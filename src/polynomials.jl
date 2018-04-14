@@ -386,4 +386,25 @@ end
 include("assembly.jl")
 
 
+"""
+`get_basis(dict_sym, degrees, rcuts; kwargs...)`
+
+* `dict_sym` is a symbol defining the dictionary; to try a new dictionary
+just add it to `dictionaries.jl`
+* `degrees` : vector of "polymomial degrees" i.e. number of basis functions
+to be used for each body-order, starting with order 2
+* `rcuts` : vector of cutoff radii
+"""
+function get_basis(dsym, degrees, rcuts; kwargs...)
+   @assert length(degrees) == length(rcuts) <= 3
+   B = []
+   for (n, (deg, rcut)) in enumerate(zip(degrees, rcuts))
+      D = dict(dsym, deg, rcut)
+      exs, fs, dfs = parse(nbody_tuples(n+1, deg), D...; wrap=true)
+      push!(B, NBody.(n+1, fs, dfs, rcut))
+   end
+   return B
+end
+
+
 end

@@ -1,5 +1,6 @@
 
 using JuLIP, NBodyIPs
+using NBodyIPs.Invariants
 
 
 function gen_data(N, rnd=0.1)
@@ -23,18 +24,20 @@ r0 = rnn(:Si)
 rcut = cutoff(sw)
 rcutN = 2 * rcut
 
+DEG = 4:2:12
+errE = zeros(length(DEG))
+errF = zeros(length(DEG))
+nbasis = zeros(Int, length(DEG))
 
-NDICT = 4:2:12
-errE = zeros(length(NDICT))
-errF = zeros(length(NDICT))
-nbasis = zeros(Int, length(NDICT))
+D = Dictionary(InvInvariants, rcut)
+basis(deg) = gen_basis(3, D, deg)
 
-for (in, ndict) in enumerate(NDICT)
-   B = basis(ndict)
+for (in, deg) in enumerate(DEG)
+   B = basis(deg)
    nbasis[in] = length(B)
-   @show (ndict, length(B))
+   @show (deg, length(B))
    c = regression(B, train_data, nforces = 5)
-   IP = NBodyIP(B, c)
+   IP = NBody(B, c, D)
    errE[in], errF[in] = rms(IP, test_data)
    println("   E-rms on testset = ", errE[in])
    println("   F-rms on testset = ", errF[in])

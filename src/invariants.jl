@@ -168,6 +168,9 @@ NBody(t::VecTup{M}, c, D) where {M} =
 
 NBody(t::Tup, c, D) = NBody([t], [c], D)
 
+NBody(B::Vector{TB}, c, D) where {TB <: NBody} =
+   NBody([b.t[1] for b in B], c, D)
+
 length(V::NBody) = length(V.t)
 cutoff(V::NBody) = cutoff(V.D)
 bodyorder(V::NBody{N}) where {N} = N
@@ -245,7 +248,7 @@ energy(V::NBodyIP, at::Atoms) = sum( energy(Vn, at)  for Vn in V.orders )
 forces(V::NBodyIP, at::Atoms) = sum( forces(Vn, at)  for Vn in V.orders )
 
 function NBodyIP(basis, coeffs, D::Dictionary)
-   orders = NBodies[]
+   orders = NBody[]
    bos = bodyorder.(basis)
    for N = 2:maximum(bos)
       Ibo = find(bos .== N)  # find all basis functions that have the right bodyorder

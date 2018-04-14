@@ -73,20 +73,3 @@ for n in [1, 3]
    V3 = NBody( [tuple(rand(0:3, 3)...) for n = 1:n], 0.01 * rand(n), D )
    @test JuLIP.Testing.fdtest(V3, at)
 end
-
-
-
-
-# using NBodyIPs
-# using JuLIP, Base.Test, StaticArrays, ForwardDiff, Combinatorics
-# using BenchmarkTools
-# using NBodyIPs.Invariants
-#
-# using NBodyIPs.Invariants: invariants, grad_invariants
-# using JuLIP.Potentials: evaluate, evaluate_d
-#
-# r0 = rnn(:Cu)
-# rcut = 3.1 * r0
-# D = Dictionary(InvInvariants, rcut)
-# B = gen_basis(3, D, 12)
-# at = rattle!(bulk(:Cu, cubic=true) * 2, 0.02)
