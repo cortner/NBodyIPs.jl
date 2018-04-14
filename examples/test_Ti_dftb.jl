@@ -1,5 +1,6 @@
 
 using JuLIP, NBodyIPs, PyCall, ProgressMeter, ASE
+using NBodyIPs.Invariants
 
 function load_data(Nconfig = 411)   # (how can I load 411?)
    fname = "~/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_T2000.xyz"
@@ -22,35 +23,28 @@ end
 
 data = load_data(250)
 @show length(data)
-train_data = data[1:220]
-test_data = data[221:250]
+train_data = data[1:100]
+test_data = data[101:120]
 
 
 # parameters for fitting
 # -----------------------
-# [1] DICTTYPE: which dictionary to use, look at the top of `polynomials.jl`
-# which symbols are implemented and which dictionary they generate, or
-# how to generate new dictionaries
-DICTTYPE = :inv2
-# [2] RCUT : obviously the cut-off radius, I found for Si a good rule of
-# thumb is to use twice the site-energy cutoff!
-RCUT = [4.1, 3.1, 2.1] * rnn(:Ti)   # [2.1, 3.1, 4.1]
-# [3] NICT : how many entries in the 1D basis (=dictionary), essentially
-# the polynomial degree
-NDICT = 4:2:8    #
+rcut = 4.1 * rnn(:Ti)
+DEG = 4:2:10
+D = Dictionary(InvInvariants, rcut)
 
-tibasis(ndict) = vcat( get_basis(:inv2, [ndict+4, ndict+2, ndict], RCUT)... )
+tibasis(deg) = gen_basis(3, D, deg)
 
-errE = zeros(length(NDICT))
-errF = zeros(length(NDICT))
-nbasis = zeros(Int, length(NDICT))
+errE = zeros(length(DEG))
+errF = zeros(length(DEG))
+nbasis = zeros(Int, length(DEG))
 
-for (in, ndict) = enumerate(NDICT)
+for (in, deg) = enumerate(DEG)
    # this generates the permutation symmetric polynomials then
    # wraps them into calculators that represent the actual basis functions
    # for total energies
-   B = tibasis(ndict)
-   @show ndict, length(B)
+   B = tibasis(deg)
+   @show deg, length(B)
    nbasis[in] = length(B)
    # standard least squares (see NBodyIPs/src/fitting.jl)
    # nforces = number of (randomly chosen) forces per configuration added
@@ -58,18 +52,14 @@ for (in, ndict) = enumerate(NDICT)
    ndata = min(length(train_data), length(B))
    c = regression(B, train_data[1:ndata], nforces = 5)
    # construct an IP from the the basis and the weights
-   IP = NBodyIP(B, c)
+   # IP = NBodyIP(B, c, D)
+   IP = NBody(B, c, D)
    # check error => the normalisation is w.r.t. natoms, not a genuine
    # relative error; we can discuss
    errE[in], errF[in] = rms(IP, test_data)
    println("   E-rms on testset = ", errE[in])
    println("   F-rms on testset = ", errF[in])
 end
-
-B = tibasis(4)
-c = rand(length(B))
-IP = NBodyIP(B, c)
-rms(IP, test_data)
 
 using DataFrames
 df = DataFrame(:nbasis => nbasis)

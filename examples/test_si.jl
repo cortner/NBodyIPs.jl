@@ -1,5 +1,6 @@
 
 using JuLIP, NBodyIPs, JSON, NeighbourLists
+using NBodyIPs.Invariants
 
 si_data = "/Users/ortner/Dropbox/PIBmat/si_data.json"
 
@@ -11,39 +12,31 @@ function load_json(fname)
    return data
 end
 
-basis(ndict::Integer, bord::Integer)  =
-   get_basis(bord, dict(:inv2, ndict, rcut)..., rcut)
-
 data = load_json(si_data)
-length(data)
+train_data = data[1:100]
+test_data =  data[101:120]
 
 r0 = rnn(:Si)
-rcut = 3.2 * r0
+rcutN = 4.3*r0   # (ca 2 x SW cutoff)
+DEG = 4:2:10
+errE = zeros(length(DEG))
+errF = zeros(length(DEG))
+nbasis = zeros(Int, length(DEG))
 
-# test_params =
-#       [ (8, 3), (10, 3), (12, 3), (7, 4), (8, 4), (6, 5) ]
-#
-# for (ndict, bord) in test_params
-#    @show (ndict, bord)
-#    @show length(basis(ndict, bord))
-# end
+D = Dictionary(InvInvariants, rcutN)
+basis(deg) = gen_basis(3, D, deg)
 
-
-
-test_params =
-      [ (8, 3), (10, 3), (12, 3), (7, 4), (8, 4) ]
-
-for (ndict, bord) in test_params
-   B = basis(ndict, bord)
-   @show (ndict, bord, length(B))
-   c = NBodyIPs.regression(B, data[1:400])
+for (in, deg) in enumerate(DEG)
+   B = basis(deg)
+   nbasis[in] = length(B)
+   @show (deg, length(B))
+   c = regression(B, train_data, nforces = 5)
+   IP = NBody(B, c, D)
+   errE[in], errF[in] = rms(IP, test_data)
+   println("   E-rms on testset = ", errE[in])
+   println("   F-rms on testset = ", errF[in])
 end
 
-at = data[1][1]::Atoms
-for b in basis(8, 4)
-   @time b(at)
-end
-
-# ENV["JULIA_NUM_THREADS"] = 1
-# NeighbourLists.set_maxthreads!(1)
-# NeighbourLists.MAX_THREADS
+using DataFrames
+df = DataFrame(:nbasis => nbasis, :errE => errE, :errF => errF)
+println(df)

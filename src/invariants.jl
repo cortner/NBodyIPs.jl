@@ -71,9 +71,85 @@ function grad_invariants_inv(s::SVector{3, T}) where {T}
       SVector{3,T}(t[1]*s[2]*s[3], t[2]*s[1]*s[3], t[3]*s[1]*s[2])    )
 end
 
+"""
+`inv_degrees(::Val{N})` where `N` is the body-order returns a
+tuple of polynomials degrees corresponding to the degrees of the
+individual invariants.  E.g. for 3-body, the invariants are
+r1 + r2 + r3, r1 r2 + r1 r3 + r2 r3, r1 r2 r3, and the corresponding
+degrees are `(1, 2, 3)`.
+"""
+inv_degrees(::Val{3}) = (1, 2, 3)
+
 # TODO
 # struct ExpInvariants
 # end
+
+# -------------- 4-body invariants ----------------
+
+# TODO: reorder to obtain increasing degree?
+inv_degrees(::Val{4}) = (1, 2, 3, 4, 2, 3, 3, 4, 5, 6, 9)
+
+const _2 = 2.0^(-0.5)
+const _3 = 3.0^(-0.5)
+const _6 = 6.0^(-0.5)
+const _12 = 12.0^(-0.5)
+const R2Q = @SMatrix [ _6    _6    _6   _6    _6    _6
+                       _2     0     0  -_2     0     0
+                        0    _2     0    0   -_2     0
+                        0     0    _2    0     0   -_2
+                        0    _2   -_2    0    _2   -_2
+                       _3  -_12  -_12   _3  -_12  -_12 ]
+
+function invariants_inv(s::SVector{6, T}) where {T}
+   Q = R2Q * s
+   return @SVector{6, T}(
+      # I1
+      Q[1],
+      # I2
+      Q[2]^2 + Q[3]^2 + Q[4]^2,
+      # I3
+      Q[2] * Q[3] * Q[4],
+      # I4
+      Q[3]^2 * Q[4]^2 + Q[2]^2 * Q[4]^2 + Q[2]^2 * Q[3]^2,
+      # I5
+      Q[5]^2 + Q[6]^2,
+      # I6
+      Q[6]^3 - 3*Q[5]^2 * Q[6]
+   ), @SVector{5, T}(
+      # I7
+      Q[6] * (2*Q[2]^2 - Q[3]^2 - Q[4]^2) + √3 * Q[5] * (Q[3]^2 - Q[4]^2),
+      # I8
+      ( (Q[6]^2 - Q[5]^2) * (2*Q[2]^2 - Q[3]^2 - Q[4]^2)
+            - 2 * √3 * Q[5] * Q[6] * (Q[3]^2 - Q[4]^2) ),
+      # I9
+      ( Q[6] * (2*Q[3]^2 * Q[4]^2 - Q[2]^2 * Q[4]^2 - Q[2]^2 * Q[3]^2)
+            + √3 * Q[2] * (Q[2]^2 * Q[4]^2 - Q[2]^2 * Q[3]^2) ),
+      # I10
+      ( (Q[6]^2 - Q[5]^2)*(2*Q[3]^2*Q[4]^2 - Q[2]^2*Q[4]^2 -Q[2]^2*Q[3]^2)
+        - 2*√3 * Q[5] * Q[6] * (Q[2]^2*Q[4]^2 - Q[2]^2*Q[3]^2) ),
+      # I11
+      ( (Q[3]^2 - Q[4]^2) * (Q[4]^2 - Q[2]^2) * (Q[2]^2 - Q[3]^2) *
+            Q[5] * (3*Q[6]^2 - Q[5]^2) )
+   )
+end
+
+function grad_invariants_inv(s::SVector{6, T}) where {T}
+   t = - s.^(-2)
+   J = ForwardDiff.jacobian(invariants_inv, s)
+   return SVector{11, SVector{6, T}}(
+      t .* J[1,:],
+      t .* J[2,:],
+      t .* J[3,:],
+      t .* J[4,:],
+      t .* J[5,:],
+      t .* J[6,:],
+      t .* J[7,:],
+      t .* J[8,:],
+      t .* J[9,:],
+      t .* J[10,:],
+      t .* J[11,:]
+   )
+end
 
 
 # ==================================================================
@@ -176,6 +252,21 @@ cutoff(V::NBody) = cutoff(V.D)
 bodyorder(V::NBody{N}) where {N} = N
 dim(V::NBody{N,M}) where {N, M} = M
 
+function energy(V::NBody{N, M, T}, at::Atoms{T}) where {N, M, T}
+   nlist = neighbourlist(at, cutoff(V))
+   Es = maptosites!(r -> V(r), zeros(length(at)), nbodies(3, nlist))
+   return sum_kbn(Es)
+end
+
+function forces(V::NBody{N, M, T}, at::Atoms{T}) where {N, M, T}
+   nlist = neighbourlist(at, cutoff(V))
+   return scale!(maptosites_d!(r -> (@D V(r)),
+                 zeros(SVector{M, T}, length(at)),
+                 nbodies(N, nlist)), -1)
+end
+
+# ---------------  3-body terms ------------------
+
 function evaluate(V::NBody{3, M, T}, r::AbstractVector{TT})  where {M, T, TT}
    # @assert length(r) == M == 3
    E = 0.0
@@ -188,8 +279,6 @@ function evaluate(V::NBody{3, M, T}, r::AbstractVector{TT})  where {M, T, TT}
    return E * fc
 end
 
-# evaluate_d(V::NBody{3, M, T}, r::AbstractVector{T}) where {M, T} =
-#    ForwardDiff.gradient( r_ -> V(r_), r )
 
 function evaluate_d(V::NBody{3, M, T}, r::AbstractVector{T}) where {M, T}
    E = zero(T)
@@ -215,19 +304,31 @@ function evaluate_d(V::NBody{3, M, T}, r::AbstractVector{T}) where {M, T}
 end
 
 
-function energy(V::NBody{N, M, T}, at::Atoms{T}) where {N, M, T}
-   nlist = neighbourlist(at, cutoff(V))
-   Es = maptosites!(r -> V(r), zeros(length(at)), nbodies(3, nlist))
-   return sum_kbn(Es)
+# ---------------  4-body terms ------------------
+
+# a tuple α = (α1, …, α6, α7) means the following:
+# with f[0] = 1, f[1] = I7, …, f[5] = I11 we construct the basis set
+#   f[α7] * g(I1, …, I6)
+# this means, that gen_tuples must generate 7-tuples instead of 6-tuples
+# with the first 6 entries restricted by degree and the 7th tuple must
+# be in the range 0, …, 5
+
+function evaluate(V::NBody{4, M, T}, r::AbstractVector{TT})  where {M, T, TT}
+   E = 0.0
+   D = V.D
+   I, Iext = invariants(D, r)         # SVector{NI, T}
+   J = [SVector(1.0); Iext]
+   for (α, c) in zip(V.t, V.c)
+      E += c * J[α[7]+1] * (
+         D(α[1], I[1]) * D(α[2], I[2]) * D(α[3], I[3]) *
+         D(α[4], I[4]) * D(α[5], I[5]) * D(α[6], I[6]) )
+   end
+   fc = prod(fcut(D, r[j]) for j = 1:6)
+   return E * fc
 end
 
-function forces(V::NBody{N, M, T}, at::Atoms{T}) where {N, M, T}
-   nlist = neighbourlist(at, cutoff(V))
-   return scale!(maptosites_d!(r -> (@D V(r)),
-                 zeros(SVector{M, T}, length(at)),
-                 nbodies(N, nlist)), -1)
-end
-
+evaluate_d(V::NBody{4, M, T}, r::AbstractVector{TT})  where {M, T, TT} =
+   ForwardDiff.grad(r_ -> evaluate(V, r_), r)
 
 
 # ==================================================================
@@ -267,8 +368,19 @@ end
 
 tuple_length(::Val{2}) = 1
 tuple_length(::Val{3}) = 3
+tuple_length(::Val{7}) = 3
 
 degree(α::Tup{3}) = α[1] + 2 * α[2] + 3 * α[3]
+
+function degree(α::Tup{7})
+   degs = inv_degrees(Val(4))
+   d = sum(α[j] * degs[j] for j = 1:6)
+   if α[7] > 0
+      d += degs[6+α[7]]
+   end
+   return d
+end
+
 
 """
 `gen_tuples(N, deg; tuplebound = ...)` : generates a list of tuples, where

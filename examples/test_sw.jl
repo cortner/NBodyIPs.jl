@@ -29,7 +29,7 @@ errE = zeros(length(DEG))
 errF = zeros(length(DEG))
 nbasis = zeros(Int, length(DEG))
 
-D = Dictionary(InvInvariants, rcut)
+D = Dictionary(InvInvariants, rcutN)
 basis(deg) = gen_basis(3, D, deg)
 
 for (in, deg) in enumerate(DEG)
