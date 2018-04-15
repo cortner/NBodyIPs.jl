@@ -19,10 +19,12 @@ for r in [(@SVector rand(3)), (@SVector rand(6))]
    println("dim = $(length(r))")
    print("       invariants: ")
    @btime invariants($Inv, $r)
-   print("  grad_inveriants: ")
-   @btime grad_invariants($Inv, $r)
-   print("    ad_inveriants: ")
-   @btime ad_invariants($Inv, $r)
+   if length(r) == 3
+      print("  grad_inveriants: ")
+      @btime grad_invariants($Inv, $r)
+      print("    ad_inveriants: ")
+      @btime ad_invariants($Inv, $r)
+   end
 end
 
 println("[2] Correctness of gradients")
@@ -66,7 +68,7 @@ println("[1] Quick profiling for a 3-body with $n basis functions")
 at = rattle!(bulk(:Cu, cubic=true) * 2, 0.02)
 @show length(at)
 r = 1.0 + rand(SVector{3, Float64})
-V3 = NBody( [tuple(rand(0:4, 3)...) for n = 1:n], rand(n), D )
+V3 = NBody( [tuple(rand(0:4, 3)...) for n = 1:n], rand(n), D3 )
 print("     V3: "); @btime evaluate($V3, $r)
 print("  @D V3: "); @btime evaluate_d($V3, $r)
 print("  nlist: "); @btime neighbourlist(at, rcut3)
@@ -74,7 +76,7 @@ print(" energy: "); @btime energy(V3, at)
 print(" forces: "); @btime forces(V3, at)
 
 r = 1.0 + rand(SVector{6, Float64})
-V4 = NBody( [tuple(rand(0:4, 7)...) for n = 1:n], rand(n), D )
+V4 = NBody( [tuple(rand(0:4, 7)...) for n = 1:n], rand(n), D4 )
 print("     V4: "); @btime evaluate($V4, $r)
 print("  @D V4: "); @btime evaluate_d($V4, $r)
 print("  nlist: "); @btime neighbourlist(at, rcut4)
@@ -84,7 +86,7 @@ print(" forces: "); @btime forces(V4, at)
 
 println("[2] finite-difference test on triangles")
 for n = [1, 3]
-   V3 = NBody( [tuple(rand(0:3, 3)...) for n = 1:n], rand(n), D )
+   V3 = NBody( [tuple(rand(0:3, 3)...) for n = 1:n], rand(n), D3 )
    for _  = 1:10
       r = 1.0 + rand(SVector{3,Float64})
       @test (@D V3(r)) ≈ ForwardDiff.gradient(r_ -> V3(r_), r)
@@ -94,7 +96,7 @@ end
 println("[3] finite-difference test on configurations")
 at = rattle!(bulk(:Cu, cubic=true) * (1,2,2), 0.02)
 for n in [1, 3]
-   V3 = NBody( [tuple(rand(0:3, 3)...) for n = 1:n], 0.01 * rand(n), D )
+   V3 = NBody( [tuple(rand(0:3, 3)...) for n = 1:n], 0.01 * rand(n), D3 )
    @test JuLIP.Testing.fdtest(V3, at)
 end
 
@@ -117,3 +119,6 @@ V4 = NBody( [tuple(rand(0:4, 7)...) for n = 1:n], rand(n), D )
 r = @SVector rand(6)
 @btime evaluate($V4, $r)
 @btime evaluate_d($V4, $r)
+
+@btime energy(V4, at)
+@btime forces(V4, at)
