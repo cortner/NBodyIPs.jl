@@ -118,7 +118,7 @@ function invariants_inv(s::SVector{6, T}) where {T}
    rt3 = sqrt(3.0)
    Q_56 = Q[5] * Q[6]
 
-   return SVector{6, T}(
+   return SVector{11, T}(
       # I1
       (Q[1]),
       # I2
@@ -130,9 +130,9 @@ function invariants_inv(s::SVector{6, T}) where {T}
       # I5
       (Q2[5] + Q2[6]),
       # I6
-      (Q[6] * (Q2[6] - 3*Q2[5]))
-   ),
-   SVector{5, T}(
+      (Q[6] * (Q2[6] - 3*Q2[5])),
+   # ),
+   # SVector{5, T}(
       # I7
       (Q[6] * (2*Q2[2] - Q2[3] - Q2[4]) + rt3 * Q[5] * (Q2[3] - Q2[4])),
       # I8
@@ -149,23 +149,24 @@ function invariants_inv(s::SVector{6, T}) where {T}
    )
 end
 
-# function grad_invariants_inv(s::SVector{6, T}) where {T}
-#    t = - s.^(-2)
-#    J = ForwardDiff.jacobian(invariants_inv, s)
-#    return SVector{11, SVector{6, T}}(
-#       t .* J[1,:],
-#       t .* J[2,:],
-#       t .* J[3,:],
-#       t .* J[4,:],
-#       t .* J[5,:],
-#       t .* J[6,:],
-#       t .* J[7,:],
-#       t .* J[8,:],
-#       t .* J[9,:],
-#       t .* J[10,:],
-#       t .* J[11,:]
-#    )
-# end
+
+function grad_invariants_inv(s::SVector{6, T}) where {T}
+   t = - s.^(-2)
+   J = ForwardDiff.jacobian(invariants_inv, s)
+   return SVector{11, SVector{6, T}}(
+      t .* J[1,:],
+      t .* J[2,:],
+      t .* J[3,:],
+      t .* J[4,:],
+      t .* J[5,:],
+      t .* J[6,:],
+      t .* J[7,:],
+      t .* J[8,:],
+      t .* J[9,:],
+      t .* J[10,:],
+      t .* J[11,:]
+   )
+end
 
 
 # ==================================================================
@@ -281,6 +282,17 @@ function forces(V::NBody{N, M, T}, at::Atoms{T}) where {N, M, T}
                  nbodies(N, nlist)), -1)
 end
 
+function forces(V::NBody{4, M, T}, at::Atoms{T}) where {M, T}
+   nlist = neighbourlist(at, cutoff(V))
+   evalfun = r -> evaluate(V, r)
+   cfg = ForwardDiff.GradientConfig(evalfun, (@SVector ones(6)),
+            ForwardDiff.Chunk{6}())
+   return scale!(maptosites_d!(
+                 r -> ForwardDiff.gradient(evalfun, r, cfg, Val(false)),
+                 zeros(SVector{3, T}, length(at)),
+                 nbodies(4, nlist)), -1)
+end
+
 # ---------------  3-body terms ------------------
 
 function evaluate(V::NBody{3, M, T}, r::AbstractVector{TT})  where {M, T, TT}
@@ -332,8 +344,9 @@ end
 function evaluate(V::NBody{4, M, T}, r::AbstractVector{TT})  where {M, T, TT}
    E = 0.0
    D = V.D
-   I, Iext = invariants(D, r)         # SVector{NI, T}
-   J = [SVector(1.0); Iext]
+   II = invariants(D, r)         # SVector{NI, T}
+   I = SVector{6}(II[1],II[2],II[3],II[4],II[5],II[6])
+   J = SVector{6}(1.0, II[7], II[8], II[9], II[10], II[11])
    for (α, c) in zip(V.t, V.c)
       E += c * J[α[7]+1] * (
          D(α[1], I[1]) * D(α[2], I[2]) * D(α[3], I[3]) *
@@ -347,6 +360,70 @@ end
 evaluate_d(V::NBody{4, M, T}, r::AbstractVector{TT})  where {M, T, TT} =
    ForwardDiff.gradient(r_ -> evaluate(V, r_), r)
 
+# function evaluate_d(V::NBody{4, M, T}, r::AbstractVector{T})  where {M, T}
+#    E = 0.0
+#    dE = zero(SVector{6, T})
+#    D = V.D
+#    I = invariants(D, r)         # SVector{NI, T}
+#    DI = ForwardDiff.jacobian(r_->invariants(D, r_), r)
+#    DII = DI[SVector{6,Int}(1,2,3,4,5,6), :]
+#    J = SVector{6}(1.0, I[7], I[8], I[9], I[10], I[11])
+#    temp = zero(MVector{6, T})
+#    for (α, c) in zip(V.t, V.c)
+#       f1 = D(α[1], I[1])
+#       f2 = D(α[2], I[2])
+#       f3 = D(α[3], I[3])
+#       f4 = D(α[4], I[4])
+#       f5 = D(α[5], I[5])
+#       f6 = D(α[6], I[6])
+#       f = f1 * f2 * f3 * f4 * f5 * f6
+#       E += c * J[α[7]+1] * f
+#       if α[7] == 0
+#          DJ = zero(SVector{6,T})
+#       else
+#          DJ = DI[6+α[7], :]
+#       end
+#       cJ = c * J[1+α[7]]
+#       temp[1] = (@D D(α[1], I[1])) * f2*f3*f4*f5*f6
+#       temp[2] = (@D D(α[2], I[2])) * f1*f3*f4*f5*f6
+#       temp[3] = (@D D(α[3], I[3])) * f1*f2*f4*f5*f6
+#       temp[4] = (@D D(α[4], I[4])) * f1*f2*f3*f5*f6
+#       temp[5] = (@D D(α[5], I[5])) * f1*f2*f3*f4*f6
+#       temp[6] = (@D D(α[6], I[6])) * f1*f2*f3*f4*f5
+#       dE += c * (DJ * f + J[1+α[7]] * (DII * temp))
+#
+#       # dE += c * (DJ * f +
+#       #    J[1+α[7]] * (DII * SVector{6, T}(
+#       #       (@D D(α[1], I[1])) * f2*f3*f4*f5*f6,
+#       #       (@D D(α[2], I[2])) * f1*f3*f4*f5*f6,
+#       #       (@D D(α[3], I[3])) * f1*f2*f4*f5*f6,
+#       #       (@D D(α[4], I[4])) * f1*f2*f3*f5*f6,
+#       #       (@D D(α[5], I[5])) * f1*f2*f3*f4*f6,
+#       #       (@D D(α[6], I[6])) * f1*f2*f3*f4*f5 ) ))
+#             # + cJ * (@D D(α[1], I[1])) * f2*f3*f4*f5*f6 * DI[1,:]
+#       #       + cJ * (@D D(α[2], I[2])) * f1*f3*f4*f5*f6 * DI[2,:]
+#       #       + cJ * (@D D(α[3], I[3])) * f1*f2*f4*f5*f6 * DI[3,:]
+#       #       + cJ * (@D D(α[4], I[4])) * f1*f2*f3*f5*f6 * DI[4,:]
+#       #       + cJ * (@D D(α[5], I[5])) * f1*f2*f3*f4*f6 * DI[5,:]
+#       #       + cJ * (@D D(α[6], I[6])) * f1*f2*f3*f4*f5 * DI[6,:]
+#       # )
+#    end
+#    fc1, dfc1 = fcut(D, r[1]), fcut_d(D, r[1])
+#    fc2, dfc2 = fcut(D, r[2]), fcut_d(D, r[2])
+#    fc3, dfc3 = fcut(D, r[3]), fcut_d(D, r[3])
+#    fc4, dfc4 = fcut(D, r[4]), fcut_d(D, r[4])
+#    fc5, dfc5 = fcut(D, r[5]), fcut_d(D, r[5])
+#    fc6, dfc6 = fcut(D, r[6]), fcut_d(D, r[6])
+#    fc = fc1 * fc2 * fc3 * fc4 * fc5 * fc6
+#    dfc = SVector{6, T}(
+#          dfc1 *  fc2 *  fc3 *  fc4 *  fc5 *  fc6,
+#           fc1 * dfc2 *  fc3 *  fc4 *  fc5 *  fc6,
+#           fc1 *  fc2 * dfc3 *  fc4 *  fc5 *  fc6,
+#           fc1 *  fc2 *  fc3 * dfc4 *  fc5 *  fc6,
+#           fc1 *  fc2 *  fc3 *  fc4 * dfc5 *  fc6,
+#           fc1 *  fc2 *  fc3 *  fc4 *  fc5 * dfc6 )
+#    return dE * fc + E * dfc
+# end
 
 # ==================================================================
 #           The Final Interatomic Potential
@@ -365,13 +442,16 @@ cutoff(V::NBodyIP) = maximum( cutoff.(V.orders) )
 energy(V::NBodyIP, at::Atoms) = sum( energy(Vn, at)  for Vn in V.orders )
 forces(V::NBodyIP, at::Atoms) = sum( forces(Vn, at)  for Vn in V.orders )
 
-function NBodyIP(basis, coeffs, D::Dictionary)
+function NBodyIP(basis, coeffs)
    orders = NBody[]
    bos = bodyorder.(basis)
    for N = 2:maximum(bos)
       Ibo = find(bos .== N)  # find all basis functions that have the right bodyorder
-      V_N =  NBody(basis[Ibo], coeffs[Ibo], D, Val(N))
-      push!(orders, V_N)  # collect them
+      if length(Ibo) > 0
+         D = basis[Ibo[1]].D
+         V_N = NBody(basis[Ibo], coeffs[Ibo], D)
+         push!(orders, V_N)  # collect them
+      end
    end
    return NBodyIP(orders)
 end

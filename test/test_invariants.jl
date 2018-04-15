@@ -19,17 +19,19 @@ for r in [(@SVector rand(3)), (@SVector rand(6))]
    println("dim = $(length(r))")
    print("       invariants: ")
    @btime invariants($Inv, $r)
-   if length(r) == 3
-      print("  grad_inveriants: ")
-      @btime grad_invariants($Inv, $r)
-      print("    ad_inveriants: ")
-      @btime ad_invariants($Inv, $r)
-   end
+   print("  grad_inveriants: ")
+   @btime grad_invariants($Inv, $r)
+   print("    ad_inveriants: ")
+   @btime ad_invariants($Inv, $r)
 end
 
 println("[2] Correctness of gradients")
 for n = 1:10
    r = 0.5 + rand(SVector{3,Float64})
+   @test hcat(grad_invariants(Inv, r)...)' ≈ ad_invariants(Inv, r)
+end
+for n = 1:10
+   r = 0.5 + rand(SVector{6,Float64})
    @test hcat(grad_invariants(Inv, r)...)' ≈ ad_invariants(Inv, r)
 end
 
@@ -84,7 +86,7 @@ print(" energy: "); @btime energy(V4, at)
 print(" forces: "); @btime forces(V4, at)
 
 
-println("[2] finite-difference test on triangles")
+println("[2] Gradient- test on triangles")
 for n = [1, 3]
    V3 = NBody( [tuple(rand(0:3, 3)...) for n = 1:n], rand(n), D3 )
    for _  = 1:10
@@ -93,32 +95,53 @@ for n = [1, 3]
    end
 end
 
+for n = [1, 3]
+   V4 = NBody( [tuple(rand(0:3, 7)...) for n = 1:n], rand(n), D4 )
+   for _  = 1:10
+      r = 1.0 + rand(SVector{6,Float64})
+      @test evaluate_d(V4, r) ≈ ForwardDiff.gradient(r_ -> V4(r_), r)
+   end
+end
+
+
 println("[3] finite-difference test on configurations")
 at = rattle!(bulk(:Cu, cubic=true) * (1,2,2), 0.02)
+println("  3-body")
 for n in [1, 3]
    V3 = NBody( [tuple(rand(0:3, 3)...) for n = 1:n], 0.01 * rand(n), D3 )
    @test JuLIP.Testing.fdtest(V3, at)
 end
+println("  4-body")
+for n in [1, 3]
+   V4 = NBody( [tuple(rand(0:3, 7)...) for n = 1:n], rand(n), D4 )
+   @test JuLIP.Testing.fdtest(V4, at)
+end
+
+# r = 2.5 + (@SVector rand(6))
+# V4(r)
+# invariants(D4, r)
+#
 
 
-
-
-# ============== 4-body tests
-
-using NBodyIPs
-using JuLIP, Base.Test, StaticArrays, ForwardDiff, Combinatorics
-using BenchmarkTools
-using NBodyIPs.Invariants
-
-using NBodyIPs.Invariants: invariants, grad_invariants
-using JuLIP.Potentials: evaluate, evaluate_d
-
-n = 1
-D = Dictionary(InvInvariants, 2.5)
-V4 = NBody( [tuple(rand(0:4, 7)...) for n = 1:n], rand(n), D )
-r = @SVector rand(6)
-@btime evaluate($V4, $r)
-@btime evaluate_d($V4, $r)
-
-@btime energy(V4, at)
-@btime forces(V4, at)
+# using NBodyIPs
+# using JuLIP, Base.Test, StaticArrays, ForwardDiff, Combinatorics
+# using BenchmarkTools
+# using NBodyIPs.Invariants
+#
+# using NBodyIPs.Invariants: invariants, grad_invariants
+# using JuLIP.Potentials: evaluate, evaluate_d
+#
+# ad_invariants(inv, r) = ForwardDiff.jacobian(r_->invariants(inv, r_), r)
+# Inv = InvInvariants()
+#
+# r = 1.0 + (@SVector rand(6))
+# @btime invariants($Inv, $r)
+# @btime ad_invariants($Inv, $r)
+#
+# const temp =  @MMatrix zeros(11, 6)
+# const cfg = ForwardDiff.JacobianConfig(Invariants.invariants_inv, r,
+#                ForwardDiff.Chunk{6}())
+# dinv(r) = ForwardDiff.jacobian!(temp, Invariants.invariants_inv, r, cfg)
+#
+# @btime Invariants.invariants_inv($r)
+# @btime dinv($r)
