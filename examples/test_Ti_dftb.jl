@@ -29,7 +29,6 @@ test_data = data[221:250]
 # useful cutoffs to try
 # (3.5 x r0 is the cell dimension)
 r0 = rnn(:Ti)
-rcuts = [2.1, 2.8, 3.5, 3.5, 3.5] * r0
 
 # some notes on the orders of magnitude
 # E per atom ~ 6.0 eV
@@ -44,17 +43,18 @@ println("generating basis functions")
 BASES = []
 
 println("   first a few 3-body bases ...")
-for (deg, rcut) in zip( [4, 6, 8, 10, 12], rcuts )
+for (deg, rcut) in zip( [4, 6, 8, 10, 10],
+                        [2.1, 2.8, 3.5, 3.5, 4.1] * r0)
    D = Dictionary(InvInvariants, rcut)
    B = gen_basis(3, D, deg)
    push!(BASES, (B, D, "3 / $(length(B)) / $(round(rcut,2))"))
 end
 
 # add a few 4-body
-D3 = Dictionary(InvInvariants, rcuts[3])
+D3 = Dictionary(InvInvariants, 4.1 * r0)
 B3 = gen_basis(3, D3, 10)
-for deg in [4, 6, 8]
-   rcut = rcuts[1]
+for (deg, rcut) in zip([4, 5, 6],
+                       [2.1, 2.5, 3.1] * r0)
    D = Dictionary(InvInvariants, rcut)
    B = [B3; gen_basis(4, D, deg)]
    push!(BASES, (B, D, "4 / $(length(B)) / $(round(rcut,2))") )
