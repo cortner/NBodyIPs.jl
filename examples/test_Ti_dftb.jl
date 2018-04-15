@@ -23,29 +23,47 @@ end
 
 data = load_data(250)
 @show length(data)
-train_data = data[1:100]
-test_data = data[101:120]
+train_data = data[1:220]
+test_data = data[221:250]
+
+# useful cutoffs to try
+# (3.5 x r0 is the cell dimension)
+r0 = rnn(:Ti)
+rcuts = [2.1, 2.8, 3.5] * r0
+
+# some notes on the orders of magnitude
+# E per atom ~ 6.0 eV
+# mean force on each atom is ~ 1 eV / A
+# but range of forces is between 1 and 12 eV / A
+
+# construct a sequence of bases
+# -----------------------------
+
+println("generating basis functions")
+
+BASES = []
+
+println("   first a few 3-body bases ...")
+for (deg, rcut) in zip( [4, 6, 8], rcuts )
+   D = Dictionary(InvInvariants, rcut)
+   B = gen_basis(3, D, deg)
+   push!(BASES, (B, D, "3 / $(length(B)) / $(round(rcut,2))"))
+end
+
+# # add a few 4-body
+# for (deg, rcut) in zip( [4, 6, 8], rcuts )
+#    D = Dictionary(InvInvariants, rcut)
+#    B = gen_basis(3, D, deg)
+#    push!(BASES, B, "3 / $(length(B)) / $(round(rcut,2))")
+# end
 
 
-# parameters for fitting
-# -----------------------
-rcut = 4.1 * rnn(:Ti)
-DEG = 4:2:10
-D = Dictionary(InvInvariants, rcut)
+errE = zeros(length(BASES))
+errF = zeros(length(BASES))
 
-tibasis(deg) = gen_basis(3, D, deg)
-
-errE = zeros(length(DEG))
-errF = zeros(length(DEG))
-nbasis = zeros(Int, length(DEG))
-
-for (in, deg) = enumerate(DEG)
-   # this generates the permutation symmetric polynomials then
-   # wraps them into calculators that represent the actual basis functions
-   # for total energies
-   B = tibasis(deg)
-   @show deg, length(B)
-   nbasis[in] = length(B)
+println("For each generated basis test the fit: " )
+for (B, D, description) in BASES
+   println(" - ", description)
    # standard least squares (see NBodyIPs/src/fitting.jl)
    # nforces = number of (randomly chosen) forces per configuration added
    #           to the LSQ problem
@@ -62,8 +80,8 @@ for (in, deg) = enumerate(DEG)
 end
 
 using DataFrames
-df = DataFrame(:nbasis => nbasis)
+df = DataFrame(:desc => [B[2] for B in BASES])
 df[Symbol("E")] = errE
 df[Symbol("F")] = errF
-println("Energy and Force Errors: (float numbers are the cut-offs)")
+println("Energy and Force Errors for Ti-DFTB Database: ")
 println(df)

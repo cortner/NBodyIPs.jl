@@ -93,63 +93,75 @@ const _2 = 2.0^(-0.5)
 const _3 = 3.0^(-0.5)
 const _6 = 6.0^(-0.5)
 const _12 = 12.0^(-0.5)
-const R2Q = @SMatrix [ _6    _6    _6   _6    _6    _6
-                       _2     0     0  -_2     0     0
-                        0    _2     0    0   -_2     0
-                        0     0    _2    0     0   -_2
-                        0    _2   -_2    0    _2   -_2
-                       _3  -_12  -_12   _3  -_12  -_12 ]
+#                     ρ1=r1  ρ2=r2  ρ3=r3  ρ4=    ρ5=r5  ρ6=
+#
+const r2ρ = @SMatrix [   1 0 0 0 0 0
+                         0 1 0 0 0 0
+                         0 0 1 0 0 0
+                         0 0 0 0 0 1
+                         0 0 0 0 1 0
+                         0 0 0 1 0 0 ]  # to account for the different ordering
+
+const R2Q = @SMatrix [ _6     _6     _6    _6     _6     _6
+                        _2      0      0   -_2      0      0
+                         0     _2      0     0    -_2      0
+                         0      0     _2     0      0    -_2
+                         0    0.5   -0.5     0    0.5   -0.5
+                        _3   -_12   -_12    _3   -_12   -_12 ]
+
+const R2Qxr2ρ = R2Q * r2ρ
 
 function invariants_inv(s::SVector{6, T}) where {T}
-   Q = R2Q * s
-   return @SVector{6, T}(
+   Q = R2Qxr2ρ * s
+   Q2 = Q .* Q
+   return SVector{6, T}(
       # I1
       Q[1],
       # I2
-      Q[2]^2 + Q[3]^2 + Q[4]^2,
+      Q2[2] + Q2[3] + Q2[4],
       # I3
       Q[2] * Q[3] * Q[4],
       # I4
-      Q[3]^2 * Q[4]^2 + Q[2]^2 * Q[4]^2 + Q[2]^2 * Q[3]^2,
+      Q2[3] * Q2[4] + Q2[2] * Q2[4] + Q2[2] * Q2[3],
       # I5
-      Q[5]^2 + Q[6]^2,
+      Q2[5] + Q2[6],
       # I6
-      Q[6]^3 - 3*Q[5]^2 * Q[6]
-   ), @SVector{5, T}(
+      Q[6] * (Q2[6] - 3*Q2[5])
+   ), SVector{5, T}(
       # I7
-      Q[6] * (2*Q[2]^2 - Q[3]^2 - Q[4]^2) + √3 * Q[5] * (Q[3]^2 - Q[4]^2),
+      Q[6] * (2*Q2[2] - Q2[3] - Q2[4]) + √3 * Q[5] * (Q2[3] - Q2[4]),
       # I8
-      ( (Q[6]^2 - Q[5]^2) * (2*Q[2]^2 - Q[3]^2 - Q[4]^2)
-            - 2 * √3 * Q[5] * Q[6] * (Q[3]^2 - Q[4]^2) ),
+      ( (Q2[6] - Q2[5]) * (2*Q2[2] - Q2[3] - Q2[4])
+            - 2 * √3 * Q[5] * Q[6] * (Q2[3] - Q2[4]) ),
       # I9
-      ( Q[6] * (2*Q[3]^2 * Q[4]^2 - Q[2]^2 * Q[4]^2 - Q[2]^2 * Q[3]^2)
-            + √3 * Q[2] * (Q[2]^2 * Q[4]^2 - Q[2]^2 * Q[3]^2) ),
+      ( Q[6] * (2*Q2[3] * Q2[4] - Q2[2] * Q2[4] - Q2[2] * Q2[3])
+            + √3 * Q[5] * (Q2[2] * Q2[4] - Q2[2] * Q2[3]) ),
       # I10
-      ( (Q[6]^2 - Q[5]^2)*(2*Q[3]^2*Q[4]^2 - Q[2]^2*Q[4]^2 -Q[2]^2*Q[3]^2)
-        - 2*√3 * Q[5] * Q[6] * (Q[2]^2*Q[4]^2 - Q[2]^2*Q[3]^2) ),
+      ( (Q2[6] - Q2[5])*(2*Q2[3]*Q2[4] - Q2[2]*Q2[4] -Q2[2]*Q2[3])
+        - 2*√3 * Q[5] * Q[6] * (Q2[2]*Q2[4] - Q2[2]*Q2[3]) ),
       # I11
-      ( (Q[3]^2 - Q[4]^2) * (Q[4]^2 - Q[2]^2) * (Q[2]^2 - Q[3]^2) *
-            Q[5] * (3*Q[6]^2 - Q[5]^2) )
+      ( (Q2[3] - Q2[4]) * (Q2[4] - Q2[2]) * (Q2[2] - Q2[3]) *
+            Q[5] * (3*Q2[6] - Q2[5]) )
    )
 end
 
-function grad_invariants_inv(s::SVector{6, T}) where {T}
-   t = - s.^(-2)
-   J = ForwardDiff.jacobian(invariants_inv, s)
-   return SVector{11, SVector{6, T}}(
-      t .* J[1,:],
-      t .* J[2,:],
-      t .* J[3,:],
-      t .* J[4,:],
-      t .* J[5,:],
-      t .* J[6,:],
-      t .* J[7,:],
-      t .* J[8,:],
-      t .* J[9,:],
-      t .* J[10,:],
-      t .* J[11,:]
-   )
-end
+# function grad_invariants_inv(s::SVector{6, T}) where {T}
+#    t = - s.^(-2)
+#    J = ForwardDiff.jacobian(invariants_inv, s)
+#    return SVector{11, SVector{6, T}}(
+#       t .* J[1,:],
+#       t .* J[2,:],
+#       t .* J[3,:],
+#       t .* J[4,:],
+#       t .* J[5,:],
+#       t .* J[6,:],
+#       t .* J[7,:],
+#       t .* J[8,:],
+#       t .* J[9,:],
+#       t .* J[10,:],
+#       t .* J[11,:]
+#    )
+# end
 
 
 # ==================================================================
@@ -254,7 +266,7 @@ dim(V::NBody{N,M}) where {N, M} = M
 
 function energy(V::NBody{N, M, T}, at::Atoms{T}) where {N, M, T}
    nlist = neighbourlist(at, cutoff(V))
-   Es = maptosites!(r -> V(r), zeros(length(at)), nbodies(3, nlist))
+   Es = maptosites!(r -> V(r), zeros(length(at)), nbodies(N, nlist))
    return sum_kbn(Es)
 end
 
@@ -323,12 +335,13 @@ function evaluate(V::NBody{4, M, T}, r::AbstractVector{TT})  where {M, T, TT}
          D(α[1], I[1]) * D(α[2], I[2]) * D(α[3], I[3]) *
          D(α[4], I[4]) * D(α[5], I[5]) * D(α[6], I[6]) )
    end
-   fc = prod(fcut(D, r[j]) for j = 1:6)
+   fc = fcut(D, r[1]) * fcut(D, r[2]) * fcut(D, r[3]) *
+         fcut(D, r[4]) * fcut(D, r[5]) * fcut(D, r[6])
    return E * fc
 end
 
 evaluate_d(V::NBody{4, M, T}, r::AbstractVector{TT})  where {M, T, TT} =
-   ForwardDiff.grad(r_ -> evaluate(V, r_), r)
+   ForwardDiff.gradient(r_ -> evaluate(V, r_), r)
 
 
 # ==================================================================
@@ -366,9 +379,10 @@ end
 #           Generate a Basis
 # ==================================================================
 
+# TODO: rename this to nedges
 tuple_length(::Val{2}) = 1
 tuple_length(::Val{3}) = 3
-tuple_length(::Val{7}) = 3
+tuple_length(::Val{4}) = 6
 
 degree(α::Tup{3}) = α[1] + 2 * α[2] + 3 * α[3]
 
@@ -398,7 +412,9 @@ gen_tuples(N, deg; tuplebound = (α -> (degree(α) <= deg))) =
    gen_tuples(Val(N), Val(tuple_length(Val(N))), deg, tuplebound)
 
 
-function gen_tuples(vN::Val{N}, vK::Val{K}, deg, tuplebound) where {N, K}
+# ------------- 3-body tuples -------------
+
+function gen_tuples(vN::Val{3}, vK::Val{K}, deg, tuplebound) where {K}
    t = Tup{K}[]
    for I in CRg(CInd(ntuple(0, vK)), CInd(ntuple(deg, vK)))
       if tuplebound(I.I)
@@ -407,6 +423,24 @@ function gen_tuples(vN::Val{N}, vK::Val{K}, deg, tuplebound) where {N, K}
    end
    return t
 end
+
+# ------------- 4-body tuples -------------
+
+# little hack to make 4-body work: TODO: make this more general!!!!!
+function gen_tuples(vN::Val{4}, vM::Val{M}, deg, tuplebound) where {M}
+   t = Tup{7}[]
+   Ilo = CInd{7}(0,0,0,0,0,0,0)
+   degs = inv_degrees(vN)
+   idegs = ceil.(Int, deg ./ degs)[1:7]
+   Ihi = CInd{7}(idegs)
+   for I in CRg(Ilo, Ihi)
+      if tuplebound(I.I)
+         push!(t, I.I)
+      end
+   end
+   return t
+end
+
 
 """
 `gen_basis(N, D, deg; tuplebound = ...)` : generates a basis set of

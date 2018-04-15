@@ -15,12 +15,15 @@ println("   Testing implementation of `invariants`")
 println("-------------------------------------------")
 
 println("[1] Quick profiling:")
-print("     invariants: ")
-@btime invariants($Inv, $r)
-print("grad_inveriants: ")
-@btime grad_invariants($Inv, $r)
-print("  ad_inveriants: ")
-@btime ad_invariants($Inv, $r)
+for r in [(@SVector rand(3)), (@SVector rand(6))]
+   println("dim = $(length(r))")
+   print("       invariants: ")
+   @btime invariants($Inv, $r)
+   print("  grad_inveriants: ")
+   @btime grad_invariants($Inv, $r)
+   print("    ad_inveriants: ")
+   @btime ad_invariants($Inv, $r)
+end
 
 println("[2] Correctness of gradients")
 for n = 1:10
@@ -30,10 +33,20 @@ end
 
 println("[3] Symmetry")
 for n = 1:10
-   r = 0.5 + rand(SVector{3,Float64})
-   Q = invariants(Inv, r)
-   for rπ in permutations(r)
-      @test Q ≈ invariants(Inv, SVector{3}(rπ))
+   r = 0.5 + (@SVector rand(3))
+   I = invariants(Inv, r)
+   for rπ in NBodyIPs.simplex_permutations(r)
+      @test I ≈ invariants(Inv, SVector{3}(rπ))
+   end
+end
+
+for n = 1:10
+   r = 0.5 + (@SVector rand(6))
+   I, J = invariants(Inv, r)
+   for rπ in NBodyIPs.simplex_permutations(r)
+      Iπ, Jπ = invariants(Inv, SVector{6}(rπ))
+      @test I ≈ Iπ
+      @test J ≈ Jπ
    end
 end
 
@@ -43,8 +56,10 @@ println("   Testing Implementation of `NBody{3}`")
 println("----------------------------------------")
 
 r0 = rnn(:Cu)
-rcut = 3.1 * r0
-D = Dictionary(InvInvariants, rcut)
+rcut3 = 3.1 * r0
+D3 = Dictionary(InvInvariants, rcut3)
+rcut4 = 2.1 * r0
+D4 = Dictionary(InvInvariants, rcut4)
 
 n = 10
 println("[1] Quick profiling for a 3-body with $n basis functions")
@@ -54,9 +69,18 @@ r = 1.0 + rand(SVector{3, Float64})
 V3 = NBody( [tuple(rand(0:4, 3)...) for n = 1:n], rand(n), D )
 print("     V3: "); @btime evaluate($V3, $r)
 print("  @D V3: "); @btime evaluate_d($V3, $r)
-print("  nlist: "); @btime neighbourlist(at, rcut)
+print("  nlist: "); @btime neighbourlist(at, rcut3)
 print(" energy: "); @btime energy(V3, at)
 print(" forces: "); @btime forces(V3, at)
+
+r = 1.0 + rand(SVector{6, Float64})
+V4 = NBody( [tuple(rand(0:4, 7)...) for n = 1:n], rand(n), D )
+print("     V4: "); @btime evaluate($V4, $r)
+print("  @D V4: "); @btime evaluate_d($V4, $r)
+print("  nlist: "); @btime neighbourlist(at, rcut4)
+print(" energy: "); @btime energy(V4, at)
+print(" forces: "); @btime forces(V4, at)
+
 
 println("[2] finite-difference test on triangles")
 for n = [1, 3]
@@ -73,3 +97,23 @@ for n in [1, 3]
    V3 = NBody( [tuple(rand(0:3, 3)...) for n = 1:n], 0.01 * rand(n), D )
    @test JuLIP.Testing.fdtest(V3, at)
 end
+
+
+
+
+# ============== 4-body tests
+
+using NBodyIPs
+using JuLIP, Base.Test, StaticArrays, ForwardDiff, Combinatorics
+using BenchmarkTools
+using NBodyIPs.Invariants
+
+using NBodyIPs.Invariants: invariants, grad_invariants
+using JuLIP.Potentials: evaluate, evaluate_d
+
+n = 1
+D = Dictionary(InvInvariants, 2.5)
+V4 = NBody( [tuple(rand(0:4, 7)...) for n = 1:n], rand(n), D )
+r = @SVector rand(6)
+@btime evaluate($V4, $r)
+@btime evaluate_d($V4, $r)
