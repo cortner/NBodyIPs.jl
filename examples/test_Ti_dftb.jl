@@ -60,8 +60,10 @@ for deg in [4, 6, 8]
    push!(BASES, (B, D, "4 / $(length(B)) / $(round(rcut,2))") )
 end
 
-errE = Float64[]
-errF = Float64[]
+rmsE = Float64[]
+rmsF = Float64[]
+maeE = Float64[]
+maeF = Float64[]
 
 @show length.(BASES)
 
@@ -77,16 +79,20 @@ for (B, D, description) in BASES
    IP = NBodyIP(B, c)
    # check error => the normalisation is w.r.t. natoms, not a genuine
    # relative error; we can discuss
-   rmsE, rmsF = rms(IP, test_data)
-   push!(errE, rmsE); push!(errF, rmsF)
-   println("   E-rms on testset = ", rmsE)
-   println("   F-rms on testset = ", rmsF)
+   rE, rF = rms(IP, test_data)
+   mE, mF = mae(IP, test_data)
+   push!(rmsE, rE); push!(rmsF, rF)
+   push!(maeE, mE); push!(maeF, mF)
+   println("   E-rms, E-mae on testset = ", rE, ", ", mE)
+   println("   F-rms, F-mae on testset = ", rF, ", ", mF)
 end
 
 using DataFrames
 df = DataFrame(:desc => [B[3] for B in BASES])
-df[Symbol("E")] = errE
-df[Symbol("F")] = errF
+df[Symbol("rms-E")] = rmsE
+df[Symbol("rms-F")] = rmsF
+df[Symbol("mae-E")] = maeE
+df[Symbol("mae-F")] = maeF
 println("Energy and Force Errors for Ti-DFTB Database: ")
 println(df)
 
