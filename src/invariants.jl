@@ -262,12 +262,22 @@ NBody(t::VecTup{M}, c, D) where {M} =
 NBody(t::Tup, c, D) = NBody([t], [c], D)
 
 NBody(B::Vector{TB}, c, D) where {TB <: NBody} =
-   NBody([b.t[1] for b in B], c, D)
+      NBody([b.t[1] for b in B], c, D)
+
+# 0-body term
+NBody(c::Float64) =
+      NBody([tuple()], [c], Dictionary(PolyInvariants, 0.0), Val(0))
 
 length(V::NBody) = length(V.t)
 cutoff(V::NBody) = cutoff(V.D)
 bodyorder(V::NBody{N}) where {N} = N
 dim(V::NBody{N,M}) where {N, M} = M
+
+# energy and forces of the 0-body term
+energy(V::NBody{0,M,T}, at::Atoms{T}) where {M,T} =
+      sum(V.c) * length(at)
+forces(V::NBody{0,M,T}, at::Atoms{T}) where {M,T} =
+      zeros(SVector{3, T}, length(at))
 
 function energy(V::NBody{N, M, T}, at::Atoms{T}) where {N, M, T}
    nlist = neighbourlist(at, cutoff(V))
@@ -445,7 +455,7 @@ forces(V::NBodyIP, at::Atoms) = sum( forces(Vn, at)  for Vn in V.orders )
 function NBodyIP(basis, coeffs)
    orders = NBody[]
    bos = bodyorder.(basis)
-   for N = 2:maximum(bos)
+   for N = 0:maximum(bos)
       Ibo = find(bos .== N)  # find all basis functions that have the right bodyorder
       if length(Ibo) > 0
          D = basis[Ibo[1]].D
