@@ -150,23 +150,23 @@ function invariants_inv(s::SVector{6, T}) where {T}
 end
 
 
-function grad_invariants_inv(s::SVector{6, T}) where {T}
-   t = - s.^(-2)
-   J = ForwardDiff.jacobian(invariants_inv, s)
-   return SVector{11, SVector{6, T}}(
-      t .* J[1,:],
-      t .* J[2,:],
-      t .* J[3,:],
-      t .* J[4,:],
-      t .* J[5,:],
-      t .* J[6,:],
-      t .* J[7,:],
-      t .* J[8,:],
-      t .* J[9,:],
-      t .* J[10,:],
-      t .* J[11,:]
-   )
-end
+# function grad_invariants_inv(s::SVector{6, T}) where {T}
+#    t = - s.^(-2)
+#    J = ForwardDiff.jacobian(invariants_inv, s)
+#    return SVector{11, SVector{6, T}}(
+#       t .* J[1,:],
+#       t .* J[2,:],
+#       t .* J[3,:],
+#       t .* J[4,:],
+#       t .* J[5,:],
+#       t .* J[6,:],
+#       t .* J[7,:],
+#       t .* J[8,:],
+#       t .* J[9,:],
+#       t .* J[10,:],
+#       t .* J[11,:]
+#    )
+# end
 
 
 # ==================================================================
@@ -254,7 +254,7 @@ e.g., if M = 3, α = t[1] is a 3-vector then this corresponds to the basis funct
 NBody
 
 
-edges2bo(M) = ceil(Int, sqrt(2*M))
+edges2bo(M) = M == 0 ? 1 : ceil(Int, sqrt(2*M))
 
 NBody(t::VecTup{M}, c, D) where {M} =
       NBody(t, c, D, Val(edges2bo(M)))
@@ -264,9 +264,9 @@ NBody(t::Tup, c, D) = NBody([t], [c], D)
 NBody(B::Vector{TB}, c, D) where {TB <: NBody} =
       NBody([b.t[1] for b in B], c, D)
 
-# 0-body term
+# 1-body term (on-site energy)
 NBody(c::Float64) =
-      NBody([tuple()], [c], Dictionary(PolyInvariants, 0.0), Val(0))
+      NBody([Tup{0}()], [c], Dictionary(PolyInvariants, 0.0), Val(1))
 
 length(V::NBody) = length(V.t)
 cutoff(V::NBody) = cutoff(V.D)
@@ -274,9 +274,9 @@ bodyorder(V::NBody{N}) where {N} = N
 dim(V::NBody{N,M}) where {N, M} = M
 
 # energy and forces of the 0-body term
-energy(V::NBody{0,M,T}, at::Atoms{T}) where {M,T} =
+energy(V::NBody{1,0,T}, at::Atoms{T}) where {T} =
       sum(V.c) * length(at)
-forces(V::NBody{0,M,T}, at::Atoms{T}) where {M,T} =
+forces(V::NBody{1,0,T}, at::Atoms{T}) where {T} =
       zeros(SVector{3, T}, length(at))
 
 function energy(V::NBody{N, M, T}, at::Atoms{T}) where {N, M, T}
@@ -304,6 +304,19 @@ function forces(V::NBody{4, M, T}, at::Atoms{T}) where {M, T}
 end
 
 # ---------------  3-body terms ------------------
+
+evaluate(V::NBody{2, 1, T}, r::AbstractVector{TT}) where {T, TT} =
+   sum( c * V.D(α[1], r[1])  for (α, c) in zip(V.t, V.c) ) * fcut(V.D, r[1])
+
+function evaluate_d(V::NBody{2, 1, T}, r::AbstractVector{T}) where {T}
+   E = 0.0
+   dE = 0.0
+   for (α, c) in zip(V.t, V.c)
+      E += c * V.D(α[1], r[1])
+      dE += c * (@D V.D(α[1], r[1]))
+   end
+   return SVector{1, T}(E * fcut_d(V.D, r[1]) + dE * fcut(V.D, r[1]))
+end
 
 function evaluate(V::NBody{3, M, T}, r::AbstractVector{TT})  where {M, T, TT}
    # @assert length(r) == M == 3
@@ -455,7 +468,7 @@ forces(V::NBodyIP, at::Atoms) = sum( forces(Vn, at)  for Vn in V.orders )
 function NBodyIP(basis, coeffs)
    orders = NBody[]
    bos = bodyorder.(basis)
-   for N = 0:maximum(bos)
+   for N = 1:maximum(bos)
       Ibo = find(bos .== N)  # find all basis functions that have the right bodyorder
       if length(Ibo) > 0
          D = basis[Ibo[1]].D
@@ -478,6 +491,7 @@ tuple_length(::Val{2}) = 1
 tuple_length(::Val{3}) = 3
 tuple_length(::Val{4}) = 6
 
+degree(α::Tup{1}) = α[1]
 degree(α::Tup{3}) = α[1] + 2 * α[2] + 3 * α[3]
 
 function degree(α::Tup{7})
@@ -505,6 +519,10 @@ the degree w.r.t. lengths, not w.r.t. invariants!)
 gen_tuples(N, deg; tuplebound = (α -> (degree(α) <= deg))) =
    gen_tuples(Val(N), Val(tuple_length(Val(N))), deg, tuplebound)
 
+# ------------- 2-body tuples -------------
+
+gen_tuples(vN::Val{2}, vK::Val{1}, deg, tuplebound) =
+   Tup{1}[ Tup{1}(j)   for j = 1:deg ]
 
 # ------------- 3-body tuples -------------
 

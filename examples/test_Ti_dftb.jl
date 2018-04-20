@@ -22,16 +22,14 @@ function load_data(Nconfig = 411)   # (how can I load 411?)
 end
 
 data = load_data(250)
-@show length(data)
 train_data = data[1:220]
 test_data = data[221:250]
 
-# useful cutoffs to try
 # (3.5 x r0 is the cell dimension)
 r0 = rnn(:Ti)
 
 # some notes on the orders of magnitude
-# E per atom ~ 6.0 eV
+# E per atom ~ 6.0 eV, std ca 0.03
 # mean force on each atom is ~ 1 eV / A
 # but range of forces is between 1 and 12 eV / A
 
@@ -42,30 +40,51 @@ println("generating basis functions")
 
 BASES = []
 
+B1 = [NBody(1.0)]
+
+rcut2 = 8.5
+D2 = Dictionary(InvInvariants, rcut2)
+B2 = gen_basis(2, D2, 12)
+
+push!(BASES, ([B1; B2], D2, "2 / $(length(B2)) / $rcut2"))
+
 println("   first a few 3-body bases ...")
-for (deg, rcut) in zip( [4, 6, 8, 10, 10],
-                        [2.1, 2.8, 3.5, 3.5, 4.1] * r0)
+for (deg, rcut) in zip( [6, 8, 10],
+                        [4.5, 4.5, 4.5, 4.5] )
    D = Dictionary(InvInvariants, rcut)
-   B = gen_basis(3, D, deg)
-   push!(BASES, (B, D, "3 / $(length(B)) / $(round(rcut,2))"))
+   B3 = gen_basis(3, D, deg)
+   B = [B1; B2; B3]
+   push!(BASES, (B, D, "2+3 / $(length(B)) / 8.5+$(round(rcut,2))"))
 end
 
-# add a few 4-body
-D3 = Dictionary(InvInvariants, 4.1 * r0)
-B3 = gen_basis(3, D3, 10)
-for (deg, rcut) in zip([4, 5, 6],
-                       [2.1, 2.5, 3.1] * r0)
+# # add a few 4-body
+# rcut3 = 2.3 * r0
+# D3 = Dictionary(InvInvariants, rcut3)
+# B3 = gen_basis(3, D3, 10)
+# for (deg, rcut) in zip([4, 6, 8],
+#                        [1.7, 1.7, 1.7] * r0)
+#    D = Dictionary(InvInvariants, rcut)
+#    B4 = gen_basis(4, D, deg)
+#    B = [B3; B4]
+#    push!(BASES, (B, D, "3+4 / $(length(B3))+$(length(B4)) / $(round(rcut3,2))+$(round(rcut,2))") )
+# end
+
+for (deg, rcut) in zip([4, 6, 8],
+                       [4.5, 4.5, 4.5, 4.5])
    D = Dictionary(InvInvariants, rcut)
-   B = [B3; gen_basis(4, D, deg)]
-   push!(BASES, (B, D, "4 / $(length(B)) / $(round(rcut,2))") )
+   B4 = gen_basis(4, D, deg)
+   B = [B1; B2; B4]
+   push!(BASES, (B, D, "2+4 / $(length(B2))+$(length(B4)) / $rcut2+$(round(rcut,2))") )
 end
+#
 
 rmsE = Float64[]
 rmsF = Float64[]
 maeE = Float64[]
 maeF = Float64[]
 
-@show length.(BASES)
+length_bases = [length(B[1]) for B in BASES]
+@show length_bases
 
 println("For each generated basis test the fit: " )
 for (B, D, description) in BASES
@@ -73,8 +92,9 @@ for (B, D, description) in BASES
    # standard least squares (see NBodyIPs/src/fitting.jl)
    # nforces = number of (randomly chosen) forces per configuration added
    #           to the LSQ problem
-   ndata = min(length(train_data), length(B)÷2)
-   c = regression(B, train_data[1:ndata], nforces = 10)
+   ndata = min(length(train_data), length(B))
+   c = regression(B, train_data[1:ndata], nforces = 20, stab = 0.0)
+   @show norm(c, Inf)
    # construct an IP from the the basis and the weights
    IP = NBodyIP(B, c)
    # check error => the normalisation is w.r.t. natoms, not a genuine
@@ -95,15 +115,3 @@ df[Symbol("mae-E")] = maeE
 df[Symbol("mae-F")] = maeF
 println("Energy and Force Errors for Ti-DFTB Database: ")
 println(df)
-
-
-
-
-
-# using BenchmarkTools
-# D4 = Dictionary(InvInvariants, rcuts[1])
-# B = gen_basis(4, D4, 5)
-# b = B[15]
-# at = data[1][1]
-# @btime energy($b, $at)
-# @btime forces($b, $at)
