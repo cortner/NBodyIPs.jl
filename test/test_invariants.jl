@@ -38,7 +38,7 @@ println()
 
 println("[3] Symmetry")
 for n = 1:10
-   r = 0.5 + (@SVector rand(3))
+   r = 1.0 + (@SVector rand(3))
    I = invariants(r)
    for rπ in NBodyIPs.simplex_permutations(r)
       @test I ≈ invariants(SVector{3}(rπ))
@@ -87,11 +87,9 @@ print("  nlist: "); @btime neighbourlist(at, rcut4)
 print(" energy: "); @btime energy(V4, at)
 print(" forces: "); @btime forces(V4, at)
 
-quit()
-
 println("[2] Gradient- test on triangles")
 for n = [1, 3]
-   V3 = NBody( [tuple(rand(0:3, 3)...) for n = 1:n], rand(n), D3 )
+   V3 = NBody( [tuple(rand(0:3, 3)...) for n = 1:n], 1.0 + rand(n), D3 )
    for _  = 1:10
       r = 1.0 + rand(SVector{3,Float64})
       @test (@D V3(r)) ≈ ForwardDiff.gradient(r_ -> V3(r_), r)
@@ -99,7 +97,7 @@ for n = [1, 3]
 end
 
 for n = [1, 3]
-   V4 = NBody( [tuple(rand(0:3, 7)...) for n = 1:n], rand(n), D4 )
+   V4 = NBody( [tuple(rand(0:3, 7)...) for n = 1:n], 1.0 + rand(n), D4 )
    for _  = 1:10
       r = 1.0 + rand(SVector{6,Float64})
       @test evaluate_d(V4, r) ≈ ForwardDiff.gradient(r_ -> V4(r_), r)
@@ -111,19 +109,17 @@ println("[3] finite-difference test on configurations")
 at = rattle!(bulk(:Cu, cubic=true) * (1,2,2), 0.02)
 println("  3-body")
 for n in [1, 3]
-   V3 = NBody( [tuple(rand(0:3, 3)...) for n = 1:n], 0.01 * rand(n), D3 )
+   V3 = NBody( [tuple(rand(0:5, 3)...) for n = 1:n], 1.0+rand(n), D3 )
    @test JuLIP.Testing.fdtest(V3, at)
 end
 println("  4-body")
 for n in [1, 3]
-   V4 = NBody( [tuple(rand(0:3, 7)...) for n = 1:n], rand(n), D4 )
+   V4 = NBody( [tuple(rand(0:5, 7)...) for n = 1:n], 1.0 + rand(n), D4 )
    @test JuLIP.Testing.fdtest(V4, at)
 end
 
-# r = 2.5 + (@SVector rand(6))
-# V4(r)
-# invariants(D4, r)
-#
+
+
 
 
 # using NBodyIPs

@@ -279,15 +279,15 @@ function evaluate_d(V::NBody{3, M, T}, r::AbstractVector{T}) where {M, T}
    dE = zero(SVector{M, T})
    D = V.D
    Q = invariants(D, r)           # SVector{NI, T}
-   dQ = grad_invariants(D, r)     # SVector{NI, SVector{M, T}}
+   dQ = invariants_d(D, r)     # SVector{NI, SVector{M, T}}
    for (α, c) in zip(V.t, V.c)
       f1 = D(α[1], Q[1])
       f2 = D(α[2], Q[2])
       f3 = D(α[3], Q[3])
       E += c * f1 * f2 * f3
-      dE += c * ((@D D(α[1], Q[1])) * f2 * f3 * dQ[1] +
-                 (@D D(α[2], Q[2])) * f1 * f3 * dQ[2] +
-                 (@D D(α[3], Q[3])) * f2 * f1 * dQ[3] )
+      dE += c * ((@D D(α[1], Q[1])) * f2 * f3 * dQ[1,:] +
+                 (@D D(α[2], Q[2])) * f1 * f3 * dQ[2,:] +
+                 (@D D(α[3], Q[3])) * f2 * f1 * dQ[3,:] )
    end
    fc1, fc2, fc3 = fcut(D, r[1]), fcut(D, r[2]), fcut(D, r[3])
    dfc1, dfc2, dfc3 = fcut_d(D, r[1]), fcut_d(D, r[2]), fcut_d(D, r[3])
