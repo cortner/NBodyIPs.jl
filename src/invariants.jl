@@ -150,23 +150,23 @@ function invariants_inv(s::SVector{6, T}) where {T}
 end
 
 
-# function grad_invariants_inv(s::SVector{6, T}) where {T}
-#    t = - s.^(-2)
-#    J = ForwardDiff.jacobian(invariants_inv, s)
-#    return SVector{11, SVector{6, T}}(
-#       t .* J[1,:],
-#       t .* J[2,:],
-#       t .* J[3,:],
-#       t .* J[4,:],
-#       t .* J[5,:],
-#       t .* J[6,:],
-#       t .* J[7,:],
-#       t .* J[8,:],
-#       t .* J[9,:],
-#       t .* J[10,:],
-#       t .* J[11,:]
-#    )
-# end
+function grad_invariants_inv(s::SVector{6, T}) where {T}
+   t = - s.^(-2)
+   J = ForwardDiff.jacobian(invariants_inv, s)
+   return SVector{11, SVector{6, T}}(
+      t .* J[1,:],
+      t .* J[2,:],
+      t .* J[3,:],
+      t .* J[4,:],
+      t .* J[5,:],
+      t .* J[6,:],
+      t .* J[7,:],
+      t .* J[8,:],
+      t .* J[9,:],
+      t .* J[10,:],
+      t .* J[11,:]
+   )
+end
 
 
 # ==================================================================
