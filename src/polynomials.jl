@@ -7,14 +7,18 @@ The main types are
 * `NBody`: an N-body function wrapped into a JuLIP calculator
 * `NBodyIP`: a collection of N-body functions (of possibly different
 body-order and cut-off) wrapped into a JuLIP calculator.
-* `Invariants`: described the polynomial invariants
 
 ## Examples
 
 """
 module Polynomials
 
+using Reexport
+
 using JuLIP, NeighbourLists, StaticArrays, ForwardDiff, Calculus
+
+@reexport using JuLIP.Potentials.@analytic
+using JuLIP.Polynomials: cutsw, cutsw_d, fcut, fcut_d, coscut, coscut_d
 
 import Base: length
 import JuLIP: cutoff, energy, forces
@@ -25,12 +29,13 @@ const CInd = CartesianIndex
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
-export NBody, NBodyIP, Invariants, Dictionary,
+export NBody, NBodyIP, Dictionary,
        gen_tuples, gen_basis
 
 
-# import the raw symmetry invariant
-include("invariants.jl") 
+# import the raw symmetry invariant polynomials
+include("invariants.jl")
+
 
 # ==================================================================
 #           DICTIONARY
@@ -48,7 +53,28 @@ end
 """
 `struct Dictionary` : specifies all details about the basis functions
 
-## Methods associated with a `D::Dictionary`:
+## Convenience Constructor
+
+`Dictionary(ftrans, fcut[, rcut])`, where `ftrans`, `fcut` specify in one of several
+ways how the dictionary is defined and `rcut` is the cutoff radius. If
+the radius is not provided then `Dictionary` will try to infer it from the
+`fcut` argument. E.g.,
+```julia
+D = Dictionary((@analytic r -> 1/r), (r -> (r-rcut)^2), rcut)
+D = Dictionary( (:poly, -1), (:square, rcut) )
+D = Dictionary( (:exp, 3.0), (:sw, L, rcut) )
+```
+Known symbols for the transformation are
+```
+[:poly, :exp]
+```
+Known symbols for the cutoff are
+```
+[:cos, :sw, :spline, :square]
+```
+
+
+## Developer Doc: Methods associated with a `D::Dictionary`:
 
 * `invariants`, `jac_invariants`: compute invariants and jacobian
    in transformed coordinates defined by `D.transform`
@@ -62,18 +88,19 @@ Dictionary
 
 @inline invariants(D::Dictionary, r) = invariants(D.transform.(r))
 @inline invariants_d(D::Dictionary, r) =
-      invariants_d(transform.(r)) .* (transform_d.(r)')
+      invariants_d(D.transform.(r)) .* (D.transform_d.(r)')
 
-@inline fcut(D::Dictionary, r::Number) = D.fcut(r)
+@inline fcut(D::Dictionary, r::Number) = D.fcut(r) * (r < cutoff(D))
 @inline fcut_d(D::Dictionary, r::Number) = D.fcut_d(r)
 
 @inline evaluate(D::Dictionary, i, Q) = @fastmath Q^i
 @inline evaluate_d(D::Dictionary, i, Q) = (i == 0 ? 0.0 : (@fastmath i * Q^(i-1)))
 
-cutoff(D::Dictionary) = D.rcut
+@inline cutoff(D::Dictionary) = D.rcut
 
+
+# TODO: fix fcut applied to vector >>>>>>>>>>>>>>>>>>>>
 fcut(D::Dictionary, rs::AbstractVector) = prod(fcut(D, r) for r in rs)
-
 function fcut_d(D::Dictionary, rs::SVector{M,T}) where {M, T}
    if maximum(r) > D.rcut-eps()
       return zero(SVector{M,T})
@@ -82,12 +109,52 @@ function fcut_d(D::Dictionary, rs::SVector{M,T}) where {M, T}
    f = fcut(D, r)
    return (2 * f) ./ (r - D.rcut)
 end
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-Dictionary(T::Type, rcut) = Dictionary(T(), rcut)
+# -------------------- generate dictionaries -------------------
 
+Dictionary(ftrans::AnalyticFunction, fcut::AnalyticFunction, rcut) =
+      Dictionary(ftrans.f, ftrans.f_d, fcut.f, fcut.f_d, rcut)
 
+Dictionary(ftrans::AnalyticFunction, fcut::AnalyticFunction) =
+      Dictionary(ftrans, fcut, cutoff(fcut))
 
+Dictionary(ftrans::Any, fcut::Any) =
+      Dictionary(ftrans_analyse(ftrans...)..., fcut_analyse(fcut...)...)
 
+function ftrans_analyse(sym::Symbol, p::Number)
+   if Symbol(sym) == :poly
+      return (@analytic r -> r^p)
+   elseif Symbol(sym) == :exp
+      return (@analytic r -> exp(-p * r))
+   else
+      error("Dictionary: unknown symbol $(sym) for transformation.")
+   end
+end
+
+function fcut_analyse(sym::Symbol, args...)
+   if Symbol(sym) == :cos
+      rc1, rc2 = args...
+      return AnalyticFunction( r -> coscut(r, rc1, rc2),
+                               r -> coscut_d(r, rc1, rc2),
+                               nothing ), rc2
+   elseif Symbol(sym) == :sw
+      L, rcut = args...
+      return AnalyticFunction( r -> cutsw(r, rcut, L),
+                               r -> cutsw_d(r, rcut, L),
+                               nothing ), rcut
+   elseif Symbol(sym) == :spline
+      rc1, rc2 = args...
+      return AnalyticFunction( r -> fcut(r, rc1, rc2),
+                               r -> rcut_d(r, rc1, rc2),
+                               nothing ), rc2
+   elseif Symbol(sym) == :square
+      rcut = args...
+      return (@analytic r -> (r - rcut)^2), rcut
+   else
+      error("Dictionary: unknown symbol $(sym) for fcut.")
+   end
+end
 
 
 # ==================================================================
@@ -95,15 +162,15 @@ Dictionary(T::Type, rcut) = Dictionary(T(), rcut)
 # ==================================================================
 
 
-@pot struct NBody{N, M, T, TINV} <: AbstractCalculator
+@pot struct NBody{N, M, T, TD} <: AbstractCalculator
    t::VecTup{M}               # tuples
    c::Vector{T}               # coefficients
-   D::Dictionary{TINV, T}
-   valN::Val{N}
+   D::TD                      # Dictionary (or nothing)
+   valN::Val{N}               # encodes that this is an N-body term
 end
 
 """
-`struct NBody{N, M, T <: AbstractFloat, TI <: Integer, TF}`
+`struct NBody`
 
 A struct storing the information for a pure N-body potential, i.e., containing
 *only* terms of a specific body-order. Several `NBody`s can be
@@ -115,39 +182,40 @@ combined into an interatomic potential via `NBodyIP`.
 e.g., if M = 3, α = t[1] is a 3-vector then this corresponds to the basis function
 `f[α[1]](Q[1]) * f[α[2]](Q[2]) * f[α[3]](Q[3])` where `Q` are the 3-body invariants.
 
-* `c`: vector of coefficients for the basis functions
+* `c::Vector{T}`: vector of coefficients for the basis functions
 
-* `d`: 1D function dictionary
-
-* `rcut` : cut-off radius (all functions `f in d` must have this cutoff radius)
+* `D`: a `Dictionary`
 """
 NBody
 
+# standad constructor (N can be inferred)
+NBody(t::VecTup{M}, c, D) where {M} = NBody(t, c, D, Val(edges2bo(M)))
 
-edges2bo(M) = M == 0 ? 1 : ceil(Int, sqrt(2*M))
-
-NBody(t::VecTup{M}, c, D) where {M} =
-      NBody(t, c, D, Val(edges2bo(M)))
-
+# NBody made from a single basis function rather than a collection
 NBody(t::Tup, c, D) = NBody([t], [c], D)
 
+# collect multiple basis functions represented as NBody's into a single NBody
+# (mostly for performance reasons)
 NBody(B::Vector{TB}, c, D) where {TB <: NBody} =
       NBody([b.t[1] for b in B], c, D)
 
 # 1-body term (on-site energy)
-NBody(c::Float64) =
-      NBody([Tup{0}()], [c], Dictionary(PolyInvariants, 0.0), Val(1))
+NBody(c::Float64) = NBody([Tup{0}()], [c], nothing, Val(1))
 
-length(V::NBody) = length(V.t)
-cutoff(V::NBody) = cutoff(V.D)
 bodyorder(V::NBody{N}) where {N} = N
 dim(V::NBody{N,M}) where {N, M} = M
+# number of basis functions which this term is made from
+length(V::NBody) = length(V.t)
+
+# --------------------- Calculator Functionality for NBody
+# TODO: site energies
+
+cutoff(V::NBody) = cutoff(V.D)
 
 # energy and forces of the 0-body term
-energy(V::NBody{1,0,T}, at::Atoms{T}) where {T} =
-      sum(V.c) * length(at)
-forces(V::NBody{1,0,T}, at::Atoms{T}) where {T} =
-      zeros(SVector{3, T}, length(at))
+energy(V::NBody{1,0,T}, at::Atoms{T}) where {T} = sum(V.c) * length(at)
+forces(V::NBody{1,0,T}, at::Atoms{T}) where {T} = zeros(SVector{3, T}, length(at))
+
 
 function energy(V::NBody{N, M, T}, at::Atoms{T}) where {N, M, T}
    nlist = neighbourlist(at, cutoff(V))
@@ -173,7 +241,7 @@ function forces(V::NBody{4, M, T}, at::Atoms{T}) where {M, T}
                  nbodies(4, nlist)), -1)
 end
 
-# ---------------  3-body terms ------------------
+# ---------------  2-body terms ------------------
 
 evaluate(V::NBody{2, 1, T}, r::AbstractVector{TT}) where {T, TT} =
    sum( c * V.D(α[1], r[1])  for (α, c) in zip(V.t, V.c) ) * fcut(V.D, r[1])
@@ -187,6 +255,8 @@ function evaluate_d(V::NBody{2, 1, T}, r::AbstractVector{T}) where {T}
    end
    return SVector{1, T}(E * fcut_d(V.D, r[1]) + dE * fcut(V.D, r[1]))
 end
+
+# ---------------  3-body terms ------------------
 
 function evaluate(V::NBody{3, M, T}, r::AbstractVector{TT})  where {M, T, TT}
    # @assert length(r) == M == 3
@@ -321,7 +391,7 @@ evaluate_d(V::NBody{4, M, T}, r::AbstractVector{TT})  where {M, T, TT} =
 # ==================================================================
 #           The Final Interatomic Potential
 # ==================================================================
-
+# TODO: site energies
 
 """
 `NBodyIP` : wraps `NBody`s into a JuLIP calculator, defining
@@ -434,10 +504,3 @@ gen_basis(N, D, deg; kwargs...) = gen_basis(gen_tuples(N, deg; kwargs...), D)
 gen_basis(ts::VecTup, D::Dictionary) = [NBody(t, 1.0, D) for t in ts]
 
 end
-
-
-
-
-
-# @inline fcut(D::Dictionary, r::Number) = (r - D.rcut)^2 * (r < D.rcut)
-# @inline fcut_d(D::Dictionary, r::Number) = 2 * (r - D.rcut) * (r < D.rcut)
