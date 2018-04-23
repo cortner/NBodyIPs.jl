@@ -17,8 +17,10 @@ using Reexport
 
 using JuLIP, NeighbourLists, StaticArrays, ForwardDiff, Calculus
 
-@reexport using JuLIP.Potentials.@analytic
-using JuLIP.Polynomials: cutsw, cutsw_d, fcut, fcut_d, coscut, coscut_d
+import JuLIP.Potentials: @analytic
+using JuLIP.Potentials: cutsw, cutsw_d, coscut, coscut_d
+const cutsp = JuLIP.Potentials.fcut
+const cutsp_d = JuLIP.Potentials.fcut_d
 
 import Base: length
 import JuLIP: cutoff, energy, forces
@@ -31,6 +33,9 @@ const VecTup{M} = Vector{NTuple{M, Int}}
 
 export NBody, NBodyIP, Dictionary,
        gen_tuples, gen_basis
+
+# somehow @reexport doesn't catch this one
+export @analytic
 
 
 # import the raw symmetry invariant polynomials
@@ -101,6 +106,7 @@ Dictionary
 
 # TODO: fix fcut applied to vector >>>>>>>>>>>>>>>>>>>>
 fcut(D::Dictionary, rs::AbstractVector) = prod(fcut(D, r) for r in rs)
+
 function fcut_d(D::Dictionary, rs::SVector{M,T}) where {M, T}
    if maximum(r) > D.rcut-eps()
       return zero(SVector{M,T})
@@ -116,11 +122,8 @@ end
 Dictionary(ftrans::AnalyticFunction, fcut::AnalyticFunction, rcut) =
       Dictionary(ftrans.f, ftrans.f_d, fcut.f, fcut.f_d, rcut)
 
-Dictionary(ftrans::AnalyticFunction, fcut::AnalyticFunction) =
-      Dictionary(ftrans, fcut, cutoff(fcut))
-
 Dictionary(ftrans::Any, fcut::Any) =
-      Dictionary(ftrans_analyse(ftrans...)..., fcut_analyse(fcut...)...)
+      Dictionary(ftrans_analyse(ftrans...), fcut_analyse(fcut...)...)
 
 function ftrans_analyse(sym::Symbol, p::Number)
    if Symbol(sym) == :poly
@@ -134,22 +137,22 @@ end
 
 function fcut_analyse(sym::Symbol, args...)
    if Symbol(sym) == :cos
-      rc1, rc2 = args...
+      rc1, rc2 = args
       return AnalyticFunction( r -> coscut(r, rc1, rc2),
                                r -> coscut_d(r, rc1, rc2),
                                nothing ), rc2
    elseif Symbol(sym) == :sw
-      L, rcut = args...
+      L, rcut = args
       return AnalyticFunction( r -> cutsw(r, rcut, L),
                                r -> cutsw_d(r, rcut, L),
                                nothing ), rcut
    elseif Symbol(sym) == :spline
-      rc1, rc2 = args...
-      return AnalyticFunction( r -> fcut(r, rc1, rc2),
-                               r -> rcut_d(r, rc1, rc2),
+      rc1, rc2 = args
+      return AnalyticFunction( r -> cutsp(r, rc1, rc2),
+                               r -> cutsp_d(r, rc1, rc2),
                                nothing ), rc2
    elseif Symbol(sym) == :square
-      rcut = args...
+      rcut = args[1]
       return (@analytic r -> (r - rcut)^2), rcut
    else
       error("Dictionary: unknown symbol $(sym) for fcut.")
@@ -262,9 +265,9 @@ function evaluate(V::NBody{3, M, T}, r::AbstractVector{TT})  where {M, T, TT}
    # @assert length(r) == M == 3
    E = 0.0
    D = V.D
-   Q = invariants(D, r)         # SVector{NI, T}
+   I = invariants(D, r)         # SVector{NI, T}
    for (α, c) in zip(V.t, V.c)
-      E += c * D(α[1], Q[1]) * D(α[2], Q[2]) * D(α[3], Q[3])
+      E += c * D(α[1], I[1]) * D(α[2], I[2]) * D(α[3], I[3])
    end
    fc = fcut(D, r[1]) * fcut(D, r[2]) * fcut(D, r[3])
    return E * fc

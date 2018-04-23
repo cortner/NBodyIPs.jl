@@ -1,13 +1,11 @@
 using NBodyIPs
 using JuLIP, Base.Test, StaticArrays, ForwardDiff, Combinatorics
 using BenchmarkTools
-using NBodyIPs.Invariants
 
-using NBodyIPs.Invariants: invariants, grad_invariants
+using NBodyIPs.Polynomials: invariants, invariants_d
 using JuLIP.Potentials: evaluate, evaluate_d
 
-ad_invariants(inv, r) = ForwardDiff.jacobian(r_->invariants(inv, r_), r)
-Inv = InvInvariants()
+ad_invariants(r) = ForwardDiff.jacobian(invariants, r)
 r = 0.5 + rand(SVector{3,Float64})
 
 println("-------------------------------------------")
@@ -17,42 +15,46 @@ println("-------------------------------------------")
 println("[1] Quick profiling:")
 for r in [(@SVector rand(3)), (@SVector rand(6))]
    println("dim = $(length(r))")
-   print("       invariants: ")
-   @btime invariants($Inv, $r)
-   print("  grad_inveriants: ")
-   @btime grad_invariants($Inv, $r)
-   print("    ad_inveriants: ")
-   @btime ad_invariants($Inv, $r)
+   print("     invariants: ")
+   @btime invariants($r)
+   print("   invariants_d: ")
+   @btime invariants_d($r)
+   print("  ad_inveriants: ")
+   @btime ad_invariants($r)
 end
 
 println("[2] Correctness of gradients")
 for n = 1:10
    r = 0.5 + rand(SVector{3,Float64})
-   @test hcat(grad_invariants(Inv, r)...)' ≈ ad_invariants(Inv, r)
+   @test invariants_d(r) ≈ ad_invariants(r)
+   print(".")
 end
 # for n = 1:10
 #    r = 0.5 + rand(SVector{6,Float64})
 #    @test hcat(grad_invariants(Inv, r)...)' ≈ ad_invariants(Inv, r)
 # end
+println()
+
 
 println("[3] Symmetry")
 for n = 1:10
    r = 0.5 + (@SVector rand(3))
-   I = invariants(Inv, r)
+   I = invariants(r)
    for rπ in NBodyIPs.simplex_permutations(r)
-      @test I ≈ invariants(Inv, SVector{3}(rπ))
+      @test I ≈ invariants(SVector{3}(rπ))
    end
+   print(".")
 end
-
-for n = 1:1
+for n = 1:10
    r = 1.0 + (@SVector rand(6))
-   I, J = invariants(Inv, r)
+   I = invariants(r)
    for rπ in NBodyIPs.simplex_permutations(r)
-      Iπ, Jπ = invariants(Inv, SVector{6}(rπ))
+      Iπ = invariants(SVector{6}(rπ))
       @test I ≈ Iπ
-      @test J ≈ Jπ
    end
+   print(".")
 end
+println()
 
 
 println("----------------------------------------")
@@ -61,9 +63,9 @@ println("----------------------------------------")
 
 r0 = rnn(:Cu)
 rcut3 = 3.1 * r0
-D3 = Dictionary(InvInvariants, rcut3)
+D3 = Dictionary((:poly, -1), (:cos, 0.66*rcut3, rcut3))
 rcut4 = 2.1 * r0
-D4 = Dictionary(InvInvariants, rcut4)
+D4 = Dictionary( (:poly, -1), (:cos, 0.66*rcut4, rcut4))
 
 n = 10
 println("[1] Quick profiling for a 3-body with $n basis functions")
@@ -85,6 +87,7 @@ print("  nlist: "); @btime neighbourlist(at, rcut4)
 print(" energy: "); @btime energy(V4, at)
 print(" forces: "); @btime forces(V4, at)
 
+quit()
 
 println("[2] Gradient- test on triangles")
 for n = [1, 3]
