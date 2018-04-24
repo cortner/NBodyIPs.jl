@@ -284,23 +284,10 @@ end
 
 # ---------------  3-body terms ------------------
 
-function evaluate(V::NBody{3, M, T}, r::AbstractVector{TT})  where {M, T, TT}
-   # @assert length(r) == M == 3
-   E = 0.0
-   D = V.D
-   I = invariants(D, r)         # SVector{NI, T}
-   for (α, c) in zip(V.t, V.c)
-      E += c * D(α[1], I[1]) * D(α[2], I[2]) * D(α[3], I[3])
-   end
-   # fc = fcut(D, r[1]) * fcut(D, r[2]) * fcut(D, r[3])
-   fc = D.fcut(r[1]) * D.fcut(r[2]) * D.fcut(r[3])
-   return E * fc
-end
 
-
-function evaluate_d(V::NBody{3, M, T}, r::AbstractVector{T}) where {M, T}
+function evaluate_d(V::NBody{3, M, T}, r::SVector{MR, T}) where {M, MR, T}
    E = zero(T)
-   dE = zero(SVector{M, T})
+   dE = zero(SVector{MR, T})
    D = V.D
    I = invariants(D, r)           # SVector{NI, T}
    dI = invariants_d(D, r)     # SVector{NI, SVector{M, T}}

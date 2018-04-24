@@ -55,18 +55,20 @@ degrees(::Val{2}) = (1,)
 #             3-BODY Invariants
 # ------------------------------------------------------------------------
 
+# the 1.0 is a "secondary invariant"
 invariants(r::SVector{3, T}) where {T} =
-      SVector{3, T}(
-         r[1]+r[2]+r[3],
-         r[1]*r[2] + r[1]*r[3] + r[2]*r[3],
-         r[1]*r[2]*r[3] )
+      @SVector T[ r[1]+r[2]+r[3],
+                  r[1]*r[2] + r[1]*r[3] + r[2]*r[3],
+                  r[1]*r[2]*r[3],
+                  1.0 ]
 
 invariants_d(  r::SVector{3, T}) where {T} =
       @SMatrix T[ 1.0        1.0         1.0;
                   r[2]+r[3]  r[1]+r[3]   r[1]+r[2];
-                  r[2]*r[3]  r[1]*r[3]   r[1]*r[2]  ]
+                  r[2]*r[3]  r[1]*r[3]   r[1]*r[2];
+                  0.0        0.0         0.0  ]
 
-degrees(::Val{3}) = (1, 2, 3)
+degrees(::Val{3}) = (1, 2, 3, 0)
 
 
 # ------------------------------------------------------------------------
@@ -81,7 +83,7 @@ degrees(::Val{3}) = (1, 2, 3)
 # ------------------------------------------------------------------------
 # TODO: reorder to obtain increasing degree?
 
-degrees(::Val{4}) = (1, 2, 3, 4, 2, 3, 3, 4, 5, 6, 9)
+degrees(::Val{4}) = (1, 2, 3, 4, 2, 3, 0, 3, 4, 5, 6, 9)
 
 const _2 = 2.0^(-0.5)
 const _3 = 3.0^(-0.5)
@@ -131,7 +133,7 @@ function _invariants_Q6(Q::SVector{6, T}) where {T}
       # I6
       (Q[6] * (Q2[6] - 3*Q2[5])),
       # ---------------------------- secondary invariants
-      # sneak in an additional "invariant"
+      # sneak in an additional secondary "invariant"
       1.0,
       # I7
       (Q[6] * (2*Q2[2] - Q2[3] - Q2[4]) + rt3 * Q[5] * (Q2[3] - Q2[4])),
