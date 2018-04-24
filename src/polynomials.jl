@@ -189,7 +189,7 @@ end
 
 
 @pot struct NBody{N, M, T, TD} <: AbstractCalculator
-   t::VecTup{M}               # tuples
+   t::VecTup{M}               # tuples M = #edges + 1
    c::Vector{T}               # coefficients
    D::TD                      # Dictionary (or nothing)
    valN::Val{N}               # encodes that this is an N-body term
@@ -229,7 +229,7 @@ NBody(B::Vector{TB}, c, D) where {TB <: NBody} =
 NBody(c::Float64) = NBody([Tup{0}()], [c], nothing, Val(1))
 
 bodyorder(V::NBody{N}) where {N} = N
-dim(V::NBody{N,M}) where {N, M} = M
+dim(V::NBody{N,M}) where {N, M} = M-1
 # number of basis functions which this term is made from
 length(V::NBody) = length(V.t)
 
@@ -331,89 +331,37 @@ end
 # with the first 6 entries restricted by degree and the 7th tuple must
 # be in the range 0, …, 5
 
-function evaluate(V::NBody{4, M, T}, r::AbstractVector{TT})  where {M, T, TT}
-   E = 0.0
-   D = V.D
-   II = invariants(D, r)         # SVector{NI, T}
-   I = SVector{6}(II[1],II[2],II[3],II[4],II[5],II[6])
-   J = SVector{6}(1.0, II[7], II[8], II[9], II[10], II[11])
-   for (α, c) in zip(V.t, V.c)
-      E += c * J[α[7]+1] * (
-         D(α[1], I[1]) * D(α[2], I[2]) * D(α[3], I[3]) *
-         D(α[4], I[4]) * D(α[5], I[5]) * D(α[6], I[6]) )
+function eval_monomial(α::NTuple{M, TI}, II::SVector{NI, T}) where {M, TI, NI, T}
+   p = one(T)
+   @fastmath for i = 1:(M-1)
+      @inbounds p *= II[i]^α[i]
    end
-   fc = fcut(D, r[1]) * fcut(D, r[2]) * fcut(D, r[3]) *
-         fcut(D, r[4]) * fcut(D, r[5]) * fcut(D, r[6])
-   return E * fc
+   return p
 end
 
-evaluate_d(V::NBody{4, M, T}, r::AbstractVector{TT})  where {M, T, TT} =
+function fcut(D::Dictionary, r::SVector{M, T}) where {M, T}
+   fc = one(T)
+   @fastmath for i = 1:M
+      @inbounds fc *= fcut(D, r[i])
+   end
+   return fc
+end
+
+
+function evaluate(V::NBody{N, M, T}, r::AbstractVector{TT})  where {N, M, T, TT}
+   @assert ((N*(N-1))÷2 == M-1 == dim(V) == length(r))
+   E = zero(T)
+   D = V.D
+   II = invariants(D, r)         # SVector{NI, T}
+   for (α, c) in zip(V.t, V.c)
+      E += c * II[M+α[M]] * eval_monomial(α, II)
+   end
+   return E * fcut(D, r)
+end
+
+evaluate_d(V::NBody{N, M, T}, r::AbstractVector{T})  where {N, M, T} =
    ForwardDiff.gradient(r_ -> evaluate(V, r_), r)
 
-# function evaluate_d(V::NBody{4, M, T}, r::AbstractVector{T})  where {M, T}
-#    E = 0.0
-#    dE = zero(SVector{6, T})
-#    D = V.D
-#    I = invariants(D, r)         # SVector{NI, T}
-#    DI = ForwardDiff.jacobian(r_->invariants(D, r_), r)
-#    DII = DI[SVector{6,Int}(1,2,3,4,5,6), :]
-#    J = SVector{6}(1.0, I[7], I[8], I[9], I[10], I[11])
-#    temp = zero(MVector{6, T})
-#    for (α, c) in zip(V.t, V.c)
-#       f1 = D(α[1], I[1])
-#       f2 = D(α[2], I[2])
-#       f3 = D(α[3], I[3])
-#       f4 = D(α[4], I[4])
-#       f5 = D(α[5], I[5])
-#       f6 = D(α[6], I[6])
-#       f = f1 * f2 * f3 * f4 * f5 * f6
-#       E += c * J[α[7]+1] * f
-#       if α[7] == 0
-#          DJ = zero(SVector{6,T})
-#       else
-#          DJ = DI[6+α[7], :]
-#       end
-#       cJ = c * J[1+α[7]]
-#       temp[1] = (@D D(α[1], I[1])) * f2*f3*f4*f5*f6
-#       temp[2] = (@D D(α[2], I[2])) * f1*f3*f4*f5*f6
-#       temp[3] = (@D D(α[3], I[3])) * f1*f2*f4*f5*f6
-#       temp[4] = (@D D(α[4], I[4])) * f1*f2*f3*f5*f6
-#       temp[5] = (@D D(α[5], I[5])) * f1*f2*f3*f4*f6
-#       temp[6] = (@D D(α[6], I[6])) * f1*f2*f3*f4*f5
-#       dE += c * (DJ * f + J[1+α[7]] * (DII * temp))
-#
-#       # dE += c * (DJ * f +
-#       #    J[1+α[7]] * (DII * SVector{6, T}(
-#       #       (@D D(α[1], I[1])) * f2*f3*f4*f5*f6,
-#       #       (@D D(α[2], I[2])) * f1*f3*f4*f5*f6,
-#       #       (@D D(α[3], I[3])) * f1*f2*f4*f5*f6,
-#       #       (@D D(α[4], I[4])) * f1*f2*f3*f5*f6,
-#       #       (@D D(α[5], I[5])) * f1*f2*f3*f4*f6,
-#       #       (@D D(α[6], I[6])) * f1*f2*f3*f4*f5 ) ))
-#             # + cJ * (@D D(α[1], I[1])) * f2*f3*f4*f5*f6 * DI[1,:]
-#       #       + cJ * (@D D(α[2], I[2])) * f1*f3*f4*f5*f6 * DI[2,:]
-#       #       + cJ * (@D D(α[3], I[3])) * f1*f2*f4*f5*f6 * DI[3,:]
-#       #       + cJ * (@D D(α[4], I[4])) * f1*f2*f3*f5*f6 * DI[4,:]
-#       #       + cJ * (@D D(α[5], I[5])) * f1*f2*f3*f4*f6 * DI[5,:]
-#       #       + cJ * (@D D(α[6], I[6])) * f1*f2*f3*f4*f5 * DI[6,:]
-#       # )
-#    end
-#    fc1, dfc1 = fcut(D, r[1]), fcut_d(D, r[1])
-#    fc2, dfc2 = fcut(D, r[2]), fcut_d(D, r[2])
-#    fc3, dfc3 = fcut(D, r[3]), fcut_d(D, r[3])
-#    fc4, dfc4 = fcut(D, r[4]), fcut_d(D, r[4])
-#    fc5, dfc5 = fcut(D, r[5]), fcut_d(D, r[5])
-#    fc6, dfc6 = fcut(D, r[6]), fcut_d(D, r[6])
-#    fc = fc1 * fc2 * fc3 * fc4 * fc5 * fc6
-#    dfc = SVector{6, T}(
-#          dfc1 *  fc2 *  fc3 *  fc4 *  fc5 *  fc6,
-#           fc1 * dfc2 *  fc3 *  fc4 *  fc5 *  fc6,
-#           fc1 *  fc2 * dfc3 *  fc4 *  fc5 *  fc6,
-#           fc1 *  fc2 *  fc3 * dfc4 *  fc5 *  fc6,
-#           fc1 *  fc2 *  fc3 *  fc4 * dfc5 *  fc6,
-#           fc1 *  fc2 *  fc3 *  fc4 *  fc5 * dfc6 )
-#    return dE * fc + E * dfc
-# end
 
 # ==================================================================
 #           The Final Interatomic Potential

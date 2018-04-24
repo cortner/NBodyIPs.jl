@@ -3,7 +3,7 @@ using JuLIP, Base.Test, StaticArrays, ForwardDiff, Combinatorics
 using BenchmarkTools
 
 using NBodyIPs.Polynomials: invariants, invariants_d
-using JuLIP.Potentials: evaluate, evaluate_d, coscut, coscut_d
+using JuLIP.Potentials: evaluate, evaluate_d
 
 ad_invariants(r) = ForwardDiff.jacobian(invariants, r)
 r = 0.5 + rand(SVector{3,Float64})
@@ -77,19 +77,21 @@ at = rattle!(bulk(:Cu, cubic=true) * 2, 0.02)
 @show length(at)
 r = 1.0 + rand(SVector{3, Float64})
 V3 = NBody( [tuple(rand(0:4, 3)...) for n = 1:n], rand(n), D3 )
-print("     V3: "); @btime evaluate($V3, $r)
-print("  @D V3: "); @btime evaluate_d($V3, $r)
-print("  nlist: "); @btime neighbourlist($at, $rcut3)
-print(" energy: "); @btime energy($V3, $at)
-print(" forces: "); @btime forces($V3, $at)
+# print("     V3: "); @btime evaluate($V3, $r)
+# print("  @D V3: "); @btime evaluate_d($V3, $r)
+# print("  nlist: "); @btime neighbourlist($at, $rcut3)
+# print(" energy: "); @btime energy($V3, $at)
+# print(" forces: "); @btime forces($V3, $at)
 
 r = 1.0 + rand(SVector{6, Float64})
 V4 = NBody( [tuple(rand(0:4, 7)...) for n = 1:n], rand(n), D4 )
 print("     V4: "); @btime evaluate($V4, $r)
 print("  @D V4: "); @btime evaluate_d($V4, $r)
-print("  nlist: "); @btime neighbourlist(at, rcut4)
-print(" energy: "); @btime energy(V4, at)
-print(" forces: "); @btime forces(V4, at)
+# print("  nlist: "); @btime neighbourlist(at, rcut4)
+# print(" energy: "); @btime energy(V4, at)
+# print(" forces: "); @btime forces(V4, at)
+
+quit()
 
 println("[2] Gradient- test on triangles")
 for n = [1, 3]

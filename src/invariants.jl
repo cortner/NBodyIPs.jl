@@ -116,8 +116,8 @@ function _invariants_Q6(Q::SVector{6, T}) where {T}
    rt3 = sqrt(3.0)
    Q_56 = Q[5] * Q[6]
 
-   return SVector{11, T}(
-      # ---------------------------- primary invariants 
+   return SVector{12, T}(
+      # ---------------------------- primary invariants
       # I1
       (Q[1]),
       # I2
@@ -131,6 +131,8 @@ function _invariants_Q6(Q::SVector{6, T}) where {T}
       # I6
       (Q[6] * (Q2[6] - 3*Q2[5])),
       # ---------------------------- secondary invariants
+      # sneak in an additional "invariant"
+      1.0,
       # I7
       (Q[6] * (2*Q2[2] - Q2[3] - Q2[4]) + rt3 * Q[5] * (Q2[3] - Q2[4])),
       # I8
