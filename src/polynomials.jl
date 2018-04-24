@@ -38,14 +38,6 @@ export NBody, NBodyIP, Dictionary,
 export @analytic
 
 
-# import the raw symmetry invariant polynomials
-include("invariants.jl")
-
-
-# ==================================================================
-#           DICTIONARY
-# ==================================================================
-
 
 @pot struct Dictionary{TT, TDT, TC, TDC, T}
    transform::TT              # distance transform
@@ -54,6 +46,19 @@ include("invariants.jl")
    fcut_d::TDC                 # cut-off function derivative
    rcut::T                    # cutoff radius
 end
+
+
+# generated functions for fast evaluation of monomials
+include("fast_monomials.jl")
+
+# import the raw symmetry invariant polynomials
+include("invariants.jl")
+
+
+# ==================================================================
+#           DICTIONARY
+# ==================================================================
+
 
 """
 `struct Dictionary` : specifies all details about the basis functions
@@ -92,29 +97,29 @@ Known symbols for the cutoff are
 Dictionary
 
 @inline invariants(D::Dictionary, r) = invariants(D.transform.(r))
-@inline invariants_d(D::Dictionary, r) =
-      invariants_d(D.transform.(r)) .* (D.transform_d.(r)')
+@inline function invariants_d(D::Dictionary, r)
+   DI1, DI2 = invariants_d(D.transform.(r))
+   t_d = D.transform_d.(r)'
+   return DI1 .* t_d, DI2 .* t_d
+end
 
-@inline fcut(D::Dictionary, r::Number) = D.fcut(r) * (r < cutoff(D))
+@inline fcut(D::Dictionary, r::Number) = D.fcut(r)
 @inline fcut_d(D::Dictionary, r::Number) = D.fcut_d(r)
-
-@inline evaluate(D::Dictionary, i, Q) = @fastmath Q^i
-@inline evaluate_d(D::Dictionary, i, Q) = (i == 0 ? 0.0 : (@fastmath i * Q^(i-1)))
 
 @inline cutoff(D::Dictionary) = D.rcut
 
 
 # TODO: fix fcut applied to vector >>>>>>>>>>>>>>>>>>>>
-fcut(D::Dictionary, rs::AbstractVector) = prod(fcut(D, r) for r in rs)
+# fcut(D::Dictionary, rs::AbstractVector) = prod(fcut(D, r) for r in rs)
 
-function fcut_d(D::Dictionary, rs::SVector{M,T}) where {M, T}
-   if maximum(r) > D.rcut-eps()
-      return zero(SVector{M,T})
-   end
-   # now we know that they are all inside
-   f = fcut(D, r)
-   return (2 * f) ./ (r - D.rcut)
-end
+# function fcut_d(D::Dictionary, rs::SVector{M,T}) where {M, T}
+#    if maximum(r) > D.rcut-eps()
+#       return zero(SVector{M,T})
+#    end
+#    # now we know that they are all inside
+#    f = fcut(D, r)
+#    return (2 * f) ./ (r - D.rcut)
+# end
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 # -------------------- generate dictionaries -------------------
@@ -269,12 +274,12 @@ end
 
 # ---------------  2-body terms ------------------
 
-evaluate(V::NBody{2, 1, T}, r::AbstractVector{TT}) where {T, TT} =
+evaluate(V::NBody{2}, r::AbstractVector) =
    sum( c * V.D(α[1], r[1])  for (α, c) in zip(V.t, V.c) ) * fcut(V.D, r[1])
 
-function evaluate_d(V::NBody{2, 1, T}, r::AbstractVector{T}) where {T}
-   E = 0.0
-   dE = 0.0
+function evaluate_d(V::NBody{2}, r::AbstractVector{T}) where {T}
+   E = zero(T)
+   dE = zero(T)
    for (α, c) in zip(V.t, V.c)
       E += c * V.D(α[1], r[1])
       dE += c * (@D V.D(α[1], r[1]))
@@ -283,57 +288,24 @@ function evaluate_d(V::NBody{2, 1, T}, r::AbstractVector{T}) where {T}
 end
 
 
-
-# ---------------  evaluating monomials ------------------
-
-# function _mono1(α::NTuple{4, TI},
-#                 x::SVector{NI, T},
-#                 ::Val{3}) where {TI, NI, T}
-#    return SVector{3,T}(x[1]^α[1], x[2]^α[2], x[3]^α[3])
-# end
-
-function _monomial(α::NTuple{M, TI}, II::SVector{NI, T}) where {M, TI, NI, T}
-   p = one(T)
-   @fastmath for i = 1:(M-1)
-      @inbounds p *= II[i]^α[i]
-   end
-   return p
-end
-
-@inline _m1d(α::Number, x::T) where {T <: Number} =
-      α == 0 ? zero(T) : (@fastmath α * x^(α-1))
-
-@inline function _monomial_d(α::NTuple{M, TI},
-                             x::SVector{NI, T}, ::Val{3}) where {M, TI, NI, T}
-   f1 = @fastmath x[1]^α[1]
-   f2 = @fastmath x[2]^α[2]
-   f3 = @fastmath x[3]^α[3]
-   m = @fastmath f1 * f2 * f3
-   m_d = SVector{4, T}( _m1d(α[1], x[1]) * f2 * f3,
-                        _m1d(α[2], x[2]) * f1 * f3,
-                        _m1d(α[3], x[3]) * f1 * f2, 0.0 )
-   return m, m_d
-end
-
-
 # ---------------  evaluating the cut-off  ------------------
 
 
-function fcut(D::Dictionary, r::SVector{M, T}) where {M, T}
-   fc = one(T)
-   @fastmath for i = 1:M
-      @inbounds fc *= fcut(D, r[i])
-   end
-   return fc
-end
+# function fcut(D::Dictionary, r::SVector{M, T}) where {M, T}
+#    fc = one(T)
+#    @fastmath for i = 1:M
+#       @inbounds fc *= fcut(D, r[i])
+#    end
+#    return fc
+# end
 
 
-function fcut_d(D::Dictionary, r::SVector{3, T}) where {T}
-   fc1, fc2, fc3 = fcut(D, r[1]), fcut(D, r[2]), fcut(D, r[3])
-   dfc1, dfc2, dfc3 = fcut_d(D, r[1]), fcut_d(D, r[2]), fcut_d(D, r[3])
-   return fc1 * fc2 * fc3,
-          SVector{3, T}(dfc1 * fc2 * fc3, fc1 * dfc2 * fc3, fc1 * fc2 * dfc3)
-end
+# function fcut_d(D::Dictionary, r::SVector{3, T}) where {T}
+#    fc1, fc2, fc3 = fcut(D, r[1]), fcut(D, r[2]), fcut(D, r[3])
+#    dfc1, dfc2, dfc3 = fcut_d(D, r[1]), fcut_d(D, r[2]), fcut_d(D, r[3])
+#    return fc1 * fc2 * fc3,
+#           SVector{3, T}(dfc1 * fc2 * fc3, fc1 * dfc2 * fc3, fc1 * fc2 * dfc3)
+# end
 
 
 # ---------------  evaluate the n-body terms ------------------
@@ -346,36 +318,36 @@ end
 # be in the range 0, …, 5
 
 
-function evaluate(V::NBody{N, M, T}, r::AbstractVector{TT})  where {N, M, T, TT}
-   @assert ((N*(N-1))÷2 == M-1 == dim(V) == length(r))
+function evaluate(V::NBody, r::SVector{M, T}) where {M, T}
+   # @assert ((N*(N-1))÷2 == M == K-1 == dim(V) == M)
    E = zero(T)
-   D = V.D
-   II = invariants(D, r)         # SVector{NI, T}
+   I1, I2 = invariants(V.D, r)         # SVector{NI, T}
    for (α, c) in zip(V.t, V.c)
-      E += c * II[M+α[M]] * _monomial(α, II)
+      E += c * I2[1+α[end]] * monomial(α, I1)
    end
-   return E * fcut(D, r)
+   return E * fcut(V.D, r)
 end
 
 # with AD
-evaluate_d(V::NBody{N, M, T}, r::AbstractVector{T})  where {N, M, T} =
+evaluate_d(V::NBody, r::AbstractVector) =
    ForwardDiff.gradient(r_ -> evaluate(V, r_), r)
 
 # without AD
-function evaluate_d(V::NBody{3, M, T}, r::SVector{MR, T}) where {M, MR, T}
+function evaluate_d(V::NBody{3}, r::SVector{M, T}) where {M, T}
    E = zero(T)
-   dQ = zero(SVector{M, T})
-   dE = zero(SVector{MR, T})
+   dM = zero(SVector{M, T})
+   dE = zero(SVector{M, T})
    D = V.D
-   I = invariants(D, r)           # SVector{NI, T}
-   dI = invariants_d(D, r)     # SVector{NI, SVector{M, T}}
+   I1, I2 = invariants(D, r)              # SVectors
+   dI1, dI2 = invariants_d(D, r)          # SMatrices
    for (α, c) in zip(V.t, V.c)
-      m, m_d = _monomial_d(α, I, Val{MR}())
-      E += c * m
-      dQ += c * m_d
+      m, m_d = monomial_d(α, I1)
+      E += c * I2[1+α[end]] * m
+      dM += (c * I2[1+α[end]]) * m_d
+      dE += (c * m) * dI2[1+α[end],:]
    end
    # chain rule
-   dE += dI' * dQ
+   dE += dI1' * dM
 
    fc, fc_d = fcut_d(D, r)
    return dE * fc + E * fc_d

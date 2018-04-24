@@ -57,18 +57,19 @@ degrees(::Val{2}) = (1,)
 
 # the 1.0 is a "secondary invariant"
 invariants(r::SVector{3, T}) where {T} =
-      @SVector T[ r[1]+r[2]+r[3],
-                  r[1]*r[2] + r[1]*r[3] + r[2]*r[3],
-                  r[1]*r[2]*r[3],
-                  1.0 ]
+      (@SVector T[ r[1]+r[2]+r[3],
+                   r[1]*r[2] + r[1]*r[3] + r[2]*r[3],
+                   r[1]*r[2]*r[3] ]),
+      (@SVector T[ 1.0 ])
+
 
 invariants_d(  r::SVector{3, T}) where {T} =
-      @SMatrix T[ 1.0        1.0         1.0;
-                  r[2]+r[3]  r[1]+r[3]   r[1]+r[2];
-                  r[2]*r[3]  r[1]*r[3]   r[1]*r[2];
-                  0.0        0.0         0.0  ]
+      (@SMatrix T[ 1.0        1.0         1.0;
+                   r[2]+r[3]  r[1]+r[3]   r[1]+r[2];
+                   r[2]*r[3]  r[1]*r[3]   r[1]*r[2] ]),
+      (@SMatrix T[ 0.0        0.0         0.0  ])
 
-degrees(::Val{3}) = (1, 2, 3, 0)
+degrees(::Val{3}) = (1, 2, 3), (0,)
 
 
 # ------------------------------------------------------------------------
@@ -83,7 +84,7 @@ degrees(::Val{3}) = (1, 2, 3, 0)
 # ------------------------------------------------------------------------
 # TODO: reorder to obtain increasing degree?
 
-degrees(::Val{4}) = (1, 2, 3, 4, 2, 3, 0, 3, 4, 5, 6, 9)
+degrees(::Val{4}) = (1, 2, 3, 4, 2, 3), (0, 3, 4, 5, 6, 9)
 
 const _2 = 2.0^(-0.5)
 const _3 = 3.0^(-0.5)
@@ -109,8 +110,10 @@ const R2Qxr2ρ = R2Q * r2ρ
 
 @inline invariants(r::SVector{6, T}) where {T} = _invariants_Q6(R2Qxr2ρ * r)
 
-@inline invariants_d(r::SVector{6, T}) where {T} =
-            _invariants_Q6_d(R2Qxr2ρ * r) * R2Qxr2ρ
+@inline function invariants_d(r::SVector{6, T}) where {T}
+   DI1, DI2 = _invariants_Q6_d(R2Qxr2ρ * r)
+   return DI1 * R2Qxr2ρ, DI2 * R2Qxr2ρ
+end
 
 function _invariants_Q6(Q::SVector{6, T}) where {T}
    Q2 = Q .* Q
@@ -118,7 +121,7 @@ function _invariants_Q6(Q::SVector{6, T}) where {T}
    rt3 = sqrt(3.0)
    Q_56 = Q[5] * Q[6]
 
-   return SVector{12, T}(
+   return SVector{6, T}(
       # ---------------------------- primary invariants
       # I1
       (Q[1]),
@@ -131,8 +134,10 @@ function _invariants_Q6(Q::SVector{6, T}) where {T}
       # I5
       (Q2[5] + Q2[6]),
       # I6
-      (Q[6] * (Q2[6] - 3*Q2[5])),
+      (Q[6] * (Q2[6] - 3*Q2[5]))
+   ),
       # ---------------------------- secondary invariants
+   SVector{6, T}(
       # sneak in an additional secondary "invariant"
       1.0,
       # I7
@@ -152,7 +157,10 @@ function _invariants_Q6(Q::SVector{6, T}) where {T}
 end
 
 
-_invariants_Q6_d(Q) = ForwardDiff.jacobian(_invariants_Q6, Q)
+function _invariants_Q6_d(Q)
+   DQ = ForwardDiff.jacobian(Q_ -> vcat(_invariants_Q6(Q)...), Q)
+   return DQ[1:6,:], DQ[7:12,:]
+end
 
 
 # ------------------------------------------------------------------------
