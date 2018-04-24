@@ -284,27 +284,50 @@ end
 
 # ---------------  3-body terms ------------------
 
+# function _mono1(α::NTuple{4, TI},
+#                 x::SVector{NI, T},
+#                 ::Val{3}) where {TI, NI, T}
+#    return SVector{3,T}(x[1]^α[1], x[2]^α[2], x[3]^α[3])
+# end
+
+@inline _m1d(α::Number, x::T) where {T <: Number} =
+      α == 0 ? zero(T) : (@fastmath α * x^(α-1))
+
+@inline function _monomial_d(α::NTuple{M, TI},
+                             x::SVector{NI, T}, ::Val{3}) where {M, TI, NI, T}
+   f1 = @fastmath x[1]^α[1]
+   f2 = @fastmath x[2]^α[2]
+   f3 = @fastmath x[3]^α[3]
+   m = @fastmath f1 * f2 * f3
+   m_d = SVector{4, T}( _m1d(α[1], x[1]) * f2 * f3,
+                        _m1d(α[2], x[2]) * f1 * f3,
+                        _m1d(α[3], x[3]) * f1 * f2, 0.0 )
+   return m, m_d
+end
+
+function fcut_d(D::Dictionary, r::SVector{3, T}) where {T}
+   fc1, fc2, fc3 = fcut(D, r[1]), fcut(D, r[2]), fcut(D, r[3])
+   dfc1, dfc2, dfc3 = fcut_d(D, r[1]), fcut_d(D, r[2]), fcut_d(D, r[3])
+   return fc1 * fc2 * fc3,
+          SVector{3, T}(dfc1 * fc2 * fc3, fc1 * dfc2 * fc3, fc1 * fc2 * dfc3)
+end
 
 function evaluate_d(V::NBody{3, M, T}, r::SVector{MR, T}) where {M, MR, T}
    E = zero(T)
+   dQ = zero(SVector{M, T})
    dE = zero(SVector{MR, T})
    D = V.D
    I = invariants(D, r)           # SVector{NI, T}
    dI = invariants_d(D, r)     # SVector{NI, SVector{M, T}}
    for (α, c) in zip(V.t, V.c)
-      f1 = D(α[1], I[1])
-      f2 = D(α[2], I[2])
-      f3 = D(α[3], I[3])
-      E += c * f1 * f2 * f3
-      dE += c * ( (@D D(α[1], I[1])) * f2 * f3 * dI[1,:] +
-                  (@D D(α[2], I[2])) * f1 * f3 * dI[2,:] +
-                  (@D D(α[3], I[3])) * f2 * f1 * dI[3,:] )
+      m, m_d = _monomial_d(α, I, Val{MR}())
+      E += c * m
+      dQ += c * m_d
    end
-   fc1, fc2, fc3 = fcut(D, r[1]), fcut(D, r[2]), fcut(D, r[3])
-   dfc1, dfc2, dfc3 = fcut_d(D, r[1]), fcut_d(D, r[2]), fcut_d(D, r[3])
-   fc = fc1 * fc2 * fc3
-   fc_d = SVector{3, Float64}(
-      dfc1 * fc2 * fc3, fc1 * dfc2 * fc3, fc1 * fc2 * dfc3)
+   # chain rule
+   dE += dI' * dQ
+
+   fc, fc_d = fcut_d(D, r)
    return dE * fc + E * fc_d
 end
 
@@ -318,13 +341,14 @@ end
 # with the first 6 entries restricted by degree and the 7th tuple must
 # be in the range 0, …, 5
 
-function eval_monomial(α::NTuple{M, TI}, II::SVector{NI, T}) where {M, TI, NI, T}
+function _monomial(α::NTuple{M, TI}, II::SVector{NI, T}) where {M, TI, NI, T}
    p = one(T)
    @fastmath for i = 1:(M-1)
       @inbounds p *= II[i]^α[i]
    end
    return p
 end
+
 
 function fcut(D::Dictionary, r::SVector{M, T}) where {M, T}
    fc = one(T)
@@ -341,7 +365,7 @@ function evaluate(V::NBody{N, M, T}, r::AbstractVector{TT})  where {N, M, T, TT}
    D = V.D
    II = invariants(D, r)         # SVector{NI, T}
    for (α, c) in zip(V.t, V.c)
-      E += c * II[M+α[M]] * eval_monomial(α, II)
+      E += c * II[M+α[M]] * _monomial(α, II)
    end
    return E * fcut(D, r)
 end

@@ -8,57 +8,54 @@ using JuLIP.Potentials: evaluate, evaluate_d
 ad_invariants(r) = ForwardDiff.jacobian(invariants, r)
 r = 0.5 + rand(SVector{3,Float64})
 
-println("-------------------------------------------")
-println("   Testing implementation of `invariants`")
-println("-------------------------------------------")
-
-println("[1] Quick profiling:")
-for r in [(@SVector rand(3)), (@SVector rand(6))]
-   println("dim = $(length(r))")
-   print("     invariants: ")
-   @btime invariants($r)
-   print("   invariants_d: ")
-   @btime invariants_d($r)
-   print("  ad_inveriants: ")
-   @btime ad_invariants($r)
-end
-
-# r = (@SVector rand(3))
-# D = Dictionary((@analytic r -> 1/r), (@analytic r -> (r-1)^2), 1.0)
-# @btime invariants($D, $r)
-
-println("[2] Correctness of gradients")
-for n = 1:10
-   r = 0.5 + rand(SVector{3,Float64})
-   @test invariants_d(r) ≈ ad_invariants(r)
-   print(".")
-end
-# for n = 1:10
-#    r = 0.5 + rand(SVector{6,Float64})
-#    @test hcat(grad_invariants(Inv, r)...)' ≈ ad_invariants(Inv, r)
+# println("-------------------------------------------")
+# println("   Testing implementation of `invariants`")
+# println("-------------------------------------------")
+#
+# println("[1] Quick profiling:")
+# for r in [(@SVector rand(3)), (@SVector rand(6))]
+#    println("dim = $(length(r))")
+#    print("     invariants: ")
+#    @btime invariants($r)
+#    print("   invariants_d: ")
+#    @btime invariants_d($r)
+#    print("  ad_inveriants: ")
+#    @btime ad_invariants($r)
 # end
-println()
-
-
-println("[3] Symmetry")
-for n = 1:10
-   r = 1.0 + (@SVector rand(3))
-   I = invariants(r)
-   for rπ in NBodyIPs.simplex_permutations(r)
-      @test I ≈ invariants(SVector{3}(rπ))
-   end
-   print(".")
-end
-for n = 1:10
-   r = 1.0 + (@SVector rand(6))
-   I = invariants(r)
-   for rπ in NBodyIPs.simplex_permutations(r)
-      Iπ = invariants(SVector{6}(rπ))
-      @test I ≈ Iπ
-   end
-   print(".")
-end
-println()
+#
+#
+# println("[2] Correctness of gradients")
+# for n = 1:10
+#    r = 0.5 + rand(SVector{3,Float64})
+#    @test invariants_d(r) ≈ ad_invariants(r)
+#    print(".")
+# end
+# # for n = 1:10
+# #    r = 0.5 + rand(SVector{6,Float64})
+# #    @test hcat(grad_invariants(Inv, r)...)' ≈ ad_invariants(Inv, r)
+# # end
+# println()
+#
+#
+# println("[3] Symmetry")
+# for n = 1:10
+#    r = 1.0 + (@SVector rand(3))
+#    I = invariants(r)
+#    for rπ in NBodyIPs.simplex_permutations(r)
+#       @test I ≈ invariants(SVector{3}(rπ))
+#    end
+#    print(".")
+# end
+# for n = 1:10
+#    r = 1.0 + (@SVector rand(6))
+#    I = invariants(r)
+#    for rπ in NBodyIPs.simplex_permutations(r)
+#       Iπ = invariants(SVector{6}(rπ))
+#       @test I ≈ Iπ
+#    end
+#    print(".")
+# end
+# println()
 
 
 println("----------------------------------------")
