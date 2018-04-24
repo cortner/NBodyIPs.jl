@@ -119,41 +119,64 @@ end
 
 # -------------------- generate dictionaries -------------------
 
-Dictionary(ftrans::AnalyticFunction, fcut::AnalyticFunction, rcut) =
+Dictionary(ftrans::AnalyticFunction, fcut::AnalyticFunction, rcut::AbstractFloat) =
       Dictionary(ftrans.f, ftrans.f_d, fcut.f, fcut.f_d, rcut)
 
 Dictionary(ftrans::Any, fcut::Any) =
-      Dictionary(ftrans_analyse(ftrans...), fcut_analyse(fcut...)...)
+      Dictionary(ftrans_analyse(ftrans), fcut_analyse(fcut)...)
 
-function ftrans_analyse(sym::Symbol, p::Number)
-   if Symbol(sym) == :poly
-      return (@analytic r -> r^p)
+ftrans_analyse(x::AnalyticFunction) = x
+
+function ftrans_analyse(args)
+   if args isa Symbol || length(args) == 1
+      sym = args
+      p = nothing
+   elseif length(args) == 2
+      sym, p = args
+   else
+      sym, p = args[1], args[2:end]
+   end
+   if Symbol(sym) == :inv
+      return @analytic r -> 1/r
+   elseif Symbol(sym) == :invsqrt
+      return @analytic r -> 1/sqrt(r)
+   elseif Symbol(sym) == :invsquare
+      return @analytic r -> (1/r)^2
+   elseif Symbol(sym) == :poly
+      return let p=p; @analytic r -> r^p; end
    elseif Symbol(sym) == :exp
-      return (@analytic r -> exp(-p * r))
+      return let p=p; @analytic r -> exp(-p * r); end
    else
       error("Dictionary: unknown symbol $(sym) for transformation.")
    end
 end
 
-function fcut_analyse(sym::Symbol, args...)
+fcut_analyse(x::AnalyticFunction) = x
+
+function fcut_analyse(args::Tuple)
+   sym = args[1]::Symbol
+   args = args[2:end]
    if Symbol(sym) == :cos
       rc1, rc2 = args
-      return AnalyticFunction( r -> coscut(r, rc1, rc2),
-                               r -> coscut_d(r, rc1, rc2),
-                               nothing ), rc2
+      return let rc1=rc1, rc2=rc2
+                  AnalyticFunction( r -> coscut(r, rc1, rc2),
+                                    r -> coscut_d(r, rc1, rc2),
+                                    nothing ); end, rc2
    elseif Symbol(sym) == :sw
       L, rcut = args
-      return AnalyticFunction( r -> cutsw(r, rcut, L),
-                               r -> cutsw_d(r, rcut, L),
-                               nothing ), rcut
+      return let L=L, rcut=rcut
+                  AnalyticFunction( r -> cutsw(r, rcut, L),
+                                    r -> cutsw_d(r, rcut, L),
+                                    nothing ); end, rcut
    elseif Symbol(sym) == :spline
       rc1, rc2 = args
-      return AnalyticFunction( r -> cutsp(r, rc1, rc2),
-                               r -> cutsp_d(r, rc1, rc2),
-                               nothing ), rc2
+      return let rc1=rc1, rc2=rc2
+                  AnalyticFunction( r -> cutsp(r, rc1, rc2),
+                                    r -> cutsp_d(r, rc1, rc2),
+                                    nothing );end , rc2
    elseif Symbol(sym) == :square
       rcut = args[1]
-      return (@analytic r -> (r - rcut)^2), rcut
+      return let rcut=rcut; (@analytic r -> (r - rcut)^2); end, rcut
    else
       error("Dictionary: unknown symbol $(sym) for fcut.")
    end
@@ -269,7 +292,8 @@ function evaluate(V::NBody{3, M, T}, r::AbstractVector{TT})  where {M, T, TT}
    for (α, c) in zip(V.t, V.c)
       E += c * D(α[1], I[1]) * D(α[2], I[2]) * D(α[3], I[3])
    end
-   fc = fcut(D, r[1]) * fcut(D, r[2]) * fcut(D, r[3])
+   # fc = fcut(D, r[1]) * fcut(D, r[2]) * fcut(D, r[3])
+   fc = D.fcut(r[1]) * D.fcut(r[2]) * D.fcut(r[3])
    return E * fc
 end
 
@@ -278,16 +302,16 @@ function evaluate_d(V::NBody{3, M, T}, r::AbstractVector{T}) where {M, T}
    E = zero(T)
    dE = zero(SVector{M, T})
    D = V.D
-   Q = invariants(D, r)           # SVector{NI, T}
-   dQ = invariants_d(D, r)     # SVector{NI, SVector{M, T}}
+   I = invariants(D, r)           # SVector{NI, T}
+   dI = invariants_d(D, r)     # SVector{NI, SVector{M, T}}
    for (α, c) in zip(V.t, V.c)
-      f1 = D(α[1], Q[1])
-      f2 = D(α[2], Q[2])
-      f3 = D(α[3], Q[3])
+      f1 = D(α[1], I[1])
+      f2 = D(α[2], I[2])
+      f3 = D(α[3], I[3])
       E += c * f1 * f2 * f3
-      dE += c * ((@D D(α[1], Q[1])) * f2 * f3 * dQ[1,:] +
-                 (@D D(α[2], Q[2])) * f1 * f3 * dQ[2,:] +
-                 (@D D(α[3], Q[3])) * f2 * f1 * dQ[3,:] )
+      dE += c * ( (@D D(α[1], I[1])) * f2 * f3 * dI[1,:] +
+                  (@D D(α[2], I[2])) * f1 * f3 * dI[2,:] +
+                  (@D D(α[3], I[3])) * f2 * f1 * dI[3,:] )
    end
    fc1, fc2, fc3 = fcut(D, r[1]), fcut(D, r[2]), fcut(D, r[3])
    dfc1, dfc2, dfc3 = fcut_d(D, r[1]), fcut_d(D, r[2]), fcut_d(D, r[3])

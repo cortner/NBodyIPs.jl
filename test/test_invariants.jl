@@ -3,7 +3,7 @@ using JuLIP, Base.Test, StaticArrays, ForwardDiff, Combinatorics
 using BenchmarkTools
 
 using NBodyIPs.Polynomials: invariants, invariants_d
-using JuLIP.Potentials: evaluate, evaluate_d
+using JuLIP.Potentials: evaluate, evaluate_d, coscut, coscut_d
 
 ad_invariants(r) = ForwardDiff.jacobian(invariants, r)
 r = 0.5 + rand(SVector{3,Float64})
@@ -22,6 +22,10 @@ for r in [(@SVector rand(3)), (@SVector rand(6))]
    print("  ad_inveriants: ")
    @btime ad_invariants($r)
 end
+
+# r = (@SVector rand(3))
+# D = Dictionary((@analytic r -> 1/r), (@analytic r -> (r-1)^2), 1.0)
+# @btime invariants($D, $r)
 
 println("[2] Correctness of gradients")
 for n = 1:10
@@ -63,9 +67,9 @@ println("----------------------------------------")
 
 r0 = rnn(:Cu)
 rcut3 = 3.1 * r0
-D3 = Dictionary((:poly, -1), (:cos, 0.66*rcut3, rcut3))
+D3 = Dictionary( :invsqrt, (:cos, 0.66*rcut3, rcut3) )
 rcut4 = 2.1 * r0
-D4 = Dictionary( (:poly, -1), (:cos, 0.66*rcut4, rcut4))
+D4 = Dictionary( :invsqrt, (:cos, 0.66*rcut4, rcut4) )
 
 n = 10
 println("[1] Quick profiling for a 3-body with $n basis functions")
@@ -75,9 +79,9 @@ r = 1.0 + rand(SVector{3, Float64})
 V3 = NBody( [tuple(rand(0:4, 3)...) for n = 1:n], rand(n), D3 )
 print("     V3: "); @btime evaluate($V3, $r)
 print("  @D V3: "); @btime evaluate_d($V3, $r)
-print("  nlist: "); @btime neighbourlist(at, rcut3)
-print(" energy: "); @btime energy(V3, at)
-print(" forces: "); @btime forces(V3, at)
+print("  nlist: "); @btime neighbourlist($at, $rcut3)
+print(" energy: "); @btime energy($V3, $at)
+print(" forces: "); @btime forces($V3, $at)
 
 r = 1.0 + rand(SVector{6, Float64})
 V4 = NBody( [tuple(rand(0:4, 7)...) for n = 1:n], rand(n), D4 )
