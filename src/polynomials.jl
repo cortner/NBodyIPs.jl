@@ -288,25 +288,6 @@ function evaluate_d(V::NBody{2}, r::AbstractVector{T}) where {T}
 end
 
 
-# ---------------  evaluating the cut-off  ------------------
-
-
-# function fcut(D::Dictionary, r::SVector{M, T}) where {M, T}
-#    fc = one(T)
-#    @fastmath for i = 1:M
-#       @inbounds fc *= fcut(D, r[i])
-#    end
-#    return fc
-# end
-
-
-# function fcut_d(D::Dictionary, r::SVector{3, T}) where {T}
-#    fc1, fc2, fc3 = fcut(D, r[1]), fcut(D, r[2]), fcut(D, r[3])
-#    dfc1, dfc2, dfc3 = fcut_d(D, r[1]), fcut_d(D, r[2]), fcut_d(D, r[3])
-#    return fc1 * fc2 * fc3,
-#           SVector{3, T}(dfc1 * fc2 * fc3, fc1 * dfc2 * fc3, fc1 * fc2 * dfc3)
-# end
-
 
 # ---------------  evaluate the n-body terms ------------------
 
@@ -340,11 +321,12 @@ function evaluate_d(V::NBody{3}, r::SVector{M, T}) where {M, T}
    D = V.D
    I1, I2 = invariants(D, r)              # SVectors
    dI1, dI2 = invariants_d(D, r)          # SMatrices
+   #
    for (α, c) in zip(V.t, V.c)
       m, m_d = monomial_d(α, I1)
-      E += c * I2[1+α[end]] * m
-      dM += (c * I2[1+α[end]]) * m_d
-      dE += (c * m) * dI2[1+α[end],:]
+      E += c * I2[1+α[end]] * m        # just the value of the function itself
+      dM += (c * I2[1+α[end]]) * m_d   # the I2 * ∇m term without the chain rule
+      dE += (c * m) * dI2[1+α[end],:]  # the ∇I2 * m term
    end
    # chain rule
    dE += dI1' * dM

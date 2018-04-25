@@ -11,25 +11,14 @@ using StaticArrays
       α == 0 ? zero(T) : (@fastmath α * x^(α-1))
 
 
-# function monomial(α, x::SVector{K, T}) where {K, T}
-#    m = one(T)
-#    for i = 1:K
-#       @fastmath m *= x[i]^α[i]
-#    end
-#    return m
-# end
-
-@generated function monomial(α, x::SVector{K}) where {K}
-   # @assert length(α) >= K
-   ex = "@fastmath "
+function monomial(α, x::SVector{K, T}) where {K, T}
+   m = one(T)
    for i = 1:K
-      ex *= "x[$i]^α[$i] * "
+      @inbounds m *= _m1(α[i], x[i])
    end
-   ex = ex[1:end-3]
-   quote
-      $(parse(ex))
-   end
+   return m
 end
+
 
 @generated function monomial_d(α, x::SVector{K, T}) where {K, T}
    # @assert length(α) >= K
@@ -80,26 +69,17 @@ end
 
 # ---------------------------------------------------------------
 # NOT TECHNICALLY MONOMIALS, BUT VERY SIMILAR OBJECT:
+#   TODO: combine fcut_d and monomial_d into a single function 
 # ---------------------------------------------------------------
 
 function fcut(D::Dictionary, r::SVector{M, T}) where {M, T}
    fc = one(T)
-   @fastmath for i = 1:M
-      fc *= fcut(D, r[i])
+   for i = 1:M
+      @fastmath fc *= fcut(D, r[i])
    end
    return fc
 end
 
-# @generated function fcut(D::Dictionary, r::SVector{M, T}) where {M, T}
-#    ex = "@fastmath "
-#    for i = 1:M
-#       ex *= "fcut(D, r[$i]) * "
-#    end
-#    ex = ex[1:end-3]
-#    quote
-#       $(parse(ex))
-#    end
-# end
 
 @generated function fcut_d(D::Dictionary, r::SVector{M, T}) where {M, T}
 
