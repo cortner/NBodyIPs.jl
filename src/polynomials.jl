@@ -8,6 +8,12 @@ The main types are
 * `NBodyIP`: a collection of N-body functions (of possibly different
 body-order and cut-off) wrapped into a JuLIP calculator.
 
+## Notation
+
+* `N` : N-body
+* `M` : number of edges, i.e., M = N (N-1)/2
+* `K` : length of the tuples defining polynomials, K = M+1
+
 ## Examples
 
 """
@@ -103,24 +109,15 @@ Dictionary
    return DI1 .* t_d, DI2 .* t_d
 end
 
+# @inline evaluate(D::Dictionary, α, r) = _m1(α, r)
+# @inline evaluate_d(D::Dictionary, α, r) = _m1d(α, r)
+
+
 @inline fcut(D::Dictionary, r::Number) = D.fcut(r)
 @inline fcut_d(D::Dictionary, r::Number) = D.fcut_d(r)
 
 @inline cutoff(D::Dictionary) = D.rcut
 
-
-# TODO: fix fcut applied to vector >>>>>>>>>>>>>>>>>>>>
-# fcut(D::Dictionary, rs::AbstractVector) = prod(fcut(D, r) for r in rs)
-
-# function fcut_d(D::Dictionary, rs::SVector{M,T}) where {M, T}
-#    if maximum(r) > D.rcut-eps()
-#       return zero(SVector{M,T})
-#    end
-#    # now we know that they are all inside
-#    f = fcut(D, r)
-#    return (2 * f) ./ (r - D.rcut)
-# end
-# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 # -------------------- generate dictionaries -------------------
 
@@ -220,10 +217,12 @@ e.g., if M = 3, α = t[1] is a 3-vector then this corresponds to the basis funct
 NBody
 
 # standad constructor (N can be inferred)
-NBody(t::VecTup{M}, c, D) where {M} = NBody(t, c, D, Val(edges2bo(M)))
+NBody(t::VecTup{K}, c, D) where {K} =
+      NBody(t, c, D, Val(edges2bo(K-1)))
 
 # NBody made from a single basis function rather than a collection
-NBody(t::Tup, c, D) = NBody([t], [c], D)
+NBody(t::Tup, c, D) =
+      NBody([t], [c], D)
 
 # collect multiple basis functions represented as NBody's into a single NBody
 # (mostly for performance reasons)
@@ -231,7 +230,8 @@ NBody(B::Vector{TB}, c, D) where {TB <: NBody} =
       NBody([b.t[1] for b in B], c, D)
 
 # 1-body term (on-site energy)
-NBody(c::Float64) = NBody([Tup{0}()], [c], nothing, Val(1))
+NBody(c::Float64) =
+      NBody([Tup{0}()], [c], nothing, Val(1))
 
 bodyorder(V::NBody{N}) where {N} = N
 dim(V::NBody{N,M}) where {N, M} = M-1
@@ -244,8 +244,11 @@ length(V::NBody) = length(V.t)
 cutoff(V::NBody) = cutoff(V.D)
 
 # energy and forces of the 0-body term
-energy(V::NBody{1,0,T}, at::Atoms{T}) where {T} = sum(V.c) * length(at)
-forces(V::NBody{1,0,T}, at::Atoms{T}) where {T} = zeros(SVector{3, T}, length(at))
+energy(V::NBody{1,0,T}, at::Atoms{T}) where {T} =
+      sum(V.c) * length(at)
+
+forces(V::NBody{1,0,T}, at::Atoms{T}) where {T} =
+      zeros(SVector{3, T}, length(at))
 
 
 function energy(V::NBody{N, M, T}, at::Atoms{T}) where {N, M, T}
@@ -270,21 +273,6 @@ function forces(V::NBody{4, M, T}, at::Atoms{T}) where {M, T}
                  r -> ForwardDiff.gradient(evalfun, r, cfg, Val(false)),
                  zeros(SVector{3, T}, length(at)),
                  nbodies(4, nlist)), -1)
-end
-
-# ---------------  2-body terms ------------------
-
-evaluate(V::NBody{2}, r::AbstractVector) =
-   sum( c * V.D(α[1], r[1])  for (α, c) in zip(V.t, V.c) ) * fcut(V.D, r[1])
-
-function evaluate_d(V::NBody{2}, r::AbstractVector{T}) where {T}
-   E = zero(T)
-   dE = zero(T)
-   for (α, c) in zip(V.t, V.c)
-      E += c * V.D(α[1], r[1])
-      dE += c * (@D V.D(α[1], r[1]))
-   end
-   return SVector{1, T}(E * fcut_d(V.D, r[1]) + dE * fcut(V.D, r[1]))
 end
 
 
@@ -375,20 +363,19 @@ end
 #           Generate a Basis
 # ==================================================================
 
-# TODO: rename this to nedges
-tuple_length(::Val{2}) = 1
-tuple_length(::Val{3}) = 3
-tuple_length(::Val{4}) = 6
+nedges(::Val{N}) where {N} = (N*(N-1)) ÷ 2
 
-degree(α::Tup{1}) = α[1]
-degree(α::Tup{3}) = α[1] + 2 * α[2] + 3 * α[3]
-
-function degree(α::Tup{7})
-   degs = inv_degrees(Val(4))
-   d = sum(α[j] * degs[j] for j = 1:6)
-   if α[7] > 0
-      d += degs[6+α[7]]
-   end
+"""
+compute the total degree of the polynomial represented by α.
+Note that `M = K-1` where `K` is the tuple length while
+`M` is the number of edges.
+"""
+function degree(α::Tup{K}) where {K}
+   degs1, degs2 = degrees(Val(edges2bo(K-1)))
+   # primary invariants
+   d = sum(α[j] * degs1[j] for j = 1:K-1)
+   # secondary invariants
+   d += degs2[1+α[end]]
    return d
 end
 
@@ -405,19 +392,24 @@ into a basis, or use `gen_basis` directly.
 `α -> (degree(α) <= deg)` i.e. the standard monomial degree. (note this is
 the degree w.r.t. lengths, not w.r.t. invariants!)
 """
-gen_tuples(N, deg; tuplebound = (α -> (degree(α) <= deg))) =
-   gen_tuples(Val(N), Val(tuple_length(Val(N))), deg, tuplebound)
+gen_tuples(N, deg; tuplebound = (α -> (0 < degree(α) <= deg))) =
+   gen_tuples(Val(N), Val(nedges(Val(N))+1), deg, tuplebound)
 
 # ------------- 2-body tuples -------------
 
-gen_tuples(vN::Val{2}, vK::Val{1}, deg, tuplebound) =
-   Tup{1}[ Tup{1}(j)   for j = 1:deg ]
+# TODO: need to eventually generate 2-tuples
+gen_tuples(vN::Val{2}, vK::Val{2}, deg, tuplebound) =
+   Tup{2}[ (j, 0)   for j = 1:deg ]
 
 # ------------- 3-body tuples -------------
 
-function gen_tuples(vN::Val{3}, vK::Val{K}, deg, tuplebound) where {K}
+function gen_tuples(vN::Val{N}, vK::Val{K}, deg, tuplebound) where {N, K}
    t = Tup{K}[]
-   for I in CRg(CInd(ntuple(0, vK)), CInd(ntuple(deg, vK)))
+   degs1, degs2 = degrees(vN)
+   Ilo = CInd{K}(zeros(Int, K)...)
+   idegs = [ceil.(Int, deg ./ [degs1...]); length(degs2)-1]
+   Ihi = CInd{K}(idegs...)
+   for I in CRg(Ilo, Ihi)
       if tuplebound(I.I)
          push!(t, I.I)
       end
@@ -426,21 +418,6 @@ function gen_tuples(vN::Val{3}, vK::Val{K}, deg, tuplebound) where {K}
 end
 
 # ------------- 4-body tuples -------------
-
-# little hack to make 4-body work: TODO: make this more general!!!!!
-function gen_tuples(vN::Val{4}, vM::Val{M}, deg, tuplebound) where {M}
-   t = Tup{7}[]
-   Ilo = CInd{7}(0,0,0,0,0,0,0)
-   degs = inv_degrees(vN)
-   idegs = ceil.(Int, deg ./ degs)[1:7]
-   Ihi = CInd{7}(idegs)
-   for I in CRg(Ilo, Ihi)
-      if tuplebound(I.I)
-         push!(t, I.I)
-      end
-   end
-   return t
-end
 
 
 """

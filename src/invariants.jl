@@ -38,18 +38,20 @@ bo2edges(N::Integer) = (N * (N-1)) ÷ 2
 `edges2bo(M)`: "edges-to-bodyorder", an internal function that translates
 the number of edges in a simplex into the body-order
 """
-edges2bo(M::Integer) = round(Int, 0.5 + sqrt(0.25 + 2 * M))
+edges2bo(M::Integer) = (M <= 0) ? 1 : round(Int, 0.5 + sqrt(0.25 + 2 * M))
 
 
 # ------------------------------------------------------------------------
 #             2-BODY Invariants
 # ------------------------------------------------------------------------
 
-invariants(r::SVector{1, T}) where {T} = copy(r)
+invariants(r::SVector{1, T}) where {T} =
+   copy(r), SVector{1, T}(1.0)
 
-invariants_d(r::SVector{1, T}) where {T} = @SMatrix [one(T)]
+invariants_d(r::SVector{1, T}) where {T} =
+   (@SMatrix [one(T)]), (@SMatrix [zero(T)])
 
-degrees(::Val{2}) = (1,)
+degrees(::Val{2}) = (1,), (0,)
 
 # ------------------------------------------------------------------------
 #             3-BODY Invariants
