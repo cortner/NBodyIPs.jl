@@ -266,15 +266,10 @@ end
 
 function forces(V::NBody{4, M, T}, at::Atoms{T}) where {M, T}
    nlist = neighbourlist(at, cutoff(V))
-   evalfun = r -> evaluate(V, r)
-   cfg = ForwardDiff.GradientConfig(evalfun, (@SVector ones(6)),
-            ForwardDiff.Chunk{6}())
-   return scale!(maptosites_d!(
-                 r -> ForwardDiff.gradient(evalfun, r, cfg, Val(false)),
+   return scale!(maptosites_d!(r -> (@D V(r)),
                  zeros(SVector{3, T}, length(at)),
                  nbodies(4, nlist)), -1)
 end
-
 
 
 # ---------------  evaluate the n-body terms ------------------
@@ -297,12 +292,8 @@ function evaluate(V::NBody, r::SVector{M, T}) where {M, T}
    return E * fcut(V.D, r)
 end
 
-# with AD
-evaluate_d(V::NBody, r::AbstractVector) =
-   ForwardDiff.gradient(r_ -> evaluate(V, r_), r)
-
 # without AD
-function evaluate_d(V::NBody{3}, r::SVector{M, T}) where {M, T}
+function evaluate_d(V::NBody, r::SVector{M, T}) where {M, T}
    E = zero(T)
    dM = zero(SVector{M, T})
    dE = zero(SVector{M, T})
@@ -355,7 +346,6 @@ function NBodyIP(basis, coeffs)
    end
    return NBodyIP(orders)
 end
-
 
 
 

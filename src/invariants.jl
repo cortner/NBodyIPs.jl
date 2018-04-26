@@ -110,11 +110,13 @@ const R2Q = @SMatrix [ _6     _6     _6    _6     _6     _6
 
 const R2Qxr2ρ = R2Q * r2ρ
 
-@inline invariants(r::SVector{6, T}) where {T} = _invariants_Q6(R2Qxr2ρ * r)
+@inline invariants(r::SVector{6}) = _invariants_Q6(R2Qxr2ρ * r)
 
 @inline function invariants_d(r::SVector{6, T}) where {T}
-   DI1, DI2 = _invariants_Q6_d(R2Qxr2ρ * r)
-   return DI1 * R2Qxr2ρ, DI2 * R2Qxr2ρ
+   J12 = ForwardDiff.jacobian( r_ -> vcat(invariants(r_)...), r )
+   I1 = @SVector [1,2,3,4,5,6]
+   I2 = @SVector [7,8,9,10,11,12]
+   return J12[I1,:], J12[I2,:]
 end
 
 function _invariants_Q6(Q::SVector{6, T}) where {T}
@@ -143,25 +145,16 @@ function _invariants_Q6(Q::SVector{6, T}) where {T}
       # sneak in an additional secondary "invariant"
       1.0,
       # I7
-      (Q[6] * (2*Q2[2] - Q2[3] - Q2[4]) + rt3 * Q[5] * (Q2[3] - Q2[4])),
+      Q[6] * (2*Q2[2] - Q2[3] - Q2[4]) + rt3 * Q[5] * (Q2[3] - Q2[4]),
       # I8
-      (( (Q2[6] - Q2[5]) * (2*Q2[2] - Q2[3] - Q2[4])
-            - 2 * rt3 * Q_56 * (Q2[3] - Q2[4]) )),
+      (Q2[6] - Q2[5]) * (2*Q2[2] - Q2[3] - Q2[4]) - 2 * rt3 * Q_56 * (Q2[3] - Q2[4]),
       # I9
-      (( Q[6] * (2*Q2_34 - Q2_24 - Q2_23) + rt3 * Q[5] * (Q2_24 - Q2_23) )),
+      Q[6] * (2*Q2_34 - Q2_24 - Q2_23) + rt3 * Q[5] * (Q2_24 - Q2_23),
       # I10
-      (( (Q2[6] - Q2[5])*(2*Q2_34 - Q2_24 - Q2_23)
-                   - 2 * rt3 * Q_56 * (Q2_24 - Q2_23) )),
+      (Q2[6] - Q2[5])*(2*Q2_34 - Q2_24 - Q2_23) - 2 * rt3 * Q_56 * (Q2_24 - Q2_23),
       # I11
-      (( (Q2[3] - Q2[4]) * (Q2[4] - Q2[2]) * (Q2[2] - Q2[3]) *
-            Q[5] * (3*Q2[6] - Q2[5]) ))
+      (Q2[3] - Q2[4]) * (Q2[4] - Q2[2]) * (Q2[2] - Q2[3]) * Q[5] * (3*Q2[6] - Q2[5])
    )
-end
-
-
-function _invariants_Q6_d(Q)
-   DQ = ForwardDiff.jacobian(Q_ -> vcat(_invariants_Q6(Q)...), Q)
-   return DQ[1:6,:], DQ[7:12,:]
 end
 
 
@@ -170,3 +163,17 @@ end
 # ------------------------------------------------------------------------
 
 # TODO
+
+# COPIED FROM SLACK:
+# For the 5-body, if I am right, the number of primary invariants is 10 with
+# degrees : [ 1, 2, 2, 3, 3, 4, 4, 5, 5, 6 ]. The number of secondary for each
+# degree (starting from 0) is [ 1, 0, 0, 2, 5, 8, 15, 23, 33, 46 ] which means
+# in total 133 secondary of degree less than 9. That’s quite a lot. Some of
+# them have very long expressions.
+
+degrees(::Val{5}) = (1, 2, 2, 3, 3, 4, 4, 5, 5, 6),
+   (0,     # 1 x degree 0
+    3, 3,  # 2 x degree 3
+    4, 4, 4, 4, 4,   # 5 x degree 4
+    5, 5, 5, 5, 5, 5, 5, 5,  # 8 x degree 5
+    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6)   # 15 x degree 6
