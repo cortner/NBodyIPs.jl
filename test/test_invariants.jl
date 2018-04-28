@@ -14,7 +14,7 @@ println("   Testing implementation of `invariants`")
 println("-------------------------------------------")
 
 println("[1] Quick profiling:")
-for r in [(@SVector rand(3)), (@SVector rand(6))]
+for r in [ (@SVector rand(3)), (@SVector rand(6)) ]
    println("dim = $(length(r))")
    print("     invariants: ")
    @btime invariants($r)
@@ -27,17 +27,16 @@ end
 
 println("[2] Correctness of gradients")
 for n = 1:10
-   r = 0.5 + rand(SVector{3,Float64})
+   r = 1.0 + rand(SVector{3,Float64})
    dI1, dI2 = invariants_d(r)
    @test [dI1; dI2] ≈ ad_invariants(r)
    print(".")
 end
 # for n = 1:10
-#    r = 0.5 + rand(SVector{6,Float64})
-#    @test hcat(grad_invariants(Inv, r)...)' ≈ ad_invariants(Inv, r)
+#    r = 1.0 + rand(SVector{6,Float64})
+#    @test hcat(invariants_d(r)...)' ≈ ad_invariants(Inv, r)
 # end
 println()
-
 
 println("[3] Symmetry")
 for n = 1:10
@@ -65,10 +64,13 @@ println("   Testing Implementation of `NBody`")
 println("----------------------------------------")
 
 r0 = rnn(:Cu)
+TRANSFORM = let r0 = r0
+   (@analytic r -> (r0/r)^3)
+end
 rcut3 = 3.1 * r0
-D3 = Dictionary( :invsqrt, (:cos, 0.66*rcut3, rcut3) )
+D3 = Dictionary(TRANSFORM, (:cos, 0.66*rcut3, rcut3) )
 rcut4 = 2.1 * r0
-D4 = Dictionary( :invsqrt, (:cos, 0.66*rcut4, rcut4) )
+D4 = Dictionary(TRANSFORM, (:cos, 0.66*rcut4, rcut4) )
 
 n = 10
 println("[1] Quick profiling for a N-body with $n basis functions")

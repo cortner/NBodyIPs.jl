@@ -157,6 +157,36 @@ function _invariants_Q6(Q::SVector{6, T}) where {T}
    )
 end
 
+# import StaticPolynomials
+# using DynamicPolynomials: @polyvar
+#
+# @polyvar Q1 Q2 Q3 Q4 Q5 Q6
+#
+# const INV6Q = StaticPolynomials.system(
+#    [  Q1,
+#       Q2^2 + Q3^2 + Q4^2,
+#       Q2 * Q3 * Q4,
+#       Q3^2 * Q4^2 + Q2^2 * Q4^2 + Q2^2 * Q3^2,
+#       Q5^2 + Q6^2,
+#       Q6^3 - 3*Q5^2 * Q6,
+#       1.0,
+#       Q6 * (2*Q2^2 - Q3^2 - Q4^2) + √3 * Q5 * (Q3^2 - Q4^2),
+#       (Q6^2 - Q5^2) * (2*Q2^2 - Q3^2 - Q4^2) - 2 * √3 * Q5 * Q6 * (Q3^2 - Q4^2),
+#       Q6 * (2*Q3^2 * Q4^2 - Q2^2 * Q4^2 - Q2^2 * Q3^2) + √3 * Q2 * (Q2^2 * Q4^2 - Q2^2 * Q3^2),
+#       (Q6^2 - Q5^2)*(2*Q3^2*Q4^2 - Q2^2*Q4^2 -Q2^2*Q3^2) - 2*√3 * Q5 * Q6 * (Q2^2*Q4^2 - Q2^2*Q3^2),
+#       (Q3^2 - Q4^2) * (Q4^2 - Q2^2) * (Q2^2 - Q3^2) * Q5 * (3*Q6^2 - Q5^2)
+#    ])
+#
+# @inline _invQ6_2_(Q::SVector{6}) = StaticPolynomials.evaluate(INV6Q, Q)
+# @inline _invQ6_2_d(Q::SVector{6}) = StaticPolynomials.jacobian(INV6Q, Q)
+#
+# @inline function invariants_d(r::SVector{6, T}) where {T}
+#    J12 = _invQ6_2_d(R2Qxr2ρ * r) * R2Qxr2ρ
+#    I1 = @SVector [1,2,3,4,5,6]
+#    I2 = @SVector [7,8,9,10,11,12]
+#    return J12[I1,:], J12[I2,:]
+# end
+
 
 # ------------------------------------------------------------------------
 #             5-BODY Invariants
