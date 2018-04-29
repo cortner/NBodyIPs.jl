@@ -2,7 +2,7 @@ using NBodyIPs
 using JuLIP, Base.Test, StaticArrays, ForwardDiff, Combinatorics
 using BenchmarkTools
 
-using NBodyIPs.Polynomials: invariants, invariants_d
+using NBodyIPs.Polynomials: invariants, invariants_d, sp_invariants, sp_invariants_d
 using JuLIP.Potentials: evaluate, evaluate_d
 
 all_invariants(r) = vcat(invariants(r)...)
@@ -14,15 +14,30 @@ println("   Testing implementation of `invariants`")
 println("-------------------------------------------")
 
 println("[1] Quick profiling:")
-for r in [ (@SVector rand(3)), (@SVector rand(6)) ]
-   println("dim = $(length(r))")
-   print("     invariants: ")
-   @btime invariants($r)
-   print("   invariants_d: ")
-   @btime invariants_d($r)
-   print("  ad_inveriants: ")
-   @btime ad_invariants($r)
-end
+# for r in [ (@SVector rand(3)), (@SVector rand(6)) ]
+r = @SVector rand(6)
+println("dim = $(length(r))")
+print("     invariants: ")
+@btime invariants($r)
+print("   invariants_d: ")
+@btime invariants_d($r)
+print("         eval_Q:")
+@btime NBodyIPs.Polynomials._invQ6_2_($r)
+print("  sp_invariants: ")
+@btime sp_invariants($r)
+print("sp_invariants_d: ")
+@btime sp_invariants_d($r)
+print("     fundamentals: ")
+@btime NBodyIPs.Polynomials.fundamentals($r)
+print("   fundamentals_d: ")
+@btime NBodyIPs.Polynomials.fundamentals_d($r)
+print("  sp_fundamentals: ")
+@btime NBodyIPs.Polynomials.sp_fundamentals($r)
+print("sp_fundamentals_d: ")
+@btime NBodyIPs.Polynomials.sp_fundamentals_d($r)
+# end
+
+quit()
 
 
 println("[2] Correctness of gradients")

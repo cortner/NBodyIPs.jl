@@ -157,36 +157,136 @@ function _invariants_Q6(Q::SVector{6, T}) where {T}
    )
 end
 
-# import StaticPolynomials
-# using DynamicPolynomials: @polyvar
-#
-# @polyvar Q1 Q2 Q3 Q4 Q5 Q6
-#
-# const INV6Q = StaticPolynomials.system(
-#    [  Q1,
-#       Q2^2 + Q3^2 + Q4^2,
-#       Q2 * Q3 * Q4,
-#       Q3^2 * Q4^2 + Q2^2 * Q4^2 + Q2^2 * Q3^2,
-#       Q5^2 + Q6^2,
-#       Q6^3 - 3*Q5^2 * Q6,
-#       1.0,
-#       Q6 * (2*Q2^2 - Q3^2 - Q4^2) + √3 * Q5 * (Q3^2 - Q4^2),
-#       (Q6^2 - Q5^2) * (2*Q2^2 - Q3^2 - Q4^2) - 2 * √3 * Q5 * Q6 * (Q3^2 - Q4^2),
-#       Q6 * (2*Q3^2 * Q4^2 - Q2^2 * Q4^2 - Q2^2 * Q3^2) + √3 * Q2 * (Q2^2 * Q4^2 - Q2^2 * Q3^2),
-#       (Q6^2 - Q5^2)*(2*Q3^2*Q4^2 - Q2^2*Q4^2 -Q2^2*Q3^2) - 2*√3 * Q5 * Q6 * (Q2^2*Q4^2 - Q2^2*Q3^2),
-#       (Q3^2 - Q4^2) * (Q4^2 - Q2^2) * (Q2^2 - Q3^2) * Q5 * (3*Q6^2 - Q5^2)
-#    ])
-#
-# @inline _invQ6_2_(Q::SVector{6}) = StaticPolynomials.evaluate(INV6Q, Q)
-# @inline _invQ6_2_d(Q::SVector{6}) = StaticPolynomials.jacobian(INV6Q, Q)
-#
-# @inline function invariants_d(r::SVector{6, T}) where {T}
-#    J12 = _invQ6_2_d(R2Qxr2ρ * r) * R2Qxr2ρ
-#    I1 = @SVector [1,2,3,4,5,6]
-#    I2 = @SVector [7,8,9,10,11,12]
-#    return J12[I1,:], J12[I2,:]
-# end
+import StaticPolynomials
+using DynamicPolynomials: @polyvar
 
+@polyvar Q1 Q2 Q3 Q4 Q5 Q6
+
+const INV6Q = StaticPolynomials.system(
+   [  Q1,
+      Q2^2 + Q3^2 + Q4^2,
+      Q2 * Q3 * Q4,
+      Q3^2 * Q4^2 + Q2^2 * Q4^2 + Q2^2 * Q3^2,
+      Q5^2 + Q6^2,
+      Q6^3 - 3*Q5^2 * Q6,
+      1.0,
+      Q6 * (2*Q2^2 - Q3^2 - Q4^2) + √3 * Q5 * (Q3^2 - Q4^2),
+      (Q6^2 - Q5^2) * (2*Q2^2 - Q3^2 - Q4^2) - 2 * √3 * Q5 * Q6 * (Q3^2 - Q4^2),
+      Q6 * (2*Q3^2 * Q4^2 - Q2^2 * Q4^2 - Q2^2 * Q3^2) + √3 * Q2 * (Q2^2 * Q4^2 - Q2^2 * Q3^2),
+      (Q6^2 - Q5^2)*(2*Q3^2*Q4^2 - Q2^2*Q4^2 -Q2^2*Q3^2) - 2*√3 * Q5 * Q6 * (Q2^2*Q4^2 - Q2^2*Q3^2),
+      (Q3^2 - Q4^2) * (Q4^2 - Q2^2) * (Q2^2 - Q3^2) * Q5 * (3*Q6^2 - Q5^2)
+   ])
+
+
+@inline _invQ6_2_(Q::SVector{6}) = StaticPolynomials.evaluate(INV6Q, Q)
+@inline _invQ6_2_d(Q::SVector{6}) = StaticPolynomials.jacobian(INV6Q, Q)
+
+function sp_invariants(r::SVector{6, T}) where {T}
+   I12 = _invQ6_2_(R2Qxr2ρ * r)
+   I1 = @SVector [1,2,3,4,5,6]
+   I2 = @SVector [7,8,9,10,11,12]
+   return I12[I1], I12[I2]
+end
+
+
+function sp_invariants_d(r::SVector{6, T}) where {T}
+   J12 = _invQ6_2_d(R2Qxr2ρ * r) * R2Qxr2ρ
+   I1 = @SVector [1,2,3,4,5,6]
+   I2 = @SVector [7,8,9,10,11,12]
+   return J12[I1,:], J12[I2,:]
+end
+
+@polyvar x1 x2 x3 x4 x5 x6
+
+const FINV6 = StaticPolynomials.system(
+  [ x1 + x2 + x3 + x4 + x5 + x6,
+    x1^2 + x2^2 + x3^2 + x4^2 + x5^2 + x6^2,
+    x1*x2 + x1*x3 + x1*x4 + x1*x5 + x2*x3 + x2*x4 + x2*x6 + x3*x5 + x3*x6 + x4*x5 + x4*x6 + x5*x6,
+    x1^3 + x2^3 + x3^3 + x4^3 + x5^3 + x6^3,
+    x1^2*x2 + x1^2*x3 + x1^2*x4 + x1^2*x5 + x1*x2^2 + x1*x3^2 + x1*x4^2 + x1*x5^2 + x2^2*x3 + x2^2*x4 + x2^2*x6 + x2*x3^2 + x2*x4^2 + x2*x6^2 + x3^2*x5 + x3^2*x6 + x3*x5^2 + x3*x6^2 + x4^2*x5 + x4^2*x6 + x4*x5^2 + x4*x6^2 + x5^2*x6 + x5*x6^2,
+    x1*x2*x3 + x1*x4*x5 + x2*x4*x6 + x3*x5*x6,
+    x1^4 + x2^4 + x3^4 + x4^4 + x5^4 + x6^4,
+    x1^3*x2 + x1^3*x3 + x1^3*x4 + x1^3*x5 + x1*x2^3 + x1*x3^3 + x1*x4^3 + x1*x5^3 + x2^3*x3 + x2^3*x4 + x2^3*x6 + x2*x3^3 + x2*x4^3 + x2*x6^3 + x3^3*x5 + x3^3*x6 + x3*x5^3 + x3*x6^3 + x4^3*x5 + x4^3*x6 + x4*x5^3 + x4*x6^3 + x5^3*x6 + x5*x6^3,
+    x1^5 + x2^5 + x3^5 + x4^5 + x5^5 + x6^5 ])
+
+const FINV6b = StaticPolynomials.system(
+   [ x1 + x2 + x3 + x4 + x5 + x6,
+   x1^2 + x2^2 + x3^2 + x4^2 + x5^2 + x6^2,
+   x1*(x2+x3+x4+x5) + x2*(x3+x4+x6) + (x3+x4)*(x5+x6) + x5*x6,
+   x1^3 + x2^3 + x3^3 + x4^3 + x5^3 + x6^3,
+   x1^2*(x2+x3+x4+x5) + x1*(x2^2+x3^2+x4^2+x5^2) + x2^2*(x3+x4+x6) + x2*(x3^2+x4^2+x6^2) + (x3^2+x4^2)*(x5+x6) + (x3+x4)*(x5^2+x6^2) + x5^2*x6 + x5*x6^2,
+   x1*x2*x3 + x1*x4*x5 + x2*x4*x6 + x3*x5*x6,
+   x1^4 + x2^4 + x3^4 + x4^4 + x5^4 + x6^4,
+   x1^2*(x2+x3+x4+x5) + x1*(x2^2+x3^2+x4^2+x5^2) + x2^2*(x3+x4+x6) + x2*(x3^2+x4^2+x6^2) + (x3^2+x4^2)*(x5+x6) + (x3+x4)*(x5^2+x6^2) +  x5^2*x6 + x5*x6^2,
+   x1^5 + x2^5 + x3^5 + x4^5 + x5^5 + x6^5 ])
+
+sp_fundamentals(r::SVector{6}) = StaticPolynomials.evaluate(FINV6b, r)
+sp_fundamentals_d(r::SVector{6}) = StaticPolynomials.jacobian(FINV6b, r)
+
+import XGrad
+
+exF4 = quote
+   x2 = x .* x
+   x3 = x2 .* x
+   x4 = x3 .* x
+   x5 = x4 .* x
+   I1 = sum(x)
+   I2 = sum(x2)
+   I3 = x[1]*(x[2]+x[3]+x[4]+x[5]) + x[2]*(x[3]+x[4]+x[6]) +
+         (x[3]+x[4])*(x[5]+x[6]) + x[5]*x[6]
+   I4 = sum(x3)
+   I5a = x2[1]*(x[2]+x[3]+x[4]+x[5]) + x[1]*(x2[2]+x2[3]+x2[4]+x2[5])
+      I5b = I5a + x2[2]*(x[3]+x[4]+x[6]) + x[2]*(x2[3]+x2[4]+x2[6])
+      I5c = I5b + (x2[3]+x2[4])*(x[5]+x[6]) + (x[3]+x[4])*(x2[5]+x2[6])
+      I5 = I5c + x2[5]*x[6] + x[5]*x2[6]
+   I6 = x[1]*x[2]*x[3] + x[1]*x[4]*x[5] + x[2]*x[4]*x[6] + x[3]*x[5]*x[6]
+   I7 = sum(x4)
+   I8a = x3[1]*(x[2]+x[3]+x[4]+x[5]) + x[1]*(x3[2]+x3[3]+x3[4]+x3[5])
+      I8b = I8a + x3[2]*(x[3]+x[4]+x[6]) + x[2]*(x3[3]+x3[4]+x3[6])
+      I8c = I8b + (x3[3]+x3[4])*(x[5]+x[6]) + (x[3]+x[4])*(x3[5]+x3[6])
+      I8 = I8c +  x3[5]*x[6] + x[5]*x3[6]
+   I9 = sum(x5)
+end
+
+
+
+x_ = @SVector rand(6)
+ctx = Dict(:codegen => XGrad.VectorCodeGen())
+exF4_d = Expr[]
+for n = 1:9
+   exn = copy(exF4); push!(exn.args, :(z = I1))
+   dexn = XGrad.xdiff(exn, ctx=ctx, x=x_)
+   push!(exF4_d, dexn)
+end
+exF4_d
+
+
+
+function fundamentals(x::SVector{6})
+   x2 = x .* x
+   x3 = x2 .* x
+   x4 = x3 .* x
+   x5 = x4 .* x
+   I1 = sum(x)
+   I2 = sum(x2)
+   I3 = x[1]*(x[2]+x[3]+x[4]+x[5]) + x[2]*(x[3]+x[4]+x[6]) +
+         (x[3]+x[4])*(x[5]+x[6]) + x[5]*x[6]
+   I4 = sum(x3)
+   I5 = x2[1]*(x[2]+x[3]+x[4]+x[5]) + x[1]*(x2[2]+x2[3]+x2[4]+x2[5])
+      I5 += x2[2]*(x[3]+x[4]+x[6]) + x[2]*(x2[3]+x2[4]+x2[6])
+      I5 += (x2[3]+x2[4])*(x[5]+x[6]) + (x[3]+x[4])*(x2[5]+x2[6])
+      I5 += x2[5]*x[6] + x[5]*x2[6]
+   I6 = x[1]*x[2]*x[3] + x[1]*x[4]*x[5] + x[2]*x[4]*x[6] + x[3]*x[5]*x[6]
+   I7 = sum(x4)
+   I8 = x3[1]*(x[2]+x[3]+x[4]+x[5]) + x[1]*(x3[2]+x3[3]+x3[4]+x3[5])
+      I8 += x3[2]*(x[3]+x[4]+x[6]) + x[2]*(x3[3]+x3[4]+x3[6])
+      I8 += (x3[3]+x3[4])*(x[5]+x[6]) + (x[3]+x[4])*(x3[5]+x3[6])
+      I8 +=  x3[5]*x[6] + x[5]*x3[6]
+   I9 = sum(x5)
+   return SVector{9}(I1, I2, I3, I4, I5, I6, I7, I8, I9)
+end
+
+fundamentals_d(x) = ForwardDiff.jacobian(fundamentals, x)
 
 # ------------------------------------------------------------------------
 #             5-BODY Invariants
