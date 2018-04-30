@@ -22,29 +22,26 @@ module Polynomials
 using Reexport
 
 using JuLIP, NeighbourLists, StaticArrays, ForwardDiff, Calculus
-
-import JuLIP.Potentials: @analytic
 using JuLIP.Potentials: cutsw, cutsw_d, coscut, coscut_d
+using NBodyIPs: NBodyFunction
+
 const cutsp = JuLIP.Potentials.fcut
 const cutsp_d = JuLIP.Potentials.fcut_d
 
 import Base: length
 import JuLIP: cutoff, energy, forces
-import JuLIP.Potentials: evaluate, evaluate_d
+import JuLIP.Potentials: evaluate, evaluate_d, @analytic
+import NBodyIPs: NBodyIP, bodyorder
 
-const CRg = CartesianRange
-const CInd = CartesianIndex
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
-export NBody, NBodyIP, Dictionary,
-       gen_tuples, gen_basis
-
-# somehow @reexport doesn't catch this one
-export @analytic
+export NBody, Dictionary,
+       gen_tuples, gen_basis,
+       @analytic
 
 
-
+# TODO: rethink whether to rename this to PolyDictionary
 @pot struct Dictionary{TT, TDT, TC, TDC, T}
    transform::TT              # distance transform
    transform_d::TDT            # derivative of distance transform
@@ -103,6 +100,7 @@ Known symbols for the cutoff are
 Dictionary
 
 @inline invariants(D::Dictionary, r) = invariants(D.transform.(r))
+
 @inline function invariants_d(D::Dictionary, r)
    DI1, DI2 = invariants_d(D.transform.(r))
    t_d = D.transform_d.(r)'
@@ -112,8 +110,8 @@ end
 # @inline evaluate(D::Dictionary, α, r) = _m1(α, r)
 # @inline evaluate_d(D::Dictionary, α, r) = _m1d(α, r)
 
-
 @inline fcut(D::Dictionary, r::Number) = D.fcut(r)
+
 @inline fcut_d(D::Dictionary, r::Number) = D.fcut_d(r)
 
 @inline cutoff(D::Dictionary) = D.rcut
@@ -189,8 +187,9 @@ end
 #           Polynomials of Invariants
 # ==================================================================
 
+# TODO: rename to PolyNBody
 
-@pot struct NBody{N, M, T, TD} <: AbstractCalculator
+@pot struct NBody{N, M, T, TD} <: NBodyFunction{N}
    t::VecTup{M}               # tuples M = #edges + 1
    c::Vector{T}               # coefficients
    D::TD                      # Dictionary (or nothing)
@@ -225,7 +224,7 @@ NBody(t::Tup, c, D) =
       NBody([t], [c], D)
 
 # collect multiple basis functions represented as NBody's into a single NBody
-# (mostly for performance reasons)
+# (for performance reasons)
 NBody(B::Vector{TB}, c, D) where {TB <: NBody} =
       NBody([b.t[1] for b in B], c, D)
 
@@ -234,47 +233,13 @@ NBody(c::Float64) =
       NBody([Tup{0}()], [c], nothing, Val(1))
 
 bodyorder(V::NBody{N}) where {N} = N
+
 dim(V::NBody{N,M}) where {N, M} = M-1
+
 # number of basis functions which this term is made from
 length(V::NBody) = length(V.t)
 
-# --------------------- Calculator Functionality for NBody
-# TODO: site energies
-
 cutoff(V::NBody) = cutoff(V.D)
-
-# energy and forces of the 0-body term
-energy(V::NBody{1,0,T}, at::Atoms{T}) where {T} =
-      sum(V.c) * length(at)
-
-forces(V::NBody{1,0,T}, at::Atoms{T}) where {T} =
-      zeros(SVector{3, T}, length(at))
-
-
-function energy(V::NBody{N, M, T}, at::Atoms{T}) where {N, M, T}
-   nlist = neighbourlist(at, cutoff(V))
-   Es = maptosites!(r -> V(r), zeros(length(at)), nbodies(N, nlist))
-   return sum_kbn(Es)
-end
-
-function forces(V::NBody{N, M, T}, at::Atoms{T}) where {N, M, T}
-   nlist = neighbourlist(at, cutoff(V))
-   return scale!(maptosites_d!(r -> (@D V(r)),
-                 zeros(SVector{3, T}, length(at)),
-                 nbodies(N, nlist)), -1)
-end
-
-function forces(V::NBody{4, M, T}, at::Atoms{T}) where {M, T}
-   nlist = neighbourlist(at, cutoff(V))
-   evalfun = r -> evaluate(V, r)
-   cfg = ForwardDiff.GradientConfig(evalfun, (@SVector ones(6)),
-            ForwardDiff.Chunk{6}())
-   return scale!(maptosites_d!(
-                 r -> ForwardDiff.gradient(evalfun, r, cfg, Val(false)),
-                 zeros(SVector{3, T}, length(at)),
-                 nbodies(4, nlist)), -1)
-end
-
 
 
 # ---------------  evaluate the n-body terms ------------------
@@ -286,6 +251,9 @@ end
 # with the first 6 entries restricted by degree and the 7th tuple must
 # be in the range 0, …, 5
 
+# TODO: explore StaticPolynomials
+
+evaluate(V::NBody{1}) = sum(V.c)
 
 function evaluate(V::NBody, r::SVector{M, T}) where {M, T}
    # @assert ((N*(N-1))÷2 == M == K-1 == dim(V) == M)
@@ -297,12 +265,8 @@ function evaluate(V::NBody, r::SVector{M, T}) where {M, T}
    return E * fcut(V.D, r)
 end
 
-# with AD
-evaluate_d(V::NBody, r::AbstractVector) =
-   ForwardDiff.gradient(r_ -> evaluate(V, r_), r)
-
 # without AD
-function evaluate_d(V::NBody{3}, r::SVector{M, T}) where {M, T}
+function evaluate_d(V::NBody, r::SVector{M, T}) where {M, T}
    E = zero(T)
    dM = zero(SVector{M, T})
    dE = zero(SVector{M, T})
@@ -324,23 +288,10 @@ function evaluate_d(V::NBody{3}, r::SVector{M, T}) where {M, T}
 end
 
 
-
 # ==================================================================
-#           The Final Interatomic Potential
+#    construct an NBodyIP from a basis
 # ==================================================================
-# TODO: site energies
 
-"""
-`NBodyIP` : wraps `NBody`s into a JuLIP calculator, defining
-`energy`, `forces` and `cutoff`.
-"""
-struct NBodyIP <: AbstractCalculator
-   orders::Vector{NBody}
-end
-
-cutoff(V::NBodyIP) = maximum( cutoff.(V.orders) )
-energy(V::NBodyIP, at::Atoms) = sum( energy(Vn, at)  for Vn in V.orders )
-forces(V::NBodyIP, at::Atoms) = sum( forces(Vn, at)  for Vn in V.orders )
 
 function NBodyIP(basis, coeffs)
    orders = NBody[]
@@ -355,7 +306,6 @@ function NBodyIP(basis, coeffs)
    end
    return NBodyIP(orders)
 end
-
 
 
 
@@ -401,23 +351,20 @@ gen_tuples(N, deg; tuplebound = (α -> (0 < degree(α) <= deg))) =
 gen_tuples(vN::Val{2}, vK::Val{2}, deg, tuplebound) =
    Tup{2}[ (j, 0)   for j = 1:deg ]
 
-# ------------- 3-body tuples -------------
 
 function gen_tuples(vN::Val{N}, vK::Val{K}, deg, tuplebound) where {N, K}
    t = Tup{K}[]
    degs1, degs2 = degrees(vN)
-   Ilo = CInd{K}(zeros(Int, K)...)
+   Ilo = CartesianIndex{K}(zeros(Int, K)...)
    idegs = [ceil.(Int, deg ./ [degs1...]); length(degs2)-1]
-   Ihi = CInd{K}(idegs...)
-   for I in CRg(Ilo, Ihi)
+   Ihi = CartesianIndex{K}(idegs...)
+   for I in CartesianRange(Ilo, Ihi)
       if tuplebound(I.I)
          push!(t, I.I)
       end
    end
    return t
 end
-
-# ------------- 4-body tuples -------------
 
 
 """
@@ -429,4 +376,5 @@ gen_basis(N, D, deg; kwargs...) = gen_basis(gen_tuples(N, deg; kwargs...), D)
 
 gen_basis(ts::VecTup, D::Dictionary) = [NBody(t, 1.0, D) for t in ts]
 
-end
+
+end # module

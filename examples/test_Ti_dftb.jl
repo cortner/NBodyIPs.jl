@@ -1,6 +1,5 @@
 
 using JuLIP, NBodyIPs, PyCall, ProgressMeter, ASE
-using NBodyIPs.Invariants
 
 function load_data(Nconfig = 411)   # (how can I load 411?)
    fname = "~/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_T2000.xyz"
@@ -21,9 +20,9 @@ function load_data(Nconfig = 411)   # (how can I load 411?)
    return data
 end
 
-data = load_data(250)
-train_data = data[1:220]
-test_data = data[221:250]
+data = load_data(400)
+train_data = data[1:300]
+test_data = data[301:400]
 
 # (3.5 x r0 is the cell dimension)
 r0 = rnn(:Ti)
@@ -42,41 +41,40 @@ BASES = []
 
 B1 = [NBody(1.0)]
 
-rcut2 = 8.5
-D2 = Dictionary(InvInvariants, rcut2)
-B2 = gen_basis(2, D2, 12)
+rcut2 = 9.2
+rcut3 = 6.5
 
-push!(BASES, ([B1; B2], D2, "2 / $(length(B2)) / $rcut2"))
+TRANSFORM = (@analytic r -> (2.9/r)^3)
+CUTOFF2 = (:cos, 0.66*rcut2, rcut2)
+
+D2 = Dictionary(TRANSFORM, CUTOFF2)
+B2 = gen_basis(2, D2, 14)
+
+for deg in [10,12,14,16]
+   B = [B1; gen_basis(2, D2, deg)]
+   push!(BASES, (B, D2, "2 / $(length(B)) / $rcut2"))
+end
 
 println("   first a few 3-body bases ...")
 for (deg, rcut) in zip( [6, 8, 10],
-                        [4.5, 4.5, 4.5, 4.5] )
-   D = Dictionary(InvInvariants, rcut)
+                        [rcut3, rcut3, rcut3, rcut3] )
+   CUTOFF3 = (:cos, 0.66*rcut, rcut)
+   D = Dictionary(TRANSFORM, CUTOFF3)
    B3 = gen_basis(3, D, deg)
    B = [B1; B2; B3]
-   push!(BASES, (B, D, "2+3 / $(length(B)) / 8.5+$(round(rcut,2))"))
+   push!(BASES, (B, D, "2+3 / $(length(B)) / $rcut2+$rcut"))
 end
 
-# # add a few 4-body
-# rcut3 = 2.3 * r0
-# D3 = Dictionary(InvInvariants, rcut3)
-# B3 = gen_basis(3, D3, 10)
-# for (deg, rcut) in zip([4, 6, 8],
-#                        [1.7, 1.7, 1.7] * r0)
-#    D = Dictionary(InvInvariants, rcut)
-#    B4 = gen_basis(4, D, deg)
-#    B = [B3; B4]
-#    push!(BASES, (B, D, "3+4 / $(length(B3))+$(length(B4)) / $(round(rcut3,2))+$(round(rcut,2))") )
-# end
-
+D3 = Dictionary(TRANSFORM, (:cos, 0.66*rcut3, rcut3))
+B3 = gen_basis(3, D3, 8)
 for (deg, rcut) in zip([4, 6, 8],
                        [4.5, 4.5, 4.5, 4.5])
-   D = Dictionary(InvInvariants, rcut)
+   CUTOFF4 = (:cos, 0.66*rcut, rcut)
+   D = Dictionary(TRANSFORM, CUTOFF4)
    B4 = gen_basis(4, D, deg)
-   B = [B1; B2; B4]
-   push!(BASES, (B, D, "2+4 / $(length(B2))+$(length(B4)) / $rcut2+$(round(rcut,2))") )
+   B = [B1; B2; B3; B4]
+   push!(BASES, (B, D, "2+3+4 / $(length(B)) / $rcut2...$rcut") )
 end
-#
 
 rmsE = Float64[]
 rmsF = Float64[]
@@ -92,8 +90,8 @@ for (B, D, description) in BASES
    # standard least squares (see NBodyIPs/src/fitting.jl)
    # nforces = number of (randomly chosen) forces per configuration added
    #           to the LSQ problem
-   ndata = min(length(train_data), length(B))
-   c = regression(B, train_data[1:ndata], nforces = 20, stab = 0.0)
+   ndata = min(length(train_data), 2 * length(B))
+   c = regression(B, train_data[1:ndata], nforces = 50, stab = 0.0)
    @show norm(c, Inf)
    # construct an IP from the the basis and the weights
    IP = NBodyIP(B, c)
@@ -107,6 +105,10 @@ for (B, D, description) in BASES
    println("   F-rms, F-mae on testset = ", rF, ", ", mF)
 end
 
+using JLD
+JLD.save("backup.jld", "desc", [B[3] for B in BASES],
+         "rmsE", rmsE, "rmsF", rmsF, "maeE", maeE, "maeF", maeF)
+
 using DataFrames
 df = DataFrame(:desc => [B[3] for B in BASES])
 df[Symbol("rms-E")] = rmsE
@@ -115,3 +117,47 @@ df[Symbol("mae-E")] = maeE
 df[Symbol("mae-F")] = maeF
 println("Energy and Force Errors for Ti-DFTB Database: ")
 println(df)
+
+
+
+
+
+
+# using BenchmarkTools
+#
+# data = load_data(1)
+# r0 = rnn(:Ti)
+# at = data[1][1]
+#
+# D3 = Dictionary(InvInvariants,5.0)
+# B3 = gen_basis(3, D3, 10)
+# c3 = rand(length(B3))
+# V3 = NBody(B3, c3, D3)
+# @btime energy($V3, $at)
+# @btime forces($V3, $at)
+#
+# D4 = Dictionary(InvInvariants, 5.0)
+# B4 = gen_basis(4, D4, 6)
+# c4 = rand(length(B4))
+# V4 = NBody(B4, c4, D4)
+# @btime energy($V4, $at)
+# @btime forces($V4, $at)
+
+
+
+# B, D, desc = BASES[end]
+# at = data[1][1]
+# B
+# Es = [energy(b, at) for b in B]
+# forces(B[10], at)
+# IP = NBodyIP(B)
+# IP
+# energy(IP, at)
+#
+#
+# B, D, desc = BASES[end]
+# at = data[1][1]
+# Es = [energy(b, at) for b in B2]
+# display(Es)
+#
+# @show Es
