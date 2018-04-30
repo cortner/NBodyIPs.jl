@@ -204,7 +204,7 @@ degrees(::Val{5}) = ( 1, 2, 2, 3, 3, 4, 4, 5, 5, 6), (0, 3, 3, 4, 4, 4, 4, 4, 5,
 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
 7)
 
-function _invariants_Q10(x::SVector{10, T}) where {T}
+function invariants_Q10(x::SVector{10, T}) where {T}
 
    return SVector{10, T}(
       # ---------------------------- primary invariants
