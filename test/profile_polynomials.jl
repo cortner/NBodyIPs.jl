@@ -219,3 +219,25 @@ df(r) = StaticPolynomials.jacobian(INV6Q, r2Q(r)) * R2Q
 r = @SVector rand(6)
 @btime f($r)
 @btime df($r)
+
+using StaticArrays, BenchmarkTools
+using DynamicPolynomials: @polyvar
+import XGrad, ForwardDiff, StaticPolynomials
+r = @SVector rand(6)
+ra = rand(6)
+@polyvar x1 x2 x3 x4 x5 x6
+P = StaticPolynomials.Polynomial(x1^3*(x2+x3+x4+x5) + x1*(x2^3+x3^3+x4^3+x5^3) + x2^3*(x3+x4+x6) + x2*(x3^3+x4^3+x6^3) + (x3^3+x4^3)*(x5+x6) + (x3+x4)*(x5^3+x6^3) +  x5^3*x6 + x5*x6^3)
+p(x) = (x[1]^3*(x[2]+x[3]+x[4]+x[5]) + x[1]*(x[2]^3+x[3]^3+x[4]^3+x[5]^3) + x[2]^3*(x[3]+x[4]+x[6])) + (x[2]*(x[3]^3+x[4]^3+x[6]^3) + (x[3]^3+x[4]^3)*(x[5]+x[6]) + (x[3]+x[4])*(x[5]^3+x[6]^3) +  x[5]^3*x[6] + x[5]*x[6]^3)
+∇p(x) = XGrad.xdiff(p; x=ra)
+@btime StaticPolynomials.evaluate($P, $r)
+@btime StaticPolynomials.gradient($P, $r)
+@btime p($r)
+@btime ForwardDiff.gradient($p, $r)
+∇p(r)
+
+
+
+f(x) = ((x[1]*x[2])*x[3] + (x[1]*x[4])*x[5]) + ((x[2]*x[4])*x[6] + (x[3]*x[5])*x[6])
+r = @SVector rand(6)
+ra = rand(6)
+XGrad.xdiff(f, x=ra)
