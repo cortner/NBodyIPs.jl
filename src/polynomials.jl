@@ -226,7 +226,7 @@ NBody(t::Tup, c, D) =
 # collect multiple basis functions represented as NBody's into a single NBody
 # (for performance reasons)
 NBody(B::Vector{TB}, c, D) where {TB <: NBody} =
-      NBody([b.t[1] for b in B], c, D)
+      NBody([b.t[1] for b in B], c .* [b.c[1] for b in B], D)
 
 # 1-body term (on-site energy)
 NBody(c::Float64) =
