@@ -116,17 +116,31 @@ r10 = @SVector rand(10)
 
 
 
-# using StaticArrays, XGrad
-# fba30(x) = (x[1]*(x[5]^3*(x[6] + x[7]) + x[5]*(x[6]^3 + x[7]^3) + x[6]^3*x[7] + x[6]*x[7]^3) +
-#        x[2]*(x[5]^3*(x[8]+x[9]) + x[5]*(x[8]^3+x[9]^3) + x[8]^3*x[9] + x[8]*x[9]^3) +
-#        x[3]*(x[6]^3*(x[8]+x[10]) + x[6]*(x[8]^3+x[10]^3) + x[8]^3*x[10] + x[8]*x[10]^3) +
-#        x[4]*(x[7]^3*(x[9]+x[10]) + x[7]*(x[9]^3+x[10]^3) + x[9]^3*x[10] + x[9]*x[10]^3) )
-# r10 = @SVector rand(10)
-# fba_d = XGrad.xdiff(fba30, ctx = Dict(:codegen => XGrad.VectorCodeGen()), x=r10)
-#
-#
-# using StaticArrays
-# using XGrad
-# f(x) = ((x[1]*x[2])*x[3] + (x[1]*x[4])*x[5]) + ((x[2]*x[4])*x[6] + (x[3]*x[5])*x[6])
-# r = @SVector rand(6)
-# df = XGrad.xdiff(f, ctx=Dict(:codegen => VectorCodeGen()), x=r)
+using StaticArrays, XGrad, BenchmarkTools
+
+XGrad.@diffrule +(x::Real, y::Real, z::Real) x ds
+XGrad.@diffrule +(x::Real, y::Real, z::Real) y ds
+XGrad.@diffrule +(x::Real, y::Real, z::Real) z ds
+XGrad.@diffrule +(x1::Real, x2::Real, x3::Real, x4::Real) x1 ds
+XGrad.@diffrule +(x1::Real, x2::Real, x3::Real, x4::Real) x2 ds
+XGrad.@diffrule +(x1::Real, x2::Real, x3::Real, x4::Real) x3 ds
+XGrad.@diffrule +(x1::Real, x2::Real, x3::Real, x4::Real) x4 ds
+XGrad.@diffrule *(x::Real, y::Real, z::Real) x y*z*ds
+XGrad.@diffrule *(x::Real, y::Real, z::Real) y x*z*ds
+XGrad.@diffrule *(x::Real, y::Real, z::Real) z x*y*ds
+
+fba30(x) =( (x[1]*((x[5]^3*(x[6] + x[7]) + x[5]*(x[6]^3 + x[7]^3)) + (x[6]^3*x[7] + x[6]*x[7]^3)) +
+       x[2]*((x[5]^3*(x[8]+x[9]) + x[5]*(x[8]^3+x[9]^3)) + (x[8]^3*x[9] + x[8]*x[9]^3))) +
+       (x[3]*((x[6]^3*(x[8]+x[10]) + x[6]*(x[8]^3+x[10]^3)) + (x[8]^3*x[10] + x[8]*x[10]^3)) +
+       x[4]*((x[7]^3*(x[9]+x[10]) + x[7]*(x[9]^3+x[10]^3)) + (x[9]^3*x[10] + x[9]*x[10]^3))) )
+r10 = @SVector rand(10)
+fba_d = XGrad.xdiff(fba30, ctx = Dict(:codegen => XGrad.VectorCodeGen()), x=r10)
+@btime fba30($r10)
+@btime fba_d($r10)
+
+using StaticArrays, XGrad
+f(x) = ((x[1]*x[2])*x[3] + (x[1]*x[4])*x[5]) + ((x[2]*x[4])*x[6] + (x[3]*x[5])*x[6])
+r = @SVector rand(6)
+df = XGrad.xdiff(f, ctx=Dict(:codegen => VectorCodeGen()), x=r)
+@btime f($r)
+@btime df($r)
