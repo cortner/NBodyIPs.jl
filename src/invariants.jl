@@ -123,8 +123,8 @@ function invariants_d(x::SVector{6, T}) where {T}
    x2 = x.*x
    x3 = x2.*x
    x4 = x3.*x
-   o = @SVector ones(6)
-   z = @SVector zeros(6)
+   o = @SVector ones(T, 6)
+   z = @SVector zeros(T, 6)
    ∇I2 = @SVector [x[6], x[5], x[4], x[3], x[2], x[1]]
    ∇I4 = @SVector [ x[2]*x[3]+x[4]*x[5],
                     x[1]*x[3]+x[4]*x[6],
@@ -140,40 +140,10 @@ function invariants_d(x::SVector{6, T}) where {T}
    ∇PV2 = A * x3 + 3 * (x2 .* Ax)
    ∇PV3 = 5 * x4
 
-   return hcat(o, ∇I2, 2*x, ∇I4, 3*x2, 4*x3, z, ∇PV1, ∇PV2,
-               ∇PV3, 2*PV1*∇PV1, PV3*∇PV2 + PV2*∇PV3)'
+   return hcat(o, ∇I2, 2*x, ∇I4, 3*x2, 4*x3)',
+          hcat(z, ∇PV1, ∇PV2, ∇PV3, 2*PV1*∇PV1, PV3*∇PV2 + PV2*∇PV3)'
 end
 
-
-# import StaticPolynomials
-# using DynamicPolynomials: @polyvar
-#
-# @polyvar Q1 Q2 Q3 Q4 Q5 Q6
-#
-# const INV6Q = StaticPolynomials.system(
-#    [  Q1,
-#       Q2^2 + Q3^2 + Q4^2,
-#       Q2 * Q3 * Q4,
-#       Q3^2 * Q4^2 + Q2^2 * Q4^2 + Q2^2 * Q3^2,
-#       Q5^2 + Q6^2,
-#       Q6^3 - 3*Q5^2 * Q6,
-#       1.0,
-#       Q6 * (2*Q2^2 - Q3^2 - Q4^2) + √3 * Q5 * (Q3^2 - Q4^2),
-#       (Q6^2 - Q5^2) * (2*Q2^2 - Q3^2 - Q4^2) - 2 * √3 * Q5 * Q6 * (Q3^2 - Q4^2),
-#       Q6 * (2*Q3^2 * Q4^2 - Q2^2 * Q4^2 - Q2^2 * Q3^2) + √3 * Q2 * (Q2^2 * Q4^2 - Q2^2 * Q3^2),
-#       (Q6^2 - Q5^2)*(2*Q3^2*Q4^2 - Q2^2*Q4^2 -Q2^2*Q3^2) - 2*√3 * Q5 * Q6 * (Q2^2*Q4^2 - Q2^2*Q3^2),
-#       (Q3^2 - Q4^2) * (Q4^2 - Q2^2) * (Q2^2 - Q3^2) * Q5 * (3*Q6^2 - Q5^2)
-#    ])
-#
-# @inline _invQ6_2_(Q::SVector{6}) = StaticPolynomials.evaluate(INV6Q, Q)
-# @inline _invQ6_2_d(Q::SVector{6}) = StaticPolynomials.jacobian(INV6Q, Q)
-#
-# @inline function invariants_d(r::SVector{6, T}) where {T}
-#    J12 = _invQ6_2_d(R2Qxr2ρ * r) * R2Qxr2ρ
-#    I1 = @SVector [1,2,3,4,5,6]
-#    I2 = @SVector [7,8,9,10,11,12]
-#    return J12[I1,:], J12[I2,:]
-# end
 
 
 # ------------------------------------------------------------------------
