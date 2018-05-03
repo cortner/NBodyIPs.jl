@@ -88,112 +88,69 @@ degrees(::Val{3}) = (1, 2, 3), (0,)
 
 degrees(::Val{4}) = (1, 2, 3, 4, 2, 3), (0, 3, 4, 5, 6, 9)
 
-const _2 = 2.0^(-0.5)
-const _3 = 3.0^(-0.5)
-const _6 = 6.0^(-0.5)
-const _12 = 12.0^(-0.5)
 
-# permutation to account for the different ordering used here, vs Schmelzer et al.
-const r2ρ = @SMatrix [   1 0 0 0 0 0
-                         0 1 0 0 0 0
-                         0 0 1 0 0 0
-                         0 0 0 0 0 1
-                         0 0 0 0 1 0
-                         0 0 0 1 0 0 ]
+const A = @SMatrix [0 1 1 1 1 0
+                    1 0 1 1 0 1
+                    1 1 0 0 1 1
+                    1 1 0 0 1 1
+                    1 0 1 1 0 1
+                    0 1 1 1 1 0]
 
-const R2Q = @SMatrix [ _6     _6     _6    _6     _6     _6
-                        _2      0      0   -_2      0      0
-                         0     _2      0     0    -_2      0
-                         0      0     _2     0      0    -_2
-                         0    0.5   -0.5     0    0.5   -0.5
-                        _3   -_12   -_12    _3   -_12   -_12 ]
+function invariants(x::SVector{6, T}) where {T}
+   x2 = x.*x
+   x3 = x2.*x
+   x4 = x3.*x
 
-const R2Qxr2ρ = R2Q * r2ρ
+   I1 = sum(x)
+   I2 = x[1]*x[6] + x[2]*x[5] + x[3]*x[4]
+   I3 = sum(x2)
+   I4 = x[1]*x[2]*x[3] + x[1]*x[4]*x[5] + x[2]*x[4]*x[6] + x[3]*x[5]*x[6]
+   I5 =  sum(x3)
+   I6 = sum(x4)
 
-@inline invariants(r::SVector{6}) = _invariants_Q6(R2Qxr2ρ * r)
+   Ax = A*x
+   PV1 = dot(x2, Ax)
+   PV2 = dot(x3, Ax)
+   PV3 = dot(x4, x)
+   I11 = PV1 * PV1
+   I12 = PV2 * PV3
 
-@inline function invariants_d(r::SVector{6, T}) where {T}
-   J12 = ForwardDiff.jacobian( r_ -> vcat(invariants(r_)...), r )
-   I1 = @SVector [1,2,3,4,5,6]
-   I2 = @SVector [7,8,9,10,11,12]
-   return J12[I1,:], J12[I2,:]
+   return SVector(I1, I2, I3, I4, I5, I6),
+          SVector(one(T), PV1, PV2, PV3, I11, I12)
 end
 
-function _invariants_Q6(Q::SVector{6, T}) where {T}
-   Q2 = Q .* Q
-   Q2_34, Q2_24, Q2_23 = Q2[3] * Q2[4], Q2[2] * Q2[4], Q2[2] * Q2[3]
-   rt3 = sqrt(3.0)
-   Q_56 = Q[5] * Q[6]
+function invariants_d(x::SVector{6, T}) where {T}
+   x2 = x.*x
+   x3 = x2.*x
+   x4 = x3.*x
+   o = @SVector ones(T, 6)
+   z = @SVector zeros(T, 6)
+   ∇I2 = @SVector [x[6], x[5], x[4], x[3], x[2], x[1]]
+   ∇I4 = @SVector [ x[2]*x[3]+x[4]*x[5],
+                    x[1]*x[3]+x[4]*x[6],
+                    x[1]*x[2]+x[5]*x[6],
+                    x[1]*x[5]+x[2]*x[6],
+                    x[1]*x[4]+x[3]*x[6],
+                    x[2]*x[4]+x[3]*x[5] ]
+   Ax = A*x
+   PV1 = dot(x2, Ax)
+   PV2 = dot(x3, Ax)
+   PV3 = dot(x4, x)
+   ∇PV1 = A * x2 + 2 * (x .* Ax)
+   ∇PV2 = A * x3 + 3 * (x2 .* Ax)
+   ∇PV3 = 5 * x4
 
-   return SVector{6, T}(
-      # ---------------------------- primary invariants
-      # I1
-      (Q[1]),
-      # I2
-      (Q2[2] + Q2[3] + Q2[4]),
-      # I3
-      (Q[2] * Q[3] * Q[4]),
-      # I4
-      (Q2_34 + Q2_24 + Q2_23),
-      # I5
-      (Q2[5] + Q2[6]),
-      # I6
-      (Q[6] * (Q2[6] - 3*Q2[5]))
-   ),
-      # ---------------------------- secondary invariants
-   SVector{6, T}(
-      # sneak in an additional secondary "invariant"
-      1.0,
-      # I7
-      Q[6] * (2*Q2[2] - Q2[3] - Q2[4]) + rt3 * Q[5] * (Q2[3] - Q2[4]),
-      # I8
-      (Q2[6] - Q2[5]) * (2*Q2[2] - Q2[3] - Q2[4]) - 2 * rt3 * Q_56 * (Q2[3] - Q2[4]),
-      # I9
-      Q[6] * (2*Q2_34 - Q2_24 - Q2_23) + rt3 * Q[5] * (Q2_24 - Q2_23),
-      # I10
-      (Q2[6] - Q2[5])*(2*Q2_34 - Q2_24 - Q2_23) - 2 * rt3 * Q_56 * (Q2_24 - Q2_23),
-      # I11
-      (Q2[3] - Q2[4]) * (Q2[4] - Q2[2]) * (Q2[2] - Q2[3]) * Q[5] * (3*Q2[6] - Q2[5])
-   )
+   return hcat(o, ∇I2, 2*x, ∇I4, 3*x2, 4*x3)',
+          hcat(z, ∇PV1, ∇PV2, ∇PV3, 2*PV1*∇PV1, PV3*∇PV2 + PV2*∇PV3)'
 end
 
-# import StaticPolynomials
-# using DynamicPolynomials: @polyvar
-#
-# @polyvar Q1 Q2 Q3 Q4 Q5 Q6
-#
-# const INV6Q = StaticPolynomials.system(
-#    [  Q1,
-#       Q2^2 + Q3^2 + Q4^2,
-#       Q2 * Q3 * Q4,
-#       Q3^2 * Q4^2 + Q2^2 * Q4^2 + Q2^2 * Q3^2,
-#       Q5^2 + Q6^2,
-#       Q6^3 - 3*Q5^2 * Q6,
-#       1.0,
-#       Q6 * (2*Q2^2 - Q3^2 - Q4^2) + √3 * Q5 * (Q3^2 - Q4^2),
-#       (Q6^2 - Q5^2) * (2*Q2^2 - Q3^2 - Q4^2) - 2 * √3 * Q5 * Q6 * (Q3^2 - Q4^2),
-#       Q6 * (2*Q3^2 * Q4^2 - Q2^2 * Q4^2 - Q2^2 * Q3^2) + √3 * Q2 * (Q2^2 * Q4^2 - Q2^2 * Q3^2),
-#       (Q6^2 - Q5^2)*(2*Q3^2*Q4^2 - Q2^2*Q4^2 -Q2^2*Q3^2) - 2*√3 * Q5 * Q6 * (Q2^2*Q4^2 - Q2^2*Q3^2),
-#       (Q3^2 - Q4^2) * (Q4^2 - Q2^2) * (Q2^2 - Q3^2) * Q5 * (3*Q6^2 - Q5^2)
-#    ])
-#
-# @inline _invQ6_2_(Q::SVector{6}) = StaticPolynomials.evaluate(INV6Q, Q)
-# @inline _invQ6_2_d(Q::SVector{6}) = StaticPolynomials.jacobian(INV6Q, Q)
-#
-# @inline function invariants_d(r::SVector{6, T}) where {T}
-#    J12 = _invQ6_2_d(R2Qxr2ρ * r) * R2Qxr2ρ
-#    I1 = @SVector [1,2,3,4,5,6]
-#    I2 = @SVector [7,8,9,10,11,12]
-#    return J12[I1,:], J12[I2,:]
-# end
 
 
 # ------------------------------------------------------------------------
 #             5-BODY Invariants
 # ------------------------------------------------------------------------
 
-# TODO
-
+#Invariants up to degree 7 only.
 # COPIED FROM SLACK:
 # For the 5-body, if I am right, the number of primary invariants is 10 with
 # degrees : [ 1, 2, 2, 3, 3, 4, 4, 5, 5, 6 ]. The number of secondary for each
@@ -201,9 +158,6 @@ end
 # in total 133 secondary of degree less than 9. That’s quite a lot. Some of
 # them have very long expressions.
 
-degrees(::Val{5}) = (1, 2, 2, 3, 3, 4, 4, 5, 5, 6),
-   (0,     # 1 x degree 0
-    3, 3,  # 2 x degree 3
-    4, 4, 4, 4, 4,   # 5 x degree 4
-    5, 5, 5, 5, 5, 5, 5, 5,  # 8 x degree 5
-    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6)   # 15 x degree 6
+degrees(::Val{5}) = ( 1, 2, 2, 3, 3, 4, 4, 5, 5, 6), (0, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+7)

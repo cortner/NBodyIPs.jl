@@ -7,7 +7,6 @@ using JuLIP.Potentials: evaluate, evaluate_d
 
 all_invariants(r) = vcat(invariants(r)...)
 ad_invariants(r) = ForwardDiff.jacobian(all_invariants, r)
-r = 0.5 + rand(SVector{3,Float64})
 
 println("-------------------------------------------")
 println("   Testing implementation of `invariants`")
@@ -20,22 +19,22 @@ for r in [ (@SVector rand(3)), (@SVector rand(6)) ]
    @btime invariants($r)
    print("   invariants_d: ")
    @btime invariants_d($r)
-   print("  ad_inveriants: ")
-   @btime ad_invariants($r)
+   # print("  ad_invariants: ")
+   # @btime ad_invariants($r)
 end
 
+# TODO: test correctness of the invariants implementation
+#       against the MAGMA output
 
 println("[2] Correctness of gradients")
-for n = 1:10
-   r = 1.0 + rand(SVector{3,Float64})
-   dI1, dI2 = invariants_d(r)
-   @test [dI1; dI2] ≈ ad_invariants(r)
-   print(".")
+for dim in [3, 6]
+   for ntests = 1:3
+      r = 1.0 + SVector(rand(dim)...)
+      dI1, dI2 = invariants_d(r)
+      @test [dI1; dI2] ≈ ad_invariants(r)
+      print(".")
+   end
 end
-# for n = 1:10
-#    r = 1.0 + rand(SVector{6,Float64})
-#    @test hcat(invariants_d(r)...)' ≈ ad_invariants(Inv, r)
-# end
 println()
 
 println("[3] Symmetry")
@@ -93,12 +92,13 @@ print(" energy: "); @btime energy(V4, at)
 print(" forces: "); @btime forces(V4, at)
 
 
-println("[2] Gradient- test on triangles")
+println("[2] Gradient- test on simplices")
 for n = [1, 3]
    V3 = NBody( [tuple([rand(0:3, 3); 0]...) for n = 1:n], 1.0 + rand(n), D3 )
    for _  = 1:10
       r = 1.0 + rand(SVector{3,Float64})
       @test (@D V3(r)) ≈ ForwardDiff.gradient(r_ -> V3(r_), r)
+      print(".")
    end
 end
 
@@ -107,9 +107,10 @@ for n = [1, 3]
    for _  = 1:10
       r = 1.0 + rand(SVector{6,Float64})
       @test evaluate_d(V4, r) ≈ ForwardDiff.gradient(r_ -> V4(r_), r)
+      print(".")
    end
 end
-
+println()
 
 println("[3] finite-difference test on configurations")
 at = rattle!(bulk(:Cu, cubic=true) * (1,2,2), 0.02)
