@@ -24,7 +24,7 @@ only `NBodyIPs.Polynomials.NBody` is available for this. Currently,
 and `NBody` can only be serialised if its dictionary constructed using
 strings as parameters, e.g.,
 ```
-Dictionary("@analytic r -> ($(r0)/r)^3", "(:cos, $(0.66*rcut), $rcut)")
+Dictionary("@analytic r -> (\$(r0)/r)^3", "(:cos, \$(0.66*rcut), \$rcut)")
 ```
 since this allows the `Dictionary` to store the string from which it is
 constructed, which can be easily (de-)serialized.
