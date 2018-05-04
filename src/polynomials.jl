@@ -5,17 +5,14 @@
 The main types are
 * `Dictionary`: collects all the information about a basis
 * `NBody`: an N-body function wrapped into a JuLIP calculator
-* `NBodyIP`: a collection of N-body functions (of possibly different
-body-order and cut-off) wrapped into a JuLIP calculator.
+
+## Usage
 
 ## Notation
 
 * `N` : N-body
 * `M` : number of edges, i.e., M = N (N-1)/2
 * `K` : length of the tuples defining polynomials, K = M+1
-
-## Examples
-
 """
 module Polynomials
 
