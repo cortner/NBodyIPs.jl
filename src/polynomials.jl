@@ -48,7 +48,9 @@ export NBody, Dictionary,
    fcut::TC                   # cut-off function
    fcut_d::TDC                 # cut-off function derivative
    rcut::T                    # cutoff radius
+   s::Tuple{String,String}  # string to serialise it
 end
+
 
 
 # generated functions for fast evaluation of monomials
@@ -119,6 +121,16 @@ end
 
 # -------------------- generate dictionaries -------------------
 
+Dictionary(t, td, c, cd, rc) = Dictionary(t, td, c, cd, rc, ("",""))
+
+Dictionary(D::Dictionary, s::Tuple) =
+      Dictionary(D.transform, D.transform_d, D.fcut, D.fcut_d, D.rcut, s)
+
+function Dictionary(strans::String, scut::String)
+   D = Dictionary(eval(parse(strans)), eval(parse(scut)))
+   return Dictionary(D, (strans, scut))
+end
+
 Dictionary(ftrans::AnalyticFunction, fcut::AnalyticFunction, rcut::AbstractFloat) =
       Dictionary(ftrans.f, ftrans.f_d, fcut.f, fcut.f_d, rcut)
 
@@ -182,6 +194,14 @@ function fcut_analyse(args::Tuple)
    end
 end
 
+function Base.serialize(D::Dictionary)
+   if D.s[1] != "" && D.s[2] != ""
+      return D.s
+   end
+   error("This dictionary cannot be serialized")
+end
+
+Base.deserialize(::Type{Dictionary}, s::Tuple{String, String}) = Dictionary(s...)
 
 # ==================================================================
 #           Polynomials of Invariants
@@ -241,6 +261,13 @@ length(V::NBody) = length(V.t)
 
 cutoff(V::NBody) = cutoff(V.D)
 
+Base.serialize(V::NBody) = (bodyorder(V), V.t, V.c, serialize(V.D))
+
+Base.serialize(V::NBody{1}) = (1, V.t, V.c, nothing)
+
+Base.deserialize(::Type{NBody}, s) =
+   s[1] == 1 ? NBody(sum(s[3])) :
+   NBody(s[2], s[3], deserialize(Dictionary, s[4]), Val(s[1]))
 
 # ---------------  evaluate the n-body terms ------------------
 
