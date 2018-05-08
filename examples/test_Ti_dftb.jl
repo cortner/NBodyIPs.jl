@@ -1,31 +1,10 @@
 
-using JuLIP, NBodyIPs, PyCall, ProgressMeter, ASE
+using NBodyIPs
 
-function load_data(Nconfig = 411)   # (how can I load 411?)
-   fname = "~/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_T2000.xyz"
-   @pyimport ase.io as ase_io
-   data = Tuple{Atoms{Float64, Int}, Float64, JVecsF}[]
-   @showprogress 0.1 "Loading Ti data ..." for n = 1:Nconfig
-      atpy = try
-         ase_io.read(fname, n-1)
-      catch
-         warn("Nconfig is apparently too large")
-         break
-      end
-      E = atpy[:get_potential_energy]()
-      F = atpy[:get_array]("force")' |> vecs
-      at = Atoms(ASEAtoms(atpy))
-      push!(data, (at, E, F))
-   end
-   return data
-end
-
-data = load_data(400)
+datafile = "~/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_vartemp_virials.xyz"
+data = NBodyIPs.Data.read(datafile, index="1:10")
 train_data = data[1:300]
 test_data = data[301:400]
-
-# (3.5 x r0 is the cell dimension)
-r0 = rnn(:Ti)
 
 # some notes on the orders of magnitude
 # E per atom ~ 6.0 eV, std ca 0.03

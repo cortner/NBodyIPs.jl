@@ -31,8 +31,6 @@ constructed, which can be easily (de-)serialized.
 """
 module IO
 
-import Base: read, write
-
 using JLD
 using NBodyIPs: NBodyIP
 using NBodyIPs.Polynomials: NBody, Dictionary
