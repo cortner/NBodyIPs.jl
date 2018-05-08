@@ -258,6 +258,14 @@ length(V::NBody) = length(V.t)
 
 cutoff(V::NBody) = cutoff(V.D)
 
+# This cannot be quite correct as I am implementing it here; it is probably
+#      correct only for the basic invariants that generate the rest
+# degree(V::NBody) = length(V) == 1 ? degree(V.valN, V.t[1])) :
+#        error("`degree` is only defined for `NBody` basis functions, length == 1")
+
+ispure(V::NBody) = (length(V) == 1) ? ispure(V.valN, V.t[1]) :
+       error("`ispure` is only defined for `NBody` basis functions, length == 1")
+
 Base.serialize(V::NBody) = (bodyorder(V), V.t, V.c, serialize(V.D))
 
 Base.serialize(V::NBody{1}) = (1, V.t, V.c, nothing)

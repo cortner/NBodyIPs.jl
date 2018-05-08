@@ -21,13 +21,33 @@ function invariants end
 function invariants_d end
 
 """
-`degrees(::Val{N})` where `N` is the body-order returns a
-tuple of polynomials degrees corresponding to the degrees of the
+`tdegrees(::Val{N})` where `N` is the body-order returns a
+tuple of polynomial <vector degrees> corresponding to the degrees of the
+individual invariants.  E.g. for 3-body, the primary invariants are
+r1 + r2 + r3, r1 r2 + r1 r3 + r2 r3, r1 r2 r3, while there is only a single
+secondary invariant 1.0. The corresponding
+degrees are `( (1,0,0), (1,1,0), (1,1,1) ), ( (0,0,0), )`. Note that only the
+lexicographically leading term is included. The remaining terms are
+obtained from permutation invariance.
+"""
+function degrees end
+
+"""
+need documentation here
+"""
+function corners end
+
+"""
+`tdegrees(::Val{N})` where `N` is the body-order returns a
+tuple of polynomial <total degrees> corresponding to the degrees of the
 individual invariants.  E.g. for 3-body, the invariants are
 r1 + r2 + r3, r1 r2 + r1 r3 + r2 r3, r1 r2 r3, and the corresponding
 degrees are `(1, 2, 3)`.
 """
-function degrees end
+function tdegrees(v)
+   deg1, deg2 = degrees(v)
+   return sum.(deg1), sum.(deg2)
+end
 
 """
 `bo2edges(N)` : bodyorder-to-edges
@@ -45,17 +65,25 @@ edges2bo(M::Integer) = (M <= 0) ? 1 : round(Int, 0.5 + sqrt(0.25 + 2 * M))
 #             2-BODY Invariants
 # ------------------------------------------------------------------------
 
+# r = (r12,)
+
 invariants(r::SVector{1, T}) where {T} =
    copy(r), SVector{1, T}(1.0)
 
 invariants_d(r::SVector{1, T}) where {T} =
    (@SMatrix [one(T)]), (@SMatrix [zero(T)])
 
-degrees(::Val{2}) = (1,), (0,)
+# tdegrees(::Val{2}) = (1,), (0,)
+
+degrees(::Val{2}) = (SVector(1,),), (SVector(0,),)
+
+corners(::Val{2}) = ( SVector(1,2), )
 
 # ------------------------------------------------------------------------
 #             3-BODY Invariants
 # ------------------------------------------------------------------------
+
+# r = (r12, r13, r23)
 
 # the 1.0 is a "secondary invariant"
 invariants(r::SVector{3, T}) where {T} =
@@ -71,23 +99,33 @@ invariants_d(  r::SVector{3, T}) where {T} =
                    r[2]*r[3]  r[1]*r[3]   r[1]*r[2] ]),
       (@SMatrix T[ 0.0        0.0         0.0  ])
 
-degrees(::Val{3}) = (1, 2, 3), (0,)
+# tdegrees(::Val{3}) = (1, 2, 3), (0,)
 
+degrees(::Val{3}) = ( SVector(1,0,0), SVector(1,1,0), SVector(1,1,1) ),
+                    ( SVector(0,0,0), )
+
+corners(::Val{3}) = ( SVector(1,2), SVector(1,3), SVector(2,3) )
 
 # ------------------------------------------------------------------------
 #             4-BODY Invariants
-#
-# this implementation is based on
-#    Schmelzer, A., Murrell, J.N.: The general analytic expression for
-#    S4-symmetry-invariant potential functions of tetra-atomic homonuclear
-#    molecules. Int. J. Quantum Chem. 28, 287–295 (1985).
-#    doi:10.1002/qua.560280210
-#
 # ------------------------------------------------------------------------
-# TODO: reorder to obtain increasing degree?
 
-degrees(::Val{4}) = (1, 2, 3, 4, 2, 3), (0, 3, 4, 5, 6, 9)
+# tdegrees(::Val{4}) = (1, 2, 2, 3, 3, 4), (0, 3, 4, 5, 6, 9)
 
+degrees(::Val{4}) = ( SVector(1,0,0,0,0,0),
+                      SVector(1,0,0,0,0,1),
+                      SVector(2,0,0,0,0,0),
+                      SVector(1,1,1,0,0,0),
+                      SVector(3,0,0,0,0,0),
+                      SVector(4,0,0,0,0,0) ),
+                    ( SVector(0,0,0,0,0,0),
+                      SVector(2,1,0,0,0,0),
+                      SVector(3,1,0,0,0,0),
+                      SVector(5,0,0,0,0,0),
+                      SVector(4,2,0,0,0,0),
+                      SVector(8,1,0,0,0,0) )
+
+corners(::Val{4}) = ( SVector(1,2), SVector(1,3), SVector(1,4), SVector(2,3), SVector(2,4), SVector(3,4) )
 
 const A = @SMatrix [0 1 1 1 1 0
                     1 0 1 1 0 1
@@ -105,7 +143,7 @@ function invariants(x::SVector{6, T}) where {T}
    I2 = x[1]*x[6] + x[2]*x[5] + x[3]*x[4]
    I3 = sum(x2)
    I4 = x[1]*x[2]*x[3] + x[1]*x[4]*x[5] + x[2]*x[4]*x[6] + x[3]*x[5]*x[6]
-   I5 =  sum(x3)
+   I5 = sum(x3)
    I6 = sum(x4)
 
    Ax = A*x
@@ -163,3 +201,22 @@ degrees(::Val{5}) = ( 1, 2, 2, 3, 3, 4, 4, 5, 5, 6), (0, 3, 3, 4, 4, 4, 4, 4, 5,
 7)
 
 # include("invariants5.jl")
+
+
+
+function ispure(vN::Val{N}, t::NTuple{K, Int}) where {N, K}
+   deg1, deg2 = degrees(vN)
+   d = sum( deg1[n] * t[n] for n = 1:K-1 ) + deg2[t[end]+1]
+   contains_x = zeros(N)
+   c = corners(vN)
+   for n = 1:length(d)
+      if d[n] != 0
+         contains_x[c[n]] += 1
+      end
+   end
+   @show contains_x
+   if length(find(contains_x)) == N
+      return true
+   end
+   return false
+end
