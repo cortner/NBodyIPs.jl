@@ -374,24 +374,25 @@ into a basis, or use `gen_basis` directly.
 `α -> (degree(α) <= deg)` i.e. the standard monomial degree. (note this is
 the degree w.r.t. lengths, not w.r.t. invariants!)
 """
-gen_tuples(N, deg; tuplebound = (α -> (0 < degree(α) <= deg))) =
-   gen_tuples(Val(N), Val(nedges(Val(N))+1), deg, tuplebound)
+gen_tuples(N, deg; purify = true,
+                   tuplebound = (α -> (0 < degree(α) <= deg))) =
+   gen_tuples(Val(N), Val(nedges(Val(N))+1), deg, purify, tuplebound)
 
 # ------------- 2-body tuples -------------
 
 # TODO: need to eventually generate 2-tuples
-gen_tuples(vN::Val{2}, vK::Val{2}, deg, tuplebound) =
+gen_tuples(vN::Val{2}, vK::Val{2}, deg, purify, tuplebound) =
    Tup{2}[ (j, 0)   for j = 1:deg ]
 
 
-function gen_tuples(vN::Val{N}, vK::Val{K}, deg, tuplebound) where {N, K}
+function gen_tuples(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where {N, K}
    t = Tup{K}[]
-   degs1, degs2 = degrees(vN)
+   degs1, degs2 = tdegrees(vN)
    Ilo = CartesianIndex{K}(zeros(Int, K)...)
    idegs = [ceil.(Int, deg ./ [degs1...]); length(degs2)-1]
    Ihi = CartesianIndex{K}(idegs...)
    for I in CartesianRange(Ilo, Ihi)
-      if tuplebound(I.I)
+      if tuplebound(I.I) &&  (!purify || ispure(vN, I.I))
          push!(t, I.I)
       end
    end
