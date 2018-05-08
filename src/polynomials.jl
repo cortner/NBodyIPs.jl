@@ -48,7 +48,7 @@ export NBody, Dictionary,
    s::Tuple{String,String}  # string to serialise it
 end
 
-
+include("fastpolys.jl")
 
 # generated functions for fast evaluation of monomials
 include("fast_monomials.jl")

@@ -1,11 +1,11 @@
 
-
+using StaticArrays
 
 using JuLIP: AbstractCalculator, Atoms, neighbourlist
-using NeighbourLists: nbodies, maptosites!, maptosites_d!
+using NeighbourLists: nbodies, maptosites!, maptosites_d!, virial!
 using JuLIP.Potentials: evaluate, evaluate_d
 
-import JuLIP: cutoff, energy, forces, site_energies
+import JuLIP: cutoff, energy, forces, site_energies, virial
 
 export NBodyIP,
        bodyorder
@@ -41,6 +41,13 @@ function forces(V::NBodyFunction, at::Atoms{T}) where {T}
                  nbodies(bodyorder(V), nlist)), -1)
 end
 
+function virial(V::NBodyFunction, at::Atoms{T}) where {T}
+   nlist = neighbourlist(at, cutoff(V))
+   temp = @MMatrix zeros(3,3)
+   virial!(r -> evaluate_d(V, r), temp, nbodies(bodyorder(V), nlist))
+   return SMatrix(temp)
+end
+
 # ------ special treatment of 1-body functions
 
 site_energies(V::NBodyFunction{1}, at::Atoms) =
@@ -49,6 +56,8 @@ site_energies(V::NBodyFunction{1}, at::Atoms) =
 forces(V::NBodyFunction{1}, at::Atoms{T}) where {T} =
       zeros(SVector{3, T}, length(at))
 
+virial(V::NBodyFunction{1}, at::Atoms{T}) where {T} =
+      zero(SMatrix{3, 3, T})
 
 """
 `NBodyIP` : wraps `NBodyFunction`s into a JuLIP calculator, defining
@@ -63,3 +72,4 @@ end
 cutoff(V::NBodyIP) = maximum( cutoff.(V.orders) )
 energy(V::NBodyIP, at::Atoms) = sum( energy(Vn, at)  for Vn in V.orders )
 forces(V::NBodyIP, at::Atoms) = sum( forces(Vn, at)  for Vn in V.orders )
+virial(V::NBodyIP, at::Atoms) = sum( virial(Vn, at)  for Vn in V.orders )
