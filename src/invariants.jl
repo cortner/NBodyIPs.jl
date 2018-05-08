@@ -207,14 +207,13 @@ end
 function ispure(vN::Val{N}, t::NTuple{K, Int}) where {N, K}
    deg1, deg2 = degrees(vN)
    d = sum( deg1[n] * t[n] for n = 1:K-1 ) + deg2[t[end]+1]
-   contains_x = zeros(N)
+   contains_x = zeros(Int, N)
    c = corners(vN)
    for n = 1:length(d)
       if d[n] != 0
          contains_x[c[n]] += 1
       end
    end
-   @show contains_x
    if length(find(contains_x)) == N
       return true
    end

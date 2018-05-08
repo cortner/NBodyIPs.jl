@@ -16,4 +16,14 @@ v4 = Val(4)
 @show ispure(v4, (0,0,1,0,1))
 
 
-NBodyIPs.gen_tuples(3, 5)
+NBodyIPs.gen_tuples(3, 10, purify=false)
+NBodyIPs.gen_tuples(3, 10, purify=true)
+
+NBodyIPs.gen_tuples(4, 6, purify=false)
+NBodyIPs.gen_tuples(4, 6, purify=true)
+
+NBodyIPs.gen_tuples(4, 8, purify=false)
+NBodyIPs.gen_tuples(4, 8, purify=true)
+
+NBodyIPs.gen_tuples(4, 10, purify=false)
+NBodyIPs.gen_tuples(4, 10, purify=true)

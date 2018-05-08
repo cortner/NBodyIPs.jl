@@ -352,8 +352,8 @@ compute the total degree of the polynomial represented by α.
 Note that `M = K-1` where `K` is the tuple length while
 `M` is the number of edges.
 """
-function degree(α::Tup{K}) where {K}
-   degs1, degs2 = degrees(Val(edges2bo(K-1)))
+function tdegree(α::Tup{K}) where {K}
+   degs1, degs2 = tdegrees(Val(edges2bo(K-1)))
    # primary invariants
    d = sum(α[j] * degs1[j] for j = 1:K-1)
    # secondary invariants
@@ -375,7 +375,7 @@ into a basis, or use `gen_basis` directly.
 the degree w.r.t. lengths, not w.r.t. invariants!)
 """
 gen_tuples(N, deg; purify = true,
-                   tuplebound = (α -> (0 < degree(α) <= deg))) =
+                   tuplebound = (α -> (0 < tdegree(α) <= deg))) =
    gen_tuples(Val(N), Val(nedges(Val(N))+1), deg, purify, tuplebound)
 
 # ------------- 2-body tuples -------------
