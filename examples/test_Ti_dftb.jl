@@ -1,10 +1,11 @@
 
-using NBodyIPs
+using NBodyIPs, JuLIP
 
-datafile = "~/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_vartemp_virials.xyz"
-data = NBodyIPs.Data.read(datafile, index="1:10")
-train_data = data[1:300]
-test_data = data[301:400]
+datafile = "~/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_vartemp_virials_ASE.xyz"
+data = NBodyIPs.Data.read(datafile, index=":")
+shuffle!(data)
+train_data = data
+test_data = data[1:10:end]
 
 # some notes on the orders of magnitude
 # E per atom ~ 6.0 eV, std ca 0.03
@@ -29,7 +30,7 @@ CUTOFF2 = (:cos, 0.66*rcut2, rcut2)
 D2 = Dictionary(TRANSFORM, CUTOFF2)
 B2 = gen_basis(2, D2, 14)
 
-for deg in [10,12,14,16]
+for deg in [10,12,14]
    B = [B1; gen_basis(2, D2, deg)]
    push!(BASES, (B, D2, "2 / $(length(B)) / $rcut2"))
 end
@@ -44,16 +45,16 @@ for (deg, rcut) in zip( [6, 8, 10],
    push!(BASES, (B, D, "2+3 / $(length(B)) / $rcut2+$rcut"))
 end
 
-D3 = Dictionary(TRANSFORM, (:cos, 0.66*rcut3, rcut3))
-B3 = gen_basis(3, D3, 8)
-for (deg, rcut) in zip([4, 6, 8],
-                       [4.5, 4.5, 4.5, 4.5])
-   CUTOFF4 = (:cos, 0.66*rcut, rcut)
-   D = Dictionary(TRANSFORM, CUTOFF4)
-   B4 = gen_basis(4, D, deg)
-   B = [B1; B2; B3; B4]
-   push!(BASES, (B, D, "2+3+4 / $(length(B)) / $rcut2...$rcut") )
-end
+# D3 = Dictionary(TRANSFORM, (:cos, 0.66*rcut3, rcut3))
+# B3 = gen_basis(3, D3, 8)
+# for (deg, rcut) in zip([4, 6, 8],
+#                        [4.5, 4.5, 4.5, 4.5])
+#    CUTOFF4 = (:cos, 0.66*rcut, rcut)
+#    D = Dictionary(TRANSFORM, CUTOFF4)
+#    B4 = gen_basis(4, D, deg)
+#    B = [B1; B2; B3; B4]
+#    push!(BASES, (B, D, "2+3+4 / $(length(B)) / $rcut2...$rcut") )
+# end
 
 rmsE = Float64[]
 rmsF = Float64[]
@@ -70,23 +71,23 @@ for (B, D, description) in BASES
    # nforces = number of (randomly chosen) forces per configuration added
    #           to the LSQ problem
    ndata = min(length(train_data), 2 * length(B))
-   c = regression(B, train_data[1:ndata], nforces = 50, stab = 0.0)
+   c = regression(B, train_data[1:ndata], nforces = Inf, stab = 0.0)
    @show norm(c, Inf)
    # construct an IP from the the basis and the weights
    IP = NBodyIP(B, c)
    # check error => the normalisation is w.r.t. natoms, not a genuine
    # relative error; we can discuss
-   rE, rF = rms(IP, test_data)
-   mE, mF = mae(IP, test_data)
+   rE, rF, mE, mF = fiterrors(IP, test_data)
    push!(rmsE, rE); push!(rmsF, rF)
    push!(maeE, mE); push!(maeF, mF)
    println("   E-rms, E-mae on testset = ", rE, ", ", mE)
    println("   F-rms, F-mae on testset = ", rF, ", ", mF)
 end
 
-using JLD
-JLD.save("backup.jld", "desc", [B[3] for B in BASES],
-         "rmsE", rmsE, "rmsF", rmsF, "maeE", maeE, "maeF", maeF)
+
+# using JLD
+# JLD.save("backup.jld", "desc", [B[3] for B in BASES],
+#          "rmsE", rmsE, "rmsF", rmsF, "maeE", maeE, "maeF", maeF)
 
 using DataFrames
 df = DataFrame(:desc => [B[3] for B in BASES])
@@ -96,47 +97,3 @@ df[Symbol("mae-E")] = maeE
 df[Symbol("mae-F")] = maeF
 println("Energy and Force Errors for Ti-DFTB Database: ")
 println(df)
-
-
-
-
-
-
-# using BenchmarkTools
-#
-# data = load_data(1)
-# r0 = rnn(:Ti)
-# at = data[1][1]
-#
-# D3 = Dictionary(InvInvariants,5.0)
-# B3 = gen_basis(3, D3, 10)
-# c3 = rand(length(B3))
-# V3 = NBody(B3, c3, D3)
-# @btime energy($V3, $at)
-# @btime forces($V3, $at)
-#
-# D4 = Dictionary(InvInvariants, 5.0)
-# B4 = gen_basis(4, D4, 6)
-# c4 = rand(length(B4))
-# V4 = NBody(B4, c4, D4)
-# @btime energy($V4, $at)
-# @btime forces($V4, $at)
-
-
-
-# B, D, desc = BASES[end]
-# at = data[1][1]
-# B
-# Es = [energy(b, at) for b in B]
-# forces(B[10], at)
-# IP = NBodyIP(B)
-# IP
-# energy(IP, at)
-#
-#
-# B, D, desc = BASES[end]
-# at = data[1][1]
-# Es = [energy(b, at) for b in B2]
-# display(Es)
-#
-# @show Es
