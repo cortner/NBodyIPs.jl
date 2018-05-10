@@ -3,9 +3,8 @@ using NBodyIPs, JuLIP
 
 datafile = "~/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_vartemp_virials_ASE.xyz"
 data = NBodyIPs.Data.read(datafile, index=":")
-shuffle!(data)
 train_data = data
-test_data = data[1:10:end]
+test_data = data[1:5:end]
 
 # some notes on the orders of magnitude
 # E per atom ~ 6.0 eV, std ca 0.03
