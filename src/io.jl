@@ -20,7 +20,7 @@ will load a previously saved `NBodyIP`. One can then simply call
 
 `NBodyIP` simply stores a list of N-body terms, where each of these
 N-body terms must implement `serialize` and `deserialize`. At the moment,
-only `NBodyIPs.Polynomials.NBody` is available for this. Currently,
+only `NBodyIPs.Polys.NBody` is available for this. Currently,
 and `NBody` can only be serialised if its dictionary constructed using
 strings as parameters, e.g.,
 ```
@@ -33,7 +33,7 @@ module IO
 
 using JLD
 using NBodyIPs: NBodyIP
-using NBodyIPs.Polynomials: NBody, Dictionary
+using NBodyIPs.Polys: NBody, Dictionary
 
 function write(fname::AbstractString, IP::NBodyIP)
    @assert fname[end-3:end] == ".jld"

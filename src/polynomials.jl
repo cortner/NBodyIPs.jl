@@ -1,6 +1,6 @@
 
 """
-`module Polynomials`
+`module Polys`
 
 The main types are
 * `Dictionary`: collects all the information about a basis
@@ -14,7 +14,7 @@ The main types are
 * `M` : number of edges, i.e., M = N (N-1)/2
 * `K` : length of the tuples defining polynomials, K = M+1
 """
-module Polynomials
+module Polys
 
 using Reexport
 

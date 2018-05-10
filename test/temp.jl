@@ -1,6 +1,6 @@
 
 using NBodyIPs
-using NBodyIPs.Polynomials: ispure
+using NBodyIPs.Polys: ispure
 
 v3 = Val(3)
 @show ispure(v3, (1,0,0,0))
