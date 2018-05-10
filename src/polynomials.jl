@@ -18,7 +18,7 @@ module Polynomials
 
 using Reexport
 
-using JuLIP, NeighbourLists, StaticArrays, ForwardDiff, Calculus
+using JuLIP, NeighbourLists, StaticArrays, ForwardDiff
 using JuLIP.Potentials: cutsw, cutsw_d, coscut, coscut_d
 using NBodyIPs: NBodyFunction
 
