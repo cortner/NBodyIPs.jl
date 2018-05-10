@@ -374,7 +374,7 @@ into a basis, or use `gen_basis` directly.
 `α -> (degree(α) <= deg)` i.e. the standard monomial degree. (note this is
 the degree w.r.t. lengths, not w.r.t. invariants!)
 """
-gen_tuples(N, deg; purify = true,
+gen_tuples(N, deg; purify = false,
                    tuplebound = (α -> (0 < tdegree(α) <= deg))) =
    gen_tuples(Val(N), Val(nedges(Val(N))+1), deg, purify, tuplebound)
 
