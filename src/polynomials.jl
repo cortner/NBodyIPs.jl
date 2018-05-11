@@ -334,36 +334,46 @@ end
    valN::Val{N}
 end
 
-# @pot struct SPolyNBody{N, TD, TP} <: NBodyFunction{N}
-#    D::TD       # Dictionary (or nothing)
-#    P::TP       # a static polynomial
-#    valN::Val{N}
-# end
+"""
+`struct SPolyNBody`  (N-Body Polynomial)
 
-# """
-# `struct SPolyNBody`  (N-Body Polynomial)
-#
-# fast evaluation of the outer polynomial using `StaticPolynomials`
-# """
-# SPolyNBody
+fast evaluation of the outer polynomial using `StaticPolynomials`
+"""
+SPolyNBody
 
-# function evaluate(V::SPolyNBody, r::SVector{M, T}) where {M, T}
-#    I = vcat(invariants(V.D, r)...)
-#    return StaticPolynomials.evaluate(V.P, I)
-# end
-#
-# function evaluate_d(V::SPolyNBody, r::SVector{M, T}) where {M, T}
-#    D = V.D
-#    I = vcat(invariants(D, r)...)
-#    dI = vcat(invariants_d(D, r)...)
-#    dV_dI = StaticPolynomials.evaluate(V.P, I)
-#    return dI' * dV_dI
-# end
-#
-# function SPolyNBody(V::NBody{N}) where {N}
-#    # I = invariants(V.D,
-#    # exps = zeros(
-# end
+function evaluate(V::SPolyNBody, r::SVector{M, T}) where {M, T}
+   I = vcat(invariants(V.D, r)...)
+   E = StaticPolynomials.evaluate(V.P, I)
+   return E * fcut(V.D, r)
+end
+
+function evaluate_d(V::SPolyNBody, r::SVector{M, T}) where {M, T}
+   D = V.D
+   I = vcat(invariants(D, r)...)   # TODO: combine into a single evaluation
+   dI = vcat(invariants_d(D, r)...)
+   V, dV_dI = StaticPolynomials.evaluate_and_gradient(V.P, I)
+   fc, fc_d = fcut_d(D, r)
+   return V * fc_d + fc * (dI' * dV_dI)
+end
+
+
+function SPolyNBody(V::NBody{N}) where {N}
+   M = bo2edges(N)  # number of edges for body-order N
+   I1, I2 = invariants(V.D, SVector(ones(M)...))  # how many invariants
+   nI1 = length(I1)
+   ninvariants = length(I1) + length(I2)
+   nmonomials = length(V.c)
+   # generate the exponents for the StaticPolynomial
+   exps = zeros(Int, ninvariants, nmonomials)
+   for (i, α) in enumerate(V.t)  # i = 1:nmonomials
+      for (j, a) in enumerate(α[1:end-1])   #  ∏ I1[j]^α[j]
+         exps[j, i] = a    # I1[j]^α[j]
+      end
+      exps[nI1+1+α[end], i] = 1   # I2[α[end]] * (...)
+   end
+   # generate the static polynomial
+   return SPolyNBody(V.D, StaticPolynomials.Polynomial(V.c, exps), V.valN)
+end
 
 # ==================================================================
 #    construct an NBodyIP from a basis

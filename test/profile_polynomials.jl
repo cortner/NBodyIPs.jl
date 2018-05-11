@@ -3,8 +3,7 @@
 # StaticPolynomials to evaluate the final NBodyIP
 #
 
-using DynamicPolynomials: @polyvar
-# import StaticPolynomials
+import StaticPolynomials
 
 using StaticArrays, BenchmarkTools
 using NBodyIPs
@@ -41,22 +40,22 @@ function eval_poly_d(A::Vector{NTuple{7,Int}},
    return dE
 end
 
-# function sp_exps(A)
-#    exps = zeros(Int, (length(A), 12))
-#    for (i, a) in enumerate(A)
-#       exps[i,1:6] .= a[1:6]
-#       exps[i,7+a[end]] = 1
-#    end
-#    return exps
-# end
+function sp_exps(A)
+   exps = zeros(Int, (length(A), 12))
+   for (i, a) in enumerate(A)
+      exps[i,1:6] .= a[1:6]
+      exps[i,7+a[end]] = 1
+   end
+   return exps
+end
 
 A = NBodyIPs.gen_tuples(4, 10)
 C = rand(length(A))
-# SP = StaticPolynomials.Polynomial(C, sp_exps(A)')
+SP = StaticPolynomials.Polynomial(C, sp_exps(A)')
 
 x = @SVector rand(12)
 
 print("   hand-coded:"); @btime eval_poly($A, $C, $x)
-# print("  StaticPolys:"); @btime StaticPolynomials.evaluate($SP, $x)
+print("  StaticPolys:"); @btime StaticPolynomials.evaluate($SP, $x)
 print(" ∇-hand-coded:"); @btime eval_poly_d($A, $C, $x)
-# print("∇-StaticPolys:"); @btime StaticPolynomials.gradient($SP, $x)
+print("∇-StaticPolys:"); @btime StaticPolynomials.gradient($SP, $x)
