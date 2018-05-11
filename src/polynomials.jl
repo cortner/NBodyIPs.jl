@@ -22,7 +22,7 @@ using JuLIP, NeighbourLists, StaticArrays, ForwardDiff
 using JuLIP.Potentials: cutsw, cutsw_d, coscut, coscut_d
 using NBodyIPs: NBodyFunction
 
-# import StaticPolynomials
+import StaticPolynomials
 
 const cutsp = JuLIP.Potentials.fcut
 const cutsp_d = JuLIP.Potentials.fcut_d
@@ -328,17 +328,22 @@ end
 #      StaticPolynomial
 # ==================================================================
 
+@pot struct SPolyNBody{N, TD, TP} <: NBodyFunction{N}
+   D::TD       # Dictionary (or nothing)
+   P::TP       # a static polynomial
+   valN::Val{N}
+end
 
 # @pot struct SPolyNBody{N, TD, TP} <: NBodyFunction{N}
 #    D::TD       # Dictionary (or nothing)
 #    P::TP       # a static polynomial
 #    valN::Val{N}
 # end
-#
+
 # """
 # `struct SPolyNBody`  (N-Body Polynomial)
 #
-# fast evaluation of the outer polynomial
+# fast evaluation of the outer polynomial using `StaticPolynomials`
 # """
 # SPolyNBody
 
