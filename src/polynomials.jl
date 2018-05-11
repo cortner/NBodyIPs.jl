@@ -352,7 +352,8 @@ compute the total degree of the polynomial represented by α.
 Note that `M = K-1` where `K` is the tuple length while
 `M` is the number of edges.
 """
-function tdegree(α::Tup{K}) where {K}
+function tdegree(α)
+   K = length(α)
    degs1, degs2 = tdegrees(Val(edges2bo(K-1)))
    # primary invariants
    d = sum(α[j] * degs1[j] for j = 1:K-1)
@@ -378,7 +379,10 @@ gen_tuples(N, deg; purify = false,
                    tuplebound = (α -> (0 < tdegree(α) <= deg))) =
    gen_tuples(Val(N), Val(nedges(Val(N))+1), deg, purify, tuplebound)
 
-# ------------- 2-body tuples -------------
+
+gen_tuples_new(N, deg; purify = false,
+                   tuplebound = (α -> (0 < tdegree(α) <= deg))) =
+   gen_tuples_new(Val(N), Val(nedges(Val(N))+1), deg, purify, tuplebound)
 
 # TODO: need to eventually generate 2-tuples
 gen_tuples(vN::Val{2}, vK::Val{2}, deg, purify, tuplebound) =
@@ -397,6 +401,35 @@ function gen_tuples(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where {N, K
       end
    end
    return t
+end
+
+
+function gen_tuples_new(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where {N, K}
+   A = SVector{K, Int}[]
+   degs1, degs2 = tdegrees(vN)
+
+   E = @SMatrix eye(Int, K)
+   push!(A, E[:,1])
+   idx = 1
+
+   while idx <= length(A)
+      α = A[idx]
+      for j = 1:K-1
+         if tuplebound(α+E[:,j])
+            push!(A, α+E[:,j])
+         end
+      end
+      # for the final increment we have an additional condition that
+      # α[end] must not become larger than the number of secondary invariants
+      if (α[end]+2 <= length(degs2))
+         if tuplebound(α+E[:,K])
+            push!(A, α+E[:,K])
+         end
+      end
+      idx += 1
+   end
+
+   return [α.data for α in A]
 end
 
 
