@@ -69,7 +69,7 @@ end
 
 # ---------------------------------------------------------------
 # NOT TECHNICALLY MONOMIALS, BUT VERY SIMILAR OBJECT:
-#   TODO: combine fcut_d and monomial_d into a single function 
+#   TODO: combine fcut_d and monomial_d into a single function
 # ---------------------------------------------------------------
 
 function fcut(D::Dictionary, r::SVector{M, T}) where {M, T}

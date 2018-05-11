@@ -50,9 +50,9 @@ end
 
 A = NBodyIPs.gen_tuples(4, 10)
 C = rand(length(A))
-x = @SVector rand(12)
-
 SP = StaticPolynomials.Polynomial(C, sp_exps(A)')
+
+x = @SVector rand(12)
 
 print("   hand-coded:"); @btime eval_poly($A, $C, $x)
 print("  StaticPolys:"); @btime StaticPolynomials.evaluate($SP, $x)

@@ -22,6 +22,8 @@ using JuLIP, NeighbourLists, StaticArrays, ForwardDiff
 using JuLIP.Potentials: cutsw, cutsw_d, coscut, coscut_d
 using NBodyIPs: NBodyFunction
 
+# import StaticPolynomials
+
 const cutsp = JuLIP.Potentials.fcut
 const cutsp_d = JuLIP.Potentials.fcut_d
 
@@ -204,7 +206,6 @@ Base.deserialize(::Type{Dictionary}, s::Tuple{String, String}) = Dictionary(s...
 #           Polynomials of Invariants
 # ==================================================================
 
-# TODO: rename to PolyNBody
 
 @pot struct NBody{N, M, T, TD} <: NBodyFunction{N}
    t::VecTup{M}               # tuples M = #edges + 1
@@ -214,7 +215,7 @@ Base.deserialize(::Type{Dictionary}, s::Tuple{String, String}) = Dictionary(s...
 end
 
 """
-`struct NBody`
+`struct NBody`  (N-Body Basis Function)
 
 A struct storing the information for a pure N-body potential, i.e., containing
 *only* terms of a specific body-order. Several `NBody`s can be
@@ -231,6 +232,7 @@ e.g., if M = 3, α = t[1] is a 3-vector then this corresponds to the basis funct
 * `D`: a `Dictionary`
 """
 NBody
+
 
 # standad constructor (N can be inferred)
 NBody(t::VecTup{K}, c, D) where {K} =
@@ -319,6 +321,44 @@ function evaluate_d(V::NBody, r::SVector{M, T}) where {M, T}
    return dE * fc + E * fc_d
 end
 
+
+# ==================================================================
+#    SPolyNBody
+#      an alternative way to store an N-Body polynomial as a
+#      StaticPolynomial
+# ==================================================================
+
+
+# @pot struct SPolyNBody{N, TD, TP} <: NBodyFunction{N}
+#    D::TD       # Dictionary (or nothing)
+#    P::TP       # a static polynomial
+#    valN::Val{N}
+# end
+#
+# """
+# `struct SPolyNBody`  (N-Body Polynomial)
+#
+# fast evaluation of the outer polynomial
+# """
+# SPolyNBody
+
+# function evaluate(V::SPolyNBody, r::SVector{M, T}) where {M, T}
+#    I = vcat(invariants(V.D, r)...)
+#    return StaticPolynomials.evaluate(V.P, I)
+# end
+#
+# function evaluate_d(V::SPolyNBody, r::SVector{M, T}) where {M, T}
+#    D = V.D
+#    I = vcat(invariants(D, r)...)
+#    dI = vcat(invariants_d(D, r)...)
+#    dV_dI = StaticPolynomials.evaluate(V.P, I)
+#    return dI' * dV_dI
+# end
+#
+# function SPolyNBody(V::NBody{N}) where {N}
+#    # I = invariants(V.D,
+#    # exps = zeros(
+# end
 
 # ==================================================================
 #    construct an NBodyIP from a basis
