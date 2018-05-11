@@ -8,8 +8,8 @@ using JuLIP.Potentials: evaluate, evaluate_d
 import JuLIP: cutoff, energy, forces, site_energies, virial
 
 export NBodyIP,
-       bodyorder
-
+       bodyorder,
+       fast
 
 """
 `NBodyFunction` : abstract supertype of all "pure" N-body functions.
@@ -73,3 +73,11 @@ cutoff(V::NBodyIP) = maximum( cutoff.(V.orders) )
 energy(V::NBodyIP, at::Atoms) = sum( energy(Vn, at)  for Vn in V.orders )
 forces(V::NBodyIP, at::Atoms) = sum( forces(Vn, at)  for Vn in V.orders )
 virial(V::NBodyIP, at::Atoms) = sum( virial(Vn, at)  for Vn in V.orders )
+
+
+
+"""
+turn a potentially slow representation of an IP into a fast one,
+by switching to a different representation.
+"""
+fast(IP::NBodyIP) = NBodyIP( fast.(IP.orders) )

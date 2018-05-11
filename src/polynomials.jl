@@ -30,7 +30,7 @@ const cutsp_d = JuLIP.Potentials.fcut_d
 import Base: length
 import JuLIP: cutoff, energy, forces
 import JuLIP.Potentials: evaluate, evaluate_d, @analytic
-import NBodyIPs: NBodyIP, bodyorder
+import NBodyIPs: NBodyIP, bodyorder, fast
 
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
@@ -374,6 +374,14 @@ function SPolyNBody(V::NBody{N}) where {N}
    # generate the static polynomial
    return SPolyNBody(V.D, StaticPolynomials.Polynomial(V.c, exps), V.valN)
 end
+
+bodyorder(V::SPolyNBody{N}) where {N} = N
+
+cutoff(V::SPolyNBody) = cutoff(V.D)
+
+fast(Vn::SPolyNBody)  = Vn
+fast(Vn::NBody) =  SPolyNBody(Vn)
+fast(Vn::NBody{1}) = Vn
 
 # ==================================================================
 #    construct an NBodyIP from a basis
