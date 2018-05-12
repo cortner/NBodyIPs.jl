@@ -2,9 +2,10 @@
 """
 `module Polys`
 
-The main types are
+The exported symbols are
 * `Dictionary`: collects all the information about a basis
 * `NBody`: an N-body function wrapped into a JuLIP calculator
+* `poly_basis` : generate a basis of N-body functions
 
 ## Usage
 
@@ -36,7 +37,7 @@ const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
 export NBody, Dictionary,
-       gen_tuples, gen_basis,
+       gen_basis, poly_basis,
        @analytic
 
 
@@ -415,7 +416,8 @@ compute the total degree of the polynomial represented by α.
 Note that `M = K-1` where `K` is the tuple length while
 `M` is the number of edges.
 """
-function tdegree(α::Tup{K}) where {K}
+function tdegree(α)
+   K = length(α)
    degs1, degs2 = tdegrees(Val(edges2bo(K-1)))
    # primary invariants
    d = sum(α[j] * degs1[j] for j = 1:K-1)
@@ -434,43 +436,58 @@ into a basis, or use `gen_basis` directly.
 * `deg` : maximal degree
 * `tuplebound` : a function that takes a tuple as an argument and returns
 `true` if that tuple should be in the basis and `false` if not. The default is
-`α -> (degree(α) <= deg)` i.e. the standard monomial degree. (note this is
-the degree w.r.t. lengths, not w.r.t. invariants!)
+`α -> (0 < tdegree(α) <= deg)` i.e. the standard monomial degree. (note this is
+the degree w.r.t. lengths, not w.r.t. invariants!) The `tuplebound` function
+must be **monotone**, that is, `α,β` are tuples with `all(α .≦ β)` then
+`tuplebound(β) == true` must imply that also `tuplebound(α) == true`.
 """
 gen_tuples(N, deg; purify = false,
                    tuplebound = (α -> (0 < tdegree(α) <= deg))) =
    gen_tuples(Val(N), Val(nedges(Val(N))+1), deg, purify, tuplebound)
 
-# ------------- 2-body tuples -------------
-
-# TODO: need to eventually generate 2-tuples
-gen_tuples(vN::Val{2}, vK::Val{2}, deg, purify, tuplebound) =
-   Tup{2}[ (j, 0)   for j = 1:deg ]
-
-
 function gen_tuples(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where {N, K}
-   t = Tup{K}[]
+   A = Tup{K}[]
    degs1, degs2 = tdegrees(vN)
-   Ilo = CartesianIndex{K}(zeros(Int, K)...)
-   idegs = [ceil.(Int, deg ./ [degs1...]); length(degs2)-1]
-   Ihi = CartesianIndex{K}(idegs...)
-   for I in CartesianRange(Ilo, Ihi)
-      if tuplebound(I.I) &&  (!purify || ispure(vN, I.I))
-         push!(t, I.I)
+
+   α = @MVector zeros(K)
+   α[1] = 1
+   lastinc = 1
+
+   while true
+      admit_tuple = false
+      if α[end] <= length(degs2)-1
+         if tuplebound(α)
+            admit_tuple = true
+         end
+      end
+      if admit_tuple
+         push!(A, SVector(α).data)
+         α[1] += 1
+         lastinc = 1
+      else
+         if lastinc == K
+            return A
+         end
+         α[1:lastinc] = 0
+         α[lastinc+1] += 1
+         lastinc += 1
       end
    end
-   return t
+   error("I shouldn't be here!")
 end
 
 
 """
-`gen_basis(N, D, deg; tuplebound = ...)` : generates a basis set of
+`poly_basis(N, D, deg; tuplebound = ...)` : generates a basis set of
 `N`-body functions, with dictionary `D`, maximal degree `deg`; the precise
 set of basis functions constructed depends on `tuplebound` (see `?gen_tuples`)
 """
-gen_basis(N, D, deg; kwargs...) = gen_basis(gen_tuples(N, deg; kwargs...), D)
+poly_basis(N::Integer, D, deg; kwargs...) = poly_basis(gen_tuples(N, deg; kwargs...), D)
 
-gen_basis(ts::VecTup, D::Dictionary) = [NBody(t, 1.0, D) for t in ts]
+poly_basis(ts::VecTup, D::Dictionary) = [NBody(t, 1.0, D) for t in ts]
+
+# deprecate this
+gen_basis = poly_basis
 
 
 end # module
