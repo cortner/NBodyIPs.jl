@@ -380,9 +380,6 @@ gen_tuples(N, deg; purify = false,
    gen_tuples(Val(N), Val(nedges(Val(N))+1), deg, purify, tuplebound)
 
 
-gen_tuples_new(N, deg; purify = false,
-                   tuplebound = (α -> (0 < tdegree(α) <= deg))) =
-   gen_tuples_new(Val(N), Val(nedges(Val(N))+1), deg, purify, tuplebound)
 
 # TODO: need to eventually generate 2-tuples
 gen_tuples(vN::Val{2}, vK::Val{2}, deg, purify, tuplebound) =
@@ -403,6 +400,9 @@ function gen_tuples(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where {N, K
    return t
 end
 
+gen_tuples_new(N, deg; purify = false,
+                   tuplebound = (α -> (0 < tdegree(α) <= deg))) =
+   gen_tuples_new(Val(N), Val(nedges(Val(N))+1), deg, purify, tuplebound)
 
 function gen_tuples_new(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where {N, K}
    A = SVector{K, Int}[]
@@ -430,6 +430,46 @@ function gen_tuples_new(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where {
    end
 
    return [α.data for α in A]
+end
+
+
+gen_tuples_new2(N, deg; purify = false,
+                   tuplebound = (α -> (0 < tdegree(α) <= deg))) =
+   gen_tuples_new2(Val(N), Val(nedges(Val(N))+1), deg, purify, tuplebound)
+
+
+
+
+
+function gen_tuples_new2(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where {N, K}
+   A = Tup{K}[]
+   degs1, degs2 = tdegrees(vN)
+
+   E = eye(Int, K)
+   α = E[:,1]
+   lastinc = 1
+
+   while true
+      admit_tuple = false
+      if α[end] <= length(degs2)-1
+         if tuplebound(α)
+            admit_tuple = true
+         end
+      end
+      if admit_tuple
+         push!(A, tuple(α...))
+         α[1] += 1
+         lastinc = 1
+      else
+         if lastinc == K
+            return A
+         end
+         α[1:lastinc] = 0
+         α[lastinc+1] += 1
+         lastinc += 1
+      end
+   end
+   error("I shouldn't be here")
 end
 
 
