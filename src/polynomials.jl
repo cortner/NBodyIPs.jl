@@ -2,9 +2,10 @@
 """
 `module Polys`
 
-The main types are
+The exported symbols are
 * `Dictionary`: collects all the information about a basis
 * `NBody`: an N-body function wrapped into a JuLIP calculator
+* `poly_basis` : generate a basis of N-body functions
 
 ## Usage
 
@@ -34,7 +35,7 @@ const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
 export NBody, Dictionary,
-       gen_tuples, gen_basis,
+       gen_basis, poly_basis,
        @analytic
 
 
@@ -409,18 +410,21 @@ function gen_tuples(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where {N, K
          lastinc += 1
       end
    end
-   error("I shouldn't be here")
+   error("I shouldn't be here!")
 end
 
 
 """
-`gen_basis(N, D, deg; tuplebound = ...)` : generates a basis set of
+`poly_basis(N, D, deg; tuplebound = ...)` : generates a basis set of
 `N`-body functions, with dictionary `D`, maximal degree `deg`; the precise
 set of basis functions constructed depends on `tuplebound` (see `?gen_tuples`)
 """
-gen_basis(N, D, deg; kwargs...) = gen_basis(gen_tuples(N, deg; kwargs...), D)
+poly_basis(N::Integer, D, deg; kwargs...) = poly_basis(gen_tuples(N, deg; kwargs...), D)
 
-gen_basis(ts::VecTup, D::Dictionary) = [NBody(t, 1.0, D) for t in ts]
+poly_basis(ts::VecTup, D::Dictionary) = [NBody(t, 1.0, D) for t in ts]
+
+# deprecate this
+gen_basis = poly_basis
 
 
 end # module
