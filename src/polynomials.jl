@@ -372,81 +372,21 @@ into a basis, or use `gen_basis` directly.
 * `deg` : maximal degree
 * `tuplebound` : a function that takes a tuple as an argument and returns
 `true` if that tuple should be in the basis and `false` if not. The default is
-`α -> (degree(α) <= deg)` i.e. the standard monomial degree. (note this is
-the degree w.r.t. lengths, not w.r.t. invariants!)
+`α -> (0 < tdegree(α) <= deg)` i.e. the standard monomial degree. (note this is
+the degree w.r.t. lengths, not w.r.t. invariants!) The `tuplebound` function
+must be **monotone**, that is, `α,β` are tuples with `all(α .≦ β)` then
+`tuplebound(β) == true` must imply that also `tuplebound(α) == true`.
 """
 gen_tuples(N, deg; purify = false,
                    tuplebound = (α -> (0 < tdegree(α) <= deg))) =
    gen_tuples(Val(N), Val(nedges(Val(N))+1), deg, purify, tuplebound)
 
-
-
-# TODO: need to eventually generate 2-tuples
-gen_tuples(vN::Val{2}, vK::Val{2}, deg, purify, tuplebound) =
-   Tup{2}[ (j, 0)   for j = 1:deg ]
-
-
 function gen_tuples(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where {N, K}
-   t = Tup{K}[]
-   degs1, degs2 = tdegrees(vN)
-   Ilo = CartesianIndex{K}(zeros(Int, K)...)
-   idegs = [ceil.(Int, deg ./ [degs1...]); length(degs2)-1]
-   Ihi = CartesianIndex{K}(idegs...)
-   for I in CartesianRange(Ilo, Ihi)
-      if tuplebound(I.I) &&  (!purify || ispure(vN, I.I))
-         push!(t, I.I)
-      end
-   end
-   return t
-end
-
-gen_tuples_new(N, deg; purify = false,
-                   tuplebound = (α -> (0 < tdegree(α) <= deg))) =
-   gen_tuples_new(Val(N), Val(nedges(Val(N))+1), deg, purify, tuplebound)
-
-function gen_tuples_new(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where {N, K}
-   A = SVector{K, Int}[]
-   degs1, degs2 = tdegrees(vN)
-
-   E = @SMatrix eye(Int, K)
-   push!(A, E[:,1])
-   idx = 1
-
-   while idx <= length(A)
-      α = A[idx]
-      for j = 1:K-1
-         if tuplebound(α+E[:,j])
-            push!(A, α+E[:,j])
-         end
-      end
-      # for the final increment we have an additional condition that
-      # α[end] must not become larger than the number of secondary invariants
-      if (α[end]+2 <= length(degs2))
-         if tuplebound(α+E[:,K])
-            push!(A, α+E[:,K])
-         end
-      end
-      idx += 1
-   end
-
-   return [α.data for α in A]
-end
-
-
-gen_tuples_new2(N, deg; purify = false,
-                   tuplebound = (α -> (0 < tdegree(α) <= deg))) =
-   gen_tuples_new2(Val(N), Val(nedges(Val(N))+1), deg, purify, tuplebound)
-
-
-
-
-
-function gen_tuples_new2(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where {N, K}
    A = Tup{K}[]
    degs1, degs2 = tdegrees(vN)
 
-   E = eye(Int, K)
-   α = E[:,1]
+   α = @MVector zeros(K)
+   α[1] = 1
    lastinc = 1
 
    while true
@@ -457,7 +397,7 @@ function gen_tuples_new2(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where 
          end
       end
       if admit_tuple
-         push!(A, tuple(α...))
+         push!(A, SVector(α).data)
          α[1] += 1
          lastinc = 1
       else
