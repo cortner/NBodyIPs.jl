@@ -8,7 +8,7 @@ import StaticPolynomials
 using StaticArrays, BenchmarkTools
 using NBodyIPs
 
-using NBodyIPs.Polys: monomial, monomial_d
+using NBodyIPs.Polys: monomial, monomial_d, gen_tuples
 
 function eval_poly(A::Vector{NTuple{7,Int}},
                    C::Vector{Float64},
@@ -49,7 +49,7 @@ function sp_exps(A)
    return exps
 end
 
-A = NBodyIPs.gen_tuples(4, 10)
+A = NBodyIPs.Polys.gen_tuples(4, 10)
 C = rand(length(A))
 SP = StaticPolynomials.Polynomial(C, sp_exps(A)')
 
