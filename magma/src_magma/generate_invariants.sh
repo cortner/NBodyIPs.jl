@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NBODY=4
+NBODY=5
 NBlengths=$((($NBODY*($NBODY-1))/2))
 DEGREE=6
 
@@ -60,17 +60,32 @@ ECHO "Nb of irreducible secondaries="$NBirr_sec
 
 sed -i '' '/ Nb_irr_sec_invariants/d' $fn_jl_check
 
-sed -i '' '/ Names_of_variables/d' $fn_jl_check
+sed -i '' '/ Names_of_variables/,/end_names_of_variables/d' $fn_jl_check
 
-# # replace variables for the primaries
-# # xi -> x[i]
-# for a in `seq $NBlengths -1 1`; do
-# 	OLD="x$a" ;
-# 	NEW="x[$a]" ;
-# 	sed -i '' "s/$OLD/$NEW/g" $fn_jl_check
-# done
+# sed -i '' $'s/\r//' $fn_jl_check
+# sed -i '' 's/$(printf '\r')//' $fn_jl_check
+# tr -d '\n' $fn_jl_check
+# sed -i '' '/^+/ {s/.*//; N; N; s/\n//g; p;}' $fn_jl_check
 
-# replace variables for the secondaries
+# cat $fn_jl_check | tr '\n' '+'
+# sed -i.bak "s/$(printf '\r')//" $fn_jl_check
+
+# sed -i $'s/\r//' $fn_jl_check
+# sed -i $'s/\x0D//' $fn_jl_check
+
+# $'s/\x0D//' $fn_jl_check
+# sed -i $'s/\r//' $fn_jl_check
+# sed -i 's/\r/ /g' $fn_jl_check
+# sed -i ':a;N;$!ba;s/\n+/blablab/g' $fn_jl_check
+
+# sed -i ':a' -e 'N' -e '$!ba' -e 's/\n/ /g'
+# sed -i '' 's/^+/blablba/' $fn_jl_check
+# tr -i '\n\+' ' ' < $fn_jl_check
+# sed -i '' ':a $!N;s/\n\+/blablba/;ta' $fn_jl_check
+# sed -i '' ':a;N;$!ba;s/\n\+/ /g' $fn_jl_check
+# sed -i -e ':a' -e 'N' -e '$!ba' -e 's/\n\+/ /g' $fn_jl_check
+
+# replace variables for the secondaries and the primaries
 # and d(ik,il) -> x[i]
 count=$NBlengths
 for a in `seq $(($NBODY-2)) -1 0`; do
@@ -88,6 +103,7 @@ cp $fn_jl_check $fn_jl_prim_inv
 cp $fn_jl_check $fn_jl_sec_rel_inv
 
 sed -i '' '/SYM/d' $fn_jl_check
+sed -i '' '/SYYM/d' $fn_jl_check
 
 echo "v=zeros($NBsecondaries"",1);" | cat - $fn_jl_check > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
 echo "" | cat - $fn_jl_check > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
@@ -102,8 +118,6 @@ echo "end" >> $fn_jl_check
 echo "x = rand($NBlengths"")"  >> $fn_jl_check
 echo "display(invariants_Q$NBlengths""_check(x))"  >> $fn_jl_check
 
-#TODO: put lines in Primary invariants as a single line (otherwise doesnt work.)
-#Shortcut cmd+j then cmd+shift+j
 #TODO: check that no lines start by + (otherwise wring invariants are computed)
 
 # Generate a file with only monomials of irreducible secondaries
@@ -113,7 +127,8 @@ sed -i '' 's/SYM/ /' $fn_jl_irr_inv
 
 # Generate a file with only monomials of primaries
 # ---------------------------------------------------------
-sed -i '' '/prim/!d' $fn_jl_prim_inv
+sed -i '' '/SYYM/!d' $fn_jl_prim_inv
+sed -i '' 's/SYYM/ /' $fn_jl_prim_inv
 
 # Generate a file with relations between irreducible and secondary invariants
 # ---------------------------------------------------------

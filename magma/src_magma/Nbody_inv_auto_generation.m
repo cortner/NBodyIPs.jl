@@ -69,6 +69,7 @@ PSI :=MolInvRngGen([nbody],deg);
 printf " Names_of_variables=";
 Name := MolSymCGNames(nbody);
 Name;
+printf "\n end_names_of_variables \n";
 
 
 // printf " Primary_invariants=\n";

@@ -209,6 +209,9 @@ intrinsic MolInvF95PrintPrimaries
  for i:=0 to #Prims-1 do
     printf " prim[%o] = %o", i+1, Prims[i+1];
     printf " \n";
+    printf " prim[%o] = SYYM %o\n",
+      i+1,  LeadingMonomial(Prims[i+1]);
+      printf " \n";
  end for;
 end intrinsic;
 
