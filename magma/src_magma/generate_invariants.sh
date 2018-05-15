@@ -62,10 +62,16 @@ sed -i '' '/ Nb_irr_sec_invariants/d' $fn_jl_check
 
 sed -i '' '/ Names_of_variables/,/end_names_of_variables/d' $fn_jl_check
 
-# sed -i '' $'s/\r//' $fn_jl_check
+awk '/pv$/ { printf("%s\t", $0); next } 1' $fn_jl_check
+
+# cat $fn_jl_check | tr '\r'  ' ' > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
+
+# sed -i '' ':a;N;/\r+/!s/\n/ /;ta;P;D' infile
+
+# sed -i.bak '' $'s/\r//' $fn_jl_check
 # sed -i '' 's/$(printf '\r')//' $fn_jl_check
 # tr -d '\n' $fn_jl_check
-# sed -i '' '/^+/ {s/.*//; N; N; s/\n//g; p;}' $fn_jl_check
+# gsed -i.bak '' '/^+/ {s/.*//; N; N; s/\n//g; p;}' $fn_jl_check
 
 # cat $fn_jl_check | tr '\n' '+'
 # sed -i.bak "s/$(printf '\r')//" $fn_jl_check
@@ -112,6 +118,7 @@ echo "prim=zeros($NBlengths"",1);" | cat - $fn_jl_check > /tmp/tempfile && mv /t
 echo "function invariants_Q$NBlengths""_check(x)" | cat - $fn_jl_check > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
 
 
+
 echo "return prim, v, pv"  >> $fn_jl_check
 echo "" >> $fn_jl_check
 echo "end" >> $fn_jl_check
@@ -133,6 +140,10 @@ sed -i '' 's/SYYM/ /' $fn_jl_prim_inv
 # Generate a file with relations between irreducible and secondary invariants
 # ---------------------------------------------------------
 sed -i '' '/ v\[/!d' $fn_jl_sec_rel_inv
+
+# Moving lines starting with +
+# ---------------------------------------------------------
+gsed -i '$!N;s/\n\s*+/ +/;P;D' $fn_jl_check
 
 mv $filename_log ../data_temp/$filename_log
 mv $fn_jl_check ../data_temp/$fn_jl_check
