@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NBODY=5
+NBODY=4
 NBlengths=$((($NBODY*($NBODY-1))/2))
 DEGREE=6
 
@@ -35,7 +35,7 @@ EOF
 
 rm Nbody_run.m;
 
-scp dusson@galois.warwick.ac.uk:magma_invariants/logNbody_output.txt .;
+scp dusson@galois.warwick.ac.uk:logNbody_output.txt .;
 
 mv logNbody_output.txt $filename_log
 
@@ -46,19 +46,29 @@ cp $filename_log $fn_jl_check
 sed -i '' '/v\[1\]/,$!d' $fn_jl_check
 sed -i '' '/Total/d' $fn_jl_check
 
+# remove line with number of secondaries
 TEMPVAR=$(grep "Nb_secondary_invariants" $fn_jl_check)
 NBsecondaries=${TEMPVAR#*=}
 ECHO "Nb of secondaries="$NBsecondaries
 
 sed -i '' '/ Nb_secondary_invariants/d' $fn_jl_check
 
-# replace variables for the primaries
-# xi -> x[i]
-for a in `seq $NBlengths -1 1`; do
-	OLD="x$a" ;
-	NEW="x[$a]" ;
-	sed -i '' "s/$OLD/$NEW/g" $fn_jl_check
-done
+# remove line with number of irreducible secondaries
+TEMPVAR=$(grep "Nb_irr_sec_invariants" $fn_jl_check)
+NBirr_sec=${TEMPVAR#*=}
+ECHO "Nb of irreducible secondaries="$NBirr_sec
+
+sed -i '' '/ Nb_irr_sec_invariants/d' $fn_jl_check
+
+sed -i '' '/ Names_of_variables/d' $fn_jl_check
+
+# # replace variables for the primaries
+# # xi -> x[i]
+# for a in `seq $NBlengths -1 1`; do
+# 	OLD="x$a" ;
+# 	NEW="x[$a]" ;
+# 	sed -i '' "s/$OLD/$NEW/g" $fn_jl_check
+# done
 
 # replace variables for the secondaries
 # and d(ik,il) -> x[i]
@@ -81,11 +91,12 @@ sed -i '' '/SYM/d' $fn_jl_check
 
 echo "v=zeros($NBsecondaries"",1);" | cat - $fn_jl_check > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
 echo "" | cat - $fn_jl_check > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
-echo "pv=zeros($NBsecondaries"",1);" | cat - $fn_jl_check > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
+echo "pv=zeros($NBirr_sec"",1);" | cat - $fn_jl_check > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
+echo "prim=zeros($NBlengths"",1);" | cat - $fn_jl_check > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
 echo "function invariants_Q$NBlengths""_check(x)" | cat - $fn_jl_check > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
 
 
-echo "return Primary_invariants, v, pv"  >> $fn_jl_check
+echo "return prim, v, pv"  >> $fn_jl_check
 echo "" >> $fn_jl_check
 echo "end" >> $fn_jl_check
 echo "x = rand($NBlengths"")"  >> $fn_jl_check
@@ -102,7 +113,7 @@ sed -i '' 's/SYM/ /' $fn_jl_irr_inv
 
 # Generate a file with only monomials of primaries
 # ---------------------------------------------------------
-sed -i '' '/Primary/,$!d' $fn_jl_prim_inv
+sed -i '' '/prim/!d' $fn_jl_prim_inv
 
 # Generate a file with relations between irreducible and secondary invariants
 # ---------------------------------------------------------

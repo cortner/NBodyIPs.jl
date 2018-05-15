@@ -202,6 +202,16 @@ for i:=0 to #Reps-1 do
 end for;
 end intrinsic;
 
+intrinsic MolInvF95PrintPrimaries
+ (Prims::[RngMPolElt])
+ {Print Primaries}
+ printf "\n";
+ for i:=0 to #Prims-1 do
+    printf " prim[%o] = %o", i+1, Prims[i+1];
+    printf " \n";
+ end for;
+end intrinsic;
+
 intrinsic MolInvF95PrintIrrSecs
  (base0::RngIntElt,
   base1::RngIntElt,
@@ -284,7 +294,10 @@ else
 end if;
 IrrSecs:=[R|] cat [R!f:f in IniIrrSecs];
 Secs:=[R!1] cat IrrSecs;
-// Note, we don't "F95Print" the IniIrrSecs
+if IsVerbose("MolInv") then
+   MolInvF95PrintPrimaries(Prims);
+end if;
+ // Note, we don't "F95Print" the IniIrrSecs
 for d:=1 to mxd do
  // time NewRSR:=MolInvNewRedSecsReps(d,Prims,IrrSecs,RedSecsReps);
  NewRSR:=MolInvNewRedSecsReps(d,Prims,IrrSecs,RedSecsReps);

@@ -66,8 +66,13 @@ PSI :=MolInvRngGen([nbody],deg);
 // Write(outputfile, "Primary invariants");
 // Write(outputfile, PSI`PrimaryInvariants);
 
-printf " Primary_invariants=\n";
-PSI`PrimaryInvariants;
+printf " Names_of_variables=";
+Name := MolSymCGNames(nbody);
+Name;
+
+
+// printf " Primary_invariants=\n";
+// PSI`PrimaryInvariants;
 
 // Write(outputfile, "Secondary invariants");
 // Write(outputfile, PSI`SecondaryInvariants);
@@ -100,8 +105,29 @@ PSI`PrimaryInvariants;
 // Write(outputfile, "Molien series");
 // Write(outputfile, M);
 Sec := PSI`SecondaryInvariants;
+IrrSec := PSI`IrreducibleSecondaries;
 
 printf " Nb_secondary_invariants=";
 #Sec;
+printf "\n";
+
+printf " Nb_irr_sec_invariants=";
+#IrrSec;
+
+
+
+// P := PolynomialRing(R);
+// AssignNames(~PSI, Name);
+// R0 := MolInvPrimsRngCG(nbody);
+// AssignNames(~R0, Name);
+// R0;
+// P;
+//
+// R0 := PrimaryInvariants(R);
+// R0;
+
+// PSI:Names := MolSymCGNames(nbody);
+// printf " Primary invariants=\n";
+// PSI`PrimaryInvariants;
 
 exit;
