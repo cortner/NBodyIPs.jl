@@ -4,6 +4,10 @@ NBODY=5
 NBlengths=$((($NBODY*($NBODY-1))/2))
 DEGREE=6
 
+PREFPRIM = "P"
+PREFSEC = "SEC"
+PREFIRRSEC = "IS"
+
 ECHO Nbody order= $NBODY
 ECHO Nb of lengths= $NBlengths
 ECHO Polynomial degree= $DEGREE
@@ -64,32 +68,6 @@ sed -i '' '/ Names_of_variables/,/end_names_of_variables/d' $fn_jl_check
 
 awk '/pv$/ { printf("%s\t", $0); next } 1' $fn_jl_check
 
-# cat $fn_jl_check | tr '\r'  ' ' > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
-
-# sed -i '' ':a;N;/\r+/!s/\n/ /;ta;P;D' infile
-
-# sed -i.bak '' $'s/\r//' $fn_jl_check
-# sed -i '' 's/$(printf '\r')//' $fn_jl_check
-# tr -d '\n' $fn_jl_check
-# gsed -i.bak '' '/^+/ {s/.*//; N; N; s/\n//g; p;}' $fn_jl_check
-
-# cat $fn_jl_check | tr '\n' '+'
-# sed -i.bak "s/$(printf '\r')//" $fn_jl_check
-
-# sed -i $'s/\r//' $fn_jl_check
-# sed -i $'s/\x0D//' $fn_jl_check
-
-# $'s/\x0D//' $fn_jl_check
-# sed -i $'s/\r//' $fn_jl_check
-# sed -i 's/\r/ /g' $fn_jl_check
-# sed -i ':a;N;$!ba;s/\n+/blablab/g' $fn_jl_check
-
-# sed -i ':a' -e 'N' -e '$!ba' -e 's/\n/ /g'
-# sed -i '' 's/^+/blablba/' $fn_jl_check
-# tr -i '\n\+' ' ' < $fn_jl_check
-# sed -i '' ':a $!N;s/\n\+/blablba/;ta' $fn_jl_check
-# sed -i '' ':a;N;$!ba;s/\n\+/ /g' $fn_jl_check
-# sed -i -e ':a' -e 'N' -e '$!ba' -e 's/\n\+/ /g' $fn_jl_check
 
 # replace variables for the secondaries and the primaries
 # and d(ik,il) -> x[i]

@@ -230,9 +230,13 @@ for i:=0 to #IrrSecs-1 do
      base0+i+1,  LeadingMonomial(IrrSecs[i+1]);
 end for;
 if 0 lt #IrrSecs then
- printf " v[%o:%o] = pv[%o:%o]\n",
-   // base1, base1+#IrrSecs-1, base0, base0+#IrrSecs-1;
-    base1+1, base1+#IrrSecs, base0+1, base0+#IrrSecs;
+ // printf " v[%o:%o] = pv[%o:%o]\n",
+ //   // base1, base1+#IrrSecs-1, base0, base0+#IrrSecs-1;
+ //    base1+1, base1+#IrrSecs, base0+1, base0+#IrrSecs;
+    for i:=0 to #IrrSecs-1 do
+     printf " v[%o] = pv[%o]\n",
+     base1+1+i, base0+1+i;
+    end for;
 end if;
 end intrinsic;
 

@@ -41,6 +41,15 @@ NB_prim = countlines(filenameprimdata)
 
 max_exp_prim = generate_invariants(filenameprimdata,filenameprim1,filenameprim2,filenameprim3,NBlengths,Deg,preword,prefprim)
 
+# -------------------------------------------
+#
+# Generate secondary invariants
+#
+# -------------------------------------------
+
+
+
+
 
 # -------------------------------------------
 #
