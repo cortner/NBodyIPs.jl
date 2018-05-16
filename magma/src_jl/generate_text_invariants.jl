@@ -1,4 +1,4 @@
-using Combinatorics, StaticArrays, NBodyIPs
+using Combinatorics, StaticArrays
 
 include("invariants_generator.jl")
 include("misc.jl")

@@ -3,6 +3,7 @@ using StaticArrays, BenchmarkTools, Combinatorics
 
 include("../data/NB_5_deg_6_non_efficient_invariants.jl")
 include("../data/NB_5_deg_6_invariants.jl")
+# include("invariants_co_new.jl")
 
 using FastPolys
 
@@ -16,17 +17,21 @@ x = @SVector rand(10)
 # ------------------
 
 # Primary comparison
-Primary - Primary_inv
-maximum(abs.(SVector(Primary...) - Primary_inv))
+SVector(Primary_slow...) - Primary_fast
+maximum(abs.(SVector(Primary_slow...) - Primary_fast))
 #dont match yet...dont know why.
 
-# Secondary comparison
-SVector(Sec_Inv...) - Sec
-maximum(abs.(SVector(Sec_Inv...) - Sec))
+# Irreducible secondary comparison
+SVector(Irr_sec_slow...) - Irr_sec_fast
+maximum(abs.(SVector(Irr_sec_slow...) - Irr_sec_fast))
+
+# # Secondary comparison
+# SVector(Sec_Inv...) - Sec
+# maximum(abs.(SVector(Sec_Inv...) - Sec))
 
 # ------------------
 # Timings
 # ------------------
 
 @btime invariants_Q10_check($x)
-@btime invariants_Q10($x)
+@btime invariants($x)
