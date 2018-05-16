@@ -109,9 +109,6 @@ Dictionary
    return DI1 .* t_d, DI2 .* t_d
 end
 
-# @inline evaluate(D::Dictionary, α, r) = _m1(α, r)
-# @inline evaluate_d(D::Dictionary, α, r) = _m1d(α, r)
-
 @inline fcut(D::Dictionary, r::Number) = D.fcut(r)
 
 @inline fcut_d(D::Dictionary, r::Number) = D.fcut_d(r)
@@ -174,21 +171,33 @@ function fcut_analyse(args::Tuple)
                   AnalyticFunction( r -> coscut(r, rc1, rc2),
                                     r -> coscut_d(r, rc1, rc2),
                                     nothing ); end, rc2
+
    elseif Symbol(sym) == :sw
       L, rcut = args
       return let L=L, rcut=rcut
                   AnalyticFunction( r -> cutsw(r, rcut, L),
                                     r -> cutsw_d(r, rcut, L),
                                     nothing ); end, rcut
+
    elseif Symbol(sym) == :spline
       rc1, rc2 = args
       return let rc1=rc1, rc2=rc2
                   AnalyticFunction( r -> cutsp(r, rc1, rc2),
                                     r -> cutsp_d(r, rc1, rc2),
                                     nothing );end , rc2
+
    elseif Symbol(sym) == :square
       rcut = args[1]
       return let rcut=rcut; (@analytic r -> (r - rcut)^2); end, rcut
+
+   elseif Symbol(sym) == :twosided
+      af =
+      return let rnn=args[1], rcut = args[2]
+         f = @analytic r -> ( ((rnn/r)^3 - (rnn/rcut)^3) * ((rnn/r)^3 - (1.0/0.75)^3) )
+         AnalyticFunction(r -> f.f(r) * (0.75*rnn < r < rcut),
+                          r -> f.f_d(r) * (0.75*rnn < r < rcut),
+                          nothing) end, args[2]
+
    else
       error("Dictionary: unknown symbol $(sym) for fcut.")
    end
