@@ -6,6 +6,9 @@ include("misc.jl")
 # Parameters
 NBody = 5;
 Deg = 6;
+prefsec = "SEC" #prefix for the secondaries
+prefirrsec = "IS" #prefix for the irreducible secondaries
+prefprim = "P" #prefix for the primaries
 # --------------
 NBlengths = Int(NBody*(NBody-1)/2);
 
@@ -20,7 +23,7 @@ filenameirrsec2 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text2.jl";
 filenameirrsec3 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text3.jl";
 filenameirrsecdata = "magma/data/NB_$NBody""_deg_$Deg""_irr_invariants.jl";
 preword = "# Irreducible secondaries for NBody=$NBody"*"and deg=$Deg \n"
-prefirrsec = "IS"
+
 NB_irrsec = countlines(filenameirrsecdata)
 
 max_exp_irrsec = generate_invariants(filenameirrsecdata,filenameirrsec1,filenameirrsec2,filenameirrsec3,NBlengths,Deg,preword,prefirrsec)
@@ -36,21 +39,16 @@ filenameprim2 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_prim_text2.jl";
 filenameprim3 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_prim_text3.jl";
 filenameprimdata = "magma/data/NB_$NBody""_deg_$Deg""_prim_invariants.jl";
 preword = "# Primary invariants for NBody=$NBody"*"and deg=$Deg \n"
-prefprim = "P"
 NB_prim = countlines(filenameprimdata)
 
 max_exp_prim = generate_invariants(filenameprimdata,filenameprim1,filenameprim2,filenameprim3,NBlengths,Deg,preword,prefprim)
-
 # -------------------------------------------
 #
-# Generate secondary invariants
+# Secondary invariants (relations with irreducible secondaries)
 #
 # -------------------------------------------
-
-
-
-
-
+filenamesec = "magma/data/NB_$NBody"*"_deg_$Deg"*"_relations_invariants.jl";
+NB_secondary = countlines(filenamesec);
 # -------------------------------------------
 #
 # Generate function with all invariants
@@ -106,6 +104,15 @@ open(file, "w") do f
     irrsec3 = read(filenameirrsec3)
     write(f, irrsec3)
 
+    # write all the secondary invariants
+    write(f, "\n\n\n   #------------------------------------------------\n")
+    write(f, "   # All secondaries\n")
+    write(f, "   #------------------------------------------------\n")
+
+    write(f, "\n\n")
+    sec = read(filenamesec)
+    write(f, sec)
+
     #write the return part
     write(f, "\n\n")
     write(f, "return (@SVector [")
@@ -113,8 +120,8 @@ open(file, "w") do f
         write(f, prefprim, "$i,")
     end
     write(f, "]), (@SVector [")
-    for i=1:NB_irrsec
-        write(f, prefirrsec, "$i,")
+    for i=1:NB_secondary
+        write(f, prefsec, "$i,")
     end
     write(f, "])\n end")
 

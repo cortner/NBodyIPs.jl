@@ -120,9 +120,6 @@ sed -i '' '/ v\[/!d' $fn_jl_sec_rel_inv
 sed -i '' "s/pv\[/$PREFIRRSEC/g" $fn_jl_sec_rel_inv
 sed -i '' "s/v\[/$PREFSEC/g" $fn_jl_sec_rel_inv
 sed -i '' "s/\]/ /g" $fn_jl_sec_rel_inv
-# gsed -i "s/pv\[/$PREFIRRSEC/g" $fn_jl_sec_rel_inv
-# gsed -i "s/ v\[/$PREFSEC/" $fn_jl_sec_rel_inv
-# gsed -i "s/\]/ /" $fn_jl_sec_rel_inv
 
 # Moving lines starting with +
 # ---------------------------------------------------------
