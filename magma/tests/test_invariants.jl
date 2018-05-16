@@ -19,12 +19,12 @@ x = @SVector rand(10)
 
 # Primary comparison
 SVector(Primary_slow...) - Primary_fast
-maximum(abs.(SVector(Primary_slow...) - Primary_fast))
+display(maximum(abs.(SVector(Primary_slow...) - Primary_fast)))
 #dont match yet...dont know why.
 
 # Irreducible secondary comparison
 SVector(Sec_slow...) - Sec_fast
-maximum(abs.(SVector(Sec_slow...) - Sec_fast))
+display(maximum(abs.(SVector(Sec_slow...) - Sec_fast)))
 
 # # Secondary comparison
 # SVector(Sec_Inv...) - Sec
@@ -36,3 +36,4 @@ maximum(abs.(SVector(Sec_slow...) - Sec_fast))
 
 @btime invariants_Q10_check($x)
 @btime invariants($x)
+@btime invariants_d($x)

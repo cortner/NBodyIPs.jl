@@ -21,12 +21,13 @@ NBlengths = Int(NBody*(NBody-1)/2);
 filenameirrsec1 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text1.jl";
 filenameirrsec2 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text2.jl";
 filenameirrsec3 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text3.jl";
+filenameirrsec4 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text4.jl";
 filenameirrsecdata = "magma/data/NB_$NBody""_deg_$Deg""_irr_invariants.jl";
 preword = "# Irreducible secondaries for NBody=$NBody"*"and deg=$Deg \n"
 
 NB_irrsec = countlines(filenameirrsecdata)
 
-max_exp_irrsec = generate_invariants(filenameirrsecdata,filenameirrsec1,filenameirrsec2,filenameirrsec3,NBlengths,Deg,preword,prefirrsec)
+max_exp_irrsec = generate_invariants(filenameirrsecdata,filenameirrsec1,filenameirrsec2,filenameirrsec3,filenameirrsec4,NBlengths,Deg,preword,prefirrsec)
 
 
 # -------------------------------------------
@@ -37,11 +38,12 @@ max_exp_irrsec = generate_invariants(filenameirrsecdata,filenameirrsec1,filename
 filenameprim1 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_prim_text1.jl";
 filenameprim2 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_prim_text2.jl";
 filenameprim3 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_prim_text3.jl";
+filenameprim4 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_prim_text4.jl";
 filenameprimdata = "magma/data/NB_$NBody""_deg_$Deg""_prim_invariants.jl";
 preword = "# Primary invariants for NBody=$NBody"*"and deg=$Deg \n"
 NB_prim = countlines(filenameprimdata)
 
-max_exp_prim = generate_invariants(filenameprimdata,filenameprim1,filenameprim2,filenameprim3,NBlengths,Deg,preword,prefprim)
+max_exp_prim = generate_invariants(filenameprimdata,filenameprim1,filenameprim2,filenameprim3,filenameprim4,NBlengths,Deg,preword,prefprim)
 # -------------------------------------------
 #
 # Secondary invariants (relations with irreducible secondaries)
@@ -125,5 +127,53 @@ open(file, "w") do f
     end
     write(f, "])\n end")
 
+
+
+    # -------------------------------------------
+    #
+    # Generate derivatives of the invariants
+    #
+    # -------------------------------------------
+    write(f, "\n\n\n\n")
+    write(f, "function invariants_d(x1::SVector{$NBlengths, T}) where {T}\n")
+    for i=2:max(max_exp_irrsec,max_exp_prim)
+        im = i-1;
+        write(f, "   x$i = x$im.*x1 \n")
+    end
+    write(f, "\n   dx1 = @SVector ones($NBlengths)\n")
+    for i=2:max(max_exp_irrsec,max_exp_prim)
+        im = i-1;
+        write(f, "   dx$i = $i * x$im \n")
+    end
+
+    # write the primary invariants
+    write(f, "   #------------------------------------------------\n")
+    write(f, "   # Primaries\n")
+    write(f, "   #------------------------------------------------\n")
+
+    write(f, "\n")
+    prim4 = read(filenameprim4)
+    write(f, prim4)
+
+    # write the irreducible secondary invariants
+    write(f, "\n\n\n   #------------------------------------------------\n")
+    write(f, "   # Irreducible secondaries\n")
+    write(f, "   #------------------------------------------------\n")
+
+    write(f, "\n\n")
+    irrsec4 = read(filenameirrsec4)
+    write(f, irrsec4)
+
+    #write the return part
+    write(f, "\n\n")
+    write(f, "return (")
+    for i=1:NB_prim
+        write(f, "d", prefprim, "$i,")
+    end
+    write(f, "), (")
+    for i=1:NB_irrsec
+        write(f, "d", prefirrsec, "$i,")
+    end
+    write(f, ")\n end")
 
 end
