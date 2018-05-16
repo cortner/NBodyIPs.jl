@@ -2,12 +2,14 @@
 using StaticArrays, BenchmarkTools, Combinatorics
 
 include("../data/NB_5_deg_6_non_efficient_invariants.jl")
-include("invariants_5B.jl")
+include("../data/NB_5_deg_6_invariants.jl")
+
+using FastPolys
 
 x = @SVector rand(10)
 
-(Primary_inv, Sec_Inv, Irr_sec) = invariants_Q10_check(x)
-(Primary,Sec) = invariants_Q10(x)
+(Primary_slow, Sec_slow, Irr_sec_slow) = invariants_Q10_check(x)
+(Primary_fast,Irr_sec_fast) = invariants(x)
 
 # ------------------
 # Invariant check vs slow version

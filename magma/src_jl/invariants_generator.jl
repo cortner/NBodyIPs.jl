@@ -52,16 +52,12 @@ function perm_2_indice(Perms)
 end
 
 
-perm_2_indice([SVector(1,2,3,0,0,0)])
-
 function monomial_2_vec_exp(monomial)
     perm_deg = length(find(monomial))
     Vec_ind = perm_2_indice(unique(simplex_permutations(monomial)))
     exponent = sort(monomial,rev=true)[1:perm_deg]
     return exponent, Vec_ind
 end
-
-monomial_2_vec_exp(SVector(4,1,1,0,0,0),SVector(1,1,1,0,0,0))
 
 
 function vec_exp_2_file(filename1,filename2,filename3,exponent,Vec_ind,prefix,number)
@@ -99,20 +95,16 @@ function vec_exp_2_file(filename1,filename2,filename3,exponent,Vec_ind,prefix,nu
     end
 end
 
-22
 
 function monomial_2_file(filename1,filename2,filename3,monomial,prefix,number)
    exponent, Vec_ind = monomial_2_vec_exp(monomial)
    vec_exp_2_file(filename1,filename2,filename3,exponent,Vec_ind,prefix,number)
+   return exponent
 end
-
-monomial_2_file("test_mono1","test_mono2","test_mono3",SVector(1,0,0,0,0,0),"IS",3)
-
-22
-
 
 
 function generate_invariants(filenamedata,filename1,filename2,filename3,NBlengths,Deg,preword,prefix)
+    max_exp = 1;
     (NB_inv,Monomials,Monomials_simple) = generate_monomials(filenamedata,NBlengths,Deg)
     open(filename1, "w") do f
       write(f, preword, " # : definitions at the beginning of the file \n")
@@ -125,19 +117,20 @@ function generate_invariants(filenamedata,filename1,filename2,filename3,NBlength
     end
     for j=1:NB_inv
        monomial = SVector(Monomials[j]...);
-       monomial_2_file(filename1,filename2,filename3,monomial,prefix,j)
+       exponent = monomial_2_file(filename1,filename2,filename3,monomial,prefix,j)
+       max_exp_temp = maximum(exponent)
+       if max_exp_temp > max_exp
+          max_exp = max_exp_temp
+       end
        # TODO: keep track of matrices
     end
 
-
+    return max_exp
 
 
 end
 
 # generate_invariants(filenamedata,filename,NBlengths,Deg,preword,prefix)
-
-22
-
 
 # function generate_invariants(filenamedata,filename,NBlengths,Deg,preword,preff)
 #     (NB_inv,Monomials,Monomials_simple) = generate_monomials(filenamedata,NBlengths,Deg)
