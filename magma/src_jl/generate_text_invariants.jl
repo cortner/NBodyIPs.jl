@@ -5,8 +5,8 @@ include("misc.jl")
 
 # Parameters
 #TODO: check that prefix are the same as the ones in generate_invariants.sh
-NBody = 5;
-Deg = 6;
+NBody = 4;
+Deg = 10;
 prefsec = "SEC" #prefix for the secondaries
 prefirrsec = "IS" #prefix for the irreducible secondaries
 prefprim = "P" #prefix for the primaries
@@ -18,7 +18,6 @@ NBlengths = Int(NBody*(NBody-1)/2);
 # Generate irreducible secondaries
 #
 # -------------------------------------------
-# filename = "magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text.jl";
 filenameirrsec1 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text1.jl";
 filenameirrsec2 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text2.jl";
 filenameirrsec3 = "magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text3.jl";
@@ -54,6 +53,38 @@ filenamesec = "magma/data/NB_$NBody"*"_deg_$Deg"*"_relations_invariants.jl";
 NB_secondary = countlines(filenamesec);
 # -------------------------------------------
 #
+# Derivatives of secondary invariants (relations with irreducible secondaries)
+#
+# -------------------------------------------
+filenamesec_d = "magma/data/NB_$NBody"*"_deg_$Deg"*"_relations_invariants_derivatives.jl";
+
+open(filenamesec_d, "w") do f
+end
+
+fileI = open(filenamesec)
+line = readlines(fileI)
+for i=1:length(line)
+    if contains(line[i], "*")
+        part1,part2 = split(line[i], "=")
+        part2_1,part2_2 = split(part2, "*")
+        repl1 = replace(part1, prefsec, "d"*prefsec)
+        repl2_1 = replace(part2_1, prefirrsec, "d"*prefirrsec)
+        repl2_2 = replace(part2_2, prefirrsec, "d"*prefirrsec)
+        open(filenamesec_d, "a") do f
+            write(f, repl1, " = ", repl2_1, "*", part2_2, "+", part2_1, "*", repl2_2, "\n")
+        end
+    else
+        open(filenamesec_d, "a") do f
+            repl1 = replace(line[i], prefsec, "d"*prefsec)
+            repl2 = replace(repl1, prefirrsec, "d"*prefirrsec)
+            write(f, repl2, "\n")
+        end
+    end
+end
+
+
+# -------------------------------------------
+#
 # Generate function with all invariants
 #
 # -------------------------------------------
@@ -81,7 +112,7 @@ open(file, "w") do f
     write(f, "\n\n")
 
     # write the name of the function
-    write(f, "function invariants(x1::SVector{$NBlengths, T}) where {T}\n")
+    write(f, "function invariants_gen(x1::SVector{$NBlengths, T}) where {T}\n")
 
     # write the precomputed powers of x
     for i=2:max(max_exp_irrsec,max_exp_prim)
@@ -136,7 +167,7 @@ open(file, "w") do f
     #
     # -------------------------------------------
     write(f, "\n\n\n\n")
-    write(f, "function invariants_d(x1::SVector{$NBlengths, T}) where {T}\n")
+    write(f, "function invariants_d_gen(x1::SVector{$NBlengths, T}) where {T}\n")
     for i=2:max(max_exp_irrsec,max_exp_prim)
         im = i-1;
         write(f, "   x$i = x$im.*x1 \n")
@@ -165,6 +196,15 @@ open(file, "w") do f
     irrsec4 = read(filenameirrsec4)
     write(f, irrsec4)
 
+    # write all the secondary invariants
+    write(f, "\n\n\n   #------------------------------------------------\n")
+    write(f, "   # All secondaries\n")
+    write(f, "   #------------------------------------------------\n")
+
+    write(f, "\n\n")
+    sec = read(filenamesec_d)
+    write(f, sec)
+
     #write the return part
     write(f, "\n\n")
     write(f, "return (")
@@ -172,9 +212,20 @@ open(file, "w") do f
         write(f, "d", prefprim, "$i,")
     end
     write(f, "), (")
-    for i=1:NB_irrsec
-        write(f, "d", prefirrsec, "$i,")
+    for i=1:NB_secondary
+        write(f, "d", prefsec, "$i,")
     end
     write(f, ")\n end")
+
+#Remove the temporary files
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text1.jl");
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text2.jl");
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text3.jl");
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text4.jl");
+
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"_prim_text1.jl");
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"_prim_text2.jl");
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"_prim_text3.jl");
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"_prim_text4.jl");
 
 end

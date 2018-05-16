@@ -1,20 +1,23 @@
 
 using StaticArrays, BenchmarkTools, Combinatorics, Base.Test
 using ForwardDiff
+using NBodyIPs
 
-include("../data/NB_5_deg_6_non_efficient_invariants.jl")
-include("../data/NB_5_deg_6_invariants.jl")
-# include("invariants_co_new.jl")
+# include("../data/NB_5_deg_6_non_efficient_invariants.jl")
+# include("../data/NB_5_deg_6_invariants.jl")
+
+include("../data/NB_4_deg_10_non_efficient_invariants.jl")
+include("../data/NB_4_deg_10_invariants.jl")
 
 include("fastpolys.jl")
 using FastPolys
 
 
-function d_invariants_Q10_check(x)
-   return ForwardDiff.gradient(invariants_Q10_check, x)
+function d_invariants_Q6_check(x)
+   return ForwardDiff.gradient(invariants_Q6_check, x)
 end
 
-all_invariants(r) = vcat(invariants(r)...)
+all_invariants(r) = vcat(invariants_gen(r)...)
 ad_invariants(r) = ForwardDiff.jacobian(all_invariants, r)
 r = 1.0 + SVector(rand(10)...)
 # dI1, dI2 = invariants_d(r)
