@@ -1,17 +1,24 @@
 #!/bin/bash
 
+# Script generating files containing primary and secondary invariants for N-body terms up to a given degree
+
+# -------------------------------------------
+# Paramters
+# -------------------------------------------
 NBODY=5
+DEGREE=6 #maximal polynomial degree
+
+PREFSEC="SEC" #prefix for the secondary invariants
+PREFIRRSEC="IS" #prefix for the irreducible secondary invariants
+
 NBlengths=$((($NBODY*($NBODY-1))/2))
-DEGREE=6
 
-PREFSEC="SEC"
-PREFIRRSEC="IS"
-
+# printing the parameters
 ECHO Nbody order= $NBODY
 ECHO Nb of lengths= $NBlengths
 ECHO Polynomial degree= $DEGREE
 
-# filename_output="NBody_$NBODY""_deg_$DEGREE""_output.txt"
+#Define the file names used later and print out their names
 filename_log="NB_$NBODY""_deg_$DEGREE""_log.txt"
 fn_jl_check="NB_$NBODY""_deg_$DEGREE""_non_efficient_invariants.jl"
 fn_jl_irr_inv="NB_$NBODY""_deg_$DEGREE""_irr_invariants.jl"
@@ -23,23 +30,35 @@ ECHO Output files:
 ECHO $filename_log
 ECHO $fn_jl_check
 ECHO $fn_jl_irr_inv
+ECHO $fn_jl_prim_inv
+ECHO $fn_jl_sec_rel_inv
 
+
+# -------------------------------------------
+# Magma part
+# -------------------------------------------
+#put the paramters into the input file
 cp Nbody_inv_auto_generation.m Nbody_run.m;
 
 sed -i -e "s/DEGREE/$DEGREE/g" Nbody_run.m;
 sed -i -e "s/NBODY/$NBODY/g" Nbody_run.m;
 
+#connect to galois and copy the input files
 scp pack_opt_primaries.m dusson@galois.warwick.ac.uk: ;
 scp Nbody_run.m dusson@galois.warwick.ac.uk: ;
 
+#run the magma computation
 ssh dusson@galois.warwick.ac.uk << EOF
 magma Nbody_run.m
 EOF
 
+#remove now useless file
 rm Nbody_run.m;
 
+#copy the output on the local machine
 scp dusson@galois.warwick.ac.uk:logNbody_output.txt .;
 
+# change the name of the output file
 mv logNbody_output.txt $filename_log
 
 # Generate julia file with function computing primary and secondary invariants (not efficient but hopefully correct)
@@ -52,6 +71,7 @@ sed -i '' '/Total/d' $fn_jl_check
 # remove line with number of secondaries
 TEMPVAR=$(grep "Nb_secondary_invariants" $fn_jl_check)
 NBsecondaries=${TEMPVAR#*=}
+#print number of secondaries
 ECHO "Nb of secondaries="$NBsecondaries
 
 sed -i '' '/ Nb_secondary_invariants/d' $fn_jl_check
@@ -88,6 +108,7 @@ cp $fn_jl_check $fn_jl_sec_rel_inv
 sed -i '' '/SYM/d' $fn_jl_check
 sed -i '' '/SYYM/d' $fn_jl_check
 
+#write the julia file for the check function
 echo "v=zeros($NBsecondaries"",1);" | cat - $fn_jl_check > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
 echo "" | cat - $fn_jl_check > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
 echo "pv=zeros($NBirr_sec"",1);" | cat - $fn_jl_check > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
@@ -95,14 +116,11 @@ echo "prim=zeros($NBlengths"",1);" | cat - $fn_jl_check > /tmp/tempfile && mv /t
 echo "function invariants_Q$NBlengths""_check(x)" | cat - $fn_jl_check > /tmp/tempfile && mv /tmp/tempfile $fn_jl_check
 
 
-
 echo "return prim, v, pv"  >> $fn_jl_check
 echo "" >> $fn_jl_check
 echo "end" >> $fn_jl_check
 echo "x = rand($NBlengths"")"  >> $fn_jl_check
 echo "display(invariants_Q$NBlengths""_check(x))"  >> $fn_jl_check
-
-#TODO: check that no lines start by + (otherwise wring invariants are computed)
 
 # Generate a file with only monomials of irreducible secondaries
 # ---------------------------------------------------------
@@ -125,22 +143,12 @@ sed -i '' "s/\]/ /g" $fn_jl_sec_rel_inv
 # ---------------------------------------------------------
 gsed -i '$!N;s/\n\s*+/ +/;P;D' $fn_jl_check
 
-
-
+#move all files to the data folder
 mv $filename_log ../data/$filename_log
 mv $fn_jl_check ../data/$fn_jl_check
 mv $fn_jl_irr_inv ../data/$fn_jl_irr_inv
 mv $fn_jl_prim_inv ../data/$fn_jl_prim_inv
 mv $fn_jl_sec_rel_inv ../data/$fn_jl_sec_rel_inv
 
+#remove useless file
 rm NBody_run.m-e
-
-# # ----------------------------------
-# cp generate_irr_secondaries.jl irr_sec_run.jl;
-#
-# sed -i -e "s/DEGREE/$DEGREE/g" irr_sec_run.jl;
-# sed -i -e "s/NBODY/$NBODY/g" irr_sec_run.jl;
-# #
-# /Applications/Julia-0.6.app/Contents/Resources/julia/bin/julia irr_sec_run.jl
-#
-# rm irr_sec_run.jl
