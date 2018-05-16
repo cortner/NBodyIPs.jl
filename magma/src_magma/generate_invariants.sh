@@ -5,8 +5,8 @@
 # -------------------------------------------
 # Paramters
 # -------------------------------------------
-NBODY=5
-DEGREE=8 #maximal polynomial degree
+NBODY=4
+DEGREE=10 #maximal polynomial degree
 
 PREFSEC="SEC" #prefix for the secondary invariants
 PREFIRRSEC="IS" #prefix for the irreducible secondary invariants
@@ -144,11 +144,13 @@ sed -i '' "s/\]/ /g" $fn_jl_sec_rel_inv
 gsed -i '$!N;s/\n\s*+/ +/;P;D' $fn_jl_check
 
 #move all files to the data folder
-mv $filename_log ../data/$filename_log
-mv $fn_jl_check ../data/$fn_jl_check
-mv $fn_jl_irr_inv ../data/$fn_jl_irr_inv
-mv $fn_jl_prim_inv ../data/$fn_jl_prim_inv
-mv $fn_jl_sec_rel_inv ../data/$fn_jl_sec_rel_inv
+mkdir -p ../data/NB_$NBODY""_deg_$DEGREE
+
+mv $filename_log ../data/NB_$NBODY""_deg_$DEGREE/$filename_log
+mv $fn_jl_check ../data/NB_$NBODY""_deg_$DEGREE/$fn_jl_check
+mv $fn_jl_irr_inv ../data/NB_$NBODY""_deg_$DEGREE/$fn_jl_irr_inv
+mv $fn_jl_prim_inv ../data/NB_$NBODY""_deg_$DEGREE/$fn_jl_prim_inv
+mv $fn_jl_sec_rel_inv ../data/NB_$NBODY""_deg_$DEGREE/$fn_jl_sec_rel_inv
 
 #remove useless file
 rm NBody_run.m-e
