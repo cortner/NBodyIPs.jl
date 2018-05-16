@@ -145,11 +145,11 @@ sed -i '' '/ v\[/!d' $fn_jl_sec_rel_inv
 # ---------------------------------------------------------
 gsed -i '$!N;s/\n\s*+/ +/;P;D' $fn_jl_check
 
-mv $filename_log ../data_temp/$filename_log
-mv $fn_jl_check ../data_temp/$fn_jl_check
-mv $fn_jl_irr_inv ../data_temp/$fn_jl_irr_inv
-mv $fn_jl_prim_inv ../data_temp/$fn_jl_prim_inv
-mv $fn_jl_sec_rel_inv ../data_temp/$fn_jl_sec_rel_inv
+mv $filename_log ../data/$filename_log
+mv $fn_jl_check ../data/$fn_jl_check
+mv $fn_jl_irr_inv ../data/$fn_jl_irr_inv
+mv $fn_jl_prim_inv ../data/$fn_jl_prim_inv
+mv $fn_jl_sec_rel_inv ../data/$fn_jl_sec_rel_inv
 
 rm NBody_run.m-e
 

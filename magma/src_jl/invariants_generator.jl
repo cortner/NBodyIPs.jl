@@ -1,5 +1,10 @@
-using Combinatorics, StaticArrays, NBodyIPs
+using Combinatorics, StaticArrays
+# , NBodyIPs
 include("misc.jl")
+
+prefix_file = "using StaticArrays \n using BenchmarkTools: @btime \n\n include(\"fastpolys.jl\") \n using FastPolys \n"
+
+
 
 
 function generate_monomials(filename,NBlengths,Deg=10)
