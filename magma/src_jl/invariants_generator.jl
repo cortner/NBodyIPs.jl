@@ -79,6 +79,7 @@ function vec_exp_2_file(filename1,filename2,filename3,exponent,Vec_ind,prefix,nu
           end
           write(f, ") \n")
        end
+       write(f, "\n")
     end
     open(filename2, "a") do f
        write(f, "const ")
@@ -111,22 +112,16 @@ monomial_2_file("test_mono1","test_mono2","test_mono3",SVector(1,0,0,0,0,0),"IS"
 
 
 
-function generate_invariants(filenamedata,filename,NBlengths,Deg,preword,prefix)
+function generate_invariants(filenamedata,filename1,filename2,filename3,NBlengths,Deg,preword,prefix)
     (NB_inv,Monomials,Monomials_simple) = generate_monomials(filenamedata,NBlengths,Deg)
-    filename1 = filename*"1"
-    filename2 = filename*"2"
-    filename3 = filename*"3"
-    open(filename, "w") do f
-       write(f, preword )
-    end
     open(filename1, "w") do f
-      # resets the file
+      write(f, preword, " # : definitions at the beginning of the file \n")
     end
     open(filename2, "w") do f
-      # resets the file
+      write(f, preword, " # : definitions of the types at the beginning of the file \n")
     end
     open(filename3, "w") do f
-      # resets the file
+      write(f, preword, " # : what goes in the function for the evaluation \n")
     end
     for j=1:NB_inv
        monomial = SVector(Monomials[j]...);
