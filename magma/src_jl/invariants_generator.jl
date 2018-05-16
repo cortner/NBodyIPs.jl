@@ -3,7 +3,8 @@ include("misc.jl")
 
 
 function generate_monomials(filename,NBlengths,Deg=10)
-    # Deg is the max. degree
+   #generate leading monomials as a tuple from a choosen file
+   # Deg is the max. degree
     NB_inv = countlines(filename); #nb of invariants
 
     Monomials = []; #indices with exponents
@@ -37,22 +38,23 @@ function generate_monomials(filename,NBlengths,Deg=10)
 end
 
 function perm_2_indice(Perms)
+   # convert a list of tuples into an array of indices with non-zero entries in reverse order. All the tuples should have the same number of nonzero entries.
    L = length(Perms);
    deg = length(find(Perms[1]));
    M = length(Perms[1]);
 
    Indices = Array{Int64, 2}(L,deg);
-   # zeros(L,deg);
-
-      for j=1:L
-         Ind_temp = sortperm(Perms[j],rev=true)
-         Indices[j,:] = Ind_temp[1:deg]
-      end
+   for j=1:L
+      Ind_temp = sortperm(Perms[j],rev=true)
+      Indices[j,:] = Ind_temp[1:deg]
+   end
    return Indices
 end
 
 
 function monomial_2_vec_exp(monomial)
+   #converts a tuple representing a monomial into an array containing the indices with non-zero entries in simplex_permutations of the monomial.
+   # The exponent of each column is given by "exponent".
     perm_deg = length(find(monomial))
     Vec_ind = perm_2_indice(unique(simplex_permutations(monomial)))
     exponent = sort(monomial,rev=true)[1:perm_deg]
@@ -61,11 +63,12 @@ end
 
 
 function vec_exp_2_file(filename1,filename2,filename3,filename4,exponent,Vec_ind,prefix,number)
+   # generate different files with parts of the invariants in them.
    nb_vec = size(Vec_ind,2);
     # filename1: write the definition of the vectors
     # filename2: write the definition of the types containing the vectors
     # filename3: write what goes inside the function
-    # filename3: write what goes inside the function for the derivatives
+    # filename4: write what goes inside the function for the derivatives
     open(filename1, "a") do f
        for s=1:nb_vec
           write(f, "const ")
@@ -143,127 +146,3 @@ function generate_invariants(filenamedata,filename1,filename2,filename3,filename
 
 
 end
-
-# generate_invariants(filenamedata,filename,NBlengths,Deg,preword,prefix)
-
-# function generate_invariants(filenamedata,filename,NBlengths,Deg,preword,preff)
-#     (NB_inv,Monomials,Monomials_simple) = generate_monomials(filenamedata,NBlengths,Deg)
-#     open(filename, "w") do f
-#        write(f, preword )
-#     end
-#     for j=1:NB_inv
-#        pref = preff*"$j";
-#        Perms = SVector(Monomials[j]...)
-#        Permsref = SVector(Monomials_simple[j]...)
-#        perm_deg = sum(Permsref)
-#        nb_diff_coef = length(unique(Perms))-1
-#        Perm_inv = sort(Perms,rev=true)
-#        # TODO: keep track of matrices
-#
-#        # different case with respect to the number of variables in the monomial
-#        if (perm_deg==1)
-#            # only 1 variable -> sum of x to some power
-#            open(filename, "a") do f
-#               exponent = Perm_inv[1];
-#               write(f, pref)
-#               write(f, " = ")
-#               write(f, "sum(x$exponent)\n\n")
-#            end
-#
-#        elseif (perm_deg==2)
-#            A = _generate_matrix_Deg_2(NBlengths,Perms)
-#            exp1 = Perm_inv[1];
-#            exp2 = Perm_inv[2];
-#            open(filename, "a") do f
-#               write(f, preff,"A$j=")
-#           end
-#               printmatrix(filename,A)
-#           open(filename, "a") do f
-#               write(f,"\n")
-#               write(f, pref)
-#               write(f, " = ")
-#               write(f, "x$exp1","'*",preff,"A$j","*"," x$exp2")
-#               write(f, "\n\n")
-#            end
-#
-#        else # (perm_deg>2)
-#            for s=1:perm_deg
-#                Ind = perm_2_indice(unique(simplex_permutations(Perms)))
-#                open(filename, "a") do f
-#                    # First vector
-#                    write(f, pref, "_$s = ")
-#                    write(f, "@SVector [")
-#                    for j = 1:size(Ind,1)
-#                        k = Ind[j,s]
-#                        # write(f, "x$exp[$k],")
-#                        write(f, "$k,")
-#                    end
-#                    write(f, "] \n")
-#                end
-#            end
-#            if (perm_deg == 3)
-#                exp1 = Perm_inv[1]
-#                exp2 = Perm_inv[2]
-#                exp3 = Perm_inv[3]
-#                open(filename, "a") do f
-#                    write(f, pref, " = ")
-#                    write(f, "dot(x$exp1[", pref, "_1].* x$exp2[", pref, "_2],x$exp3[", pref, "_3])\n \n")
-#                end
-#            elseif (perm_deg == 4)
-#                exp1 = Perm_inv[1]
-#                exp2 = Perm_inv[2]
-#                exp3 = Perm_inv[3]
-#                exp4 = Perm_inv[4]
-#                open(filename, "a") do f
-#                    write(f, pref, " = ")
-#                    write(f, "dot(x$exp1[", pref, "_1].* x$exp2[", pref, "_2],x$exp3[", pref, "_3].* x$exp4[", pref, "_4])\n \n")
-#                end
-#            elseif (perm_deg == 5)
-#                exp1 = Perm_inv[1]
-#                exp2 = Perm_inv[2]
-#                exp3 = Perm_inv[3]
-#                exp4 = Perm_inv[4]
-#                exp5 = Perm_inv[5]
-#                open(filename, "a") do f
-#                    write(f, pref, " = ")
-#                    write(f, "dot(x$exp1[", pref, "_1].* x$exp2[", pref, "_2],x$exp3[", pref, "_3].* x$exp4[", pref, "_4].* x$exp5[", pref ,"_5])\n \n")
-#                end
-#            else
-#                error("not implemented (perm_deg larger than 5)")
-#            end
-#        end
-#     end
-#     return 0
-#
-# end
-
-# function printmatrix(filename,A)
-#     M = size(A,1);
-#     N = size(A,2);
-#     open(filename, "a") do f
-#        write(f, "[")
-#        for m=1:(M-1)
-#            for n=1:N
-#                element = A[m,n]
-#                 write(f, "$element")
-#                 write(f, " ")
-#             end
-#             write(f, "; ")
-#         end
-#             for n=1:N
-#             element = A[M,n]
-#              write(f, "$element")
-#              write(f, " ")
-#          end
-#         write(f, "]\n")
-#     end
-# end
-
-# function _generate_matrix_Deg_2(NBlengths,Perms)
-#     Ind = perm_2_indice(unique(simplex_permutations(Perms)))
-#     A = zeros(Int64, NBlengths,NBlengths);
-#     for i=1:size(Ind, 1)
-#         A[Ind[i,1],Ind[i,2]] = 1;
-#     end
-#     return A
-# end

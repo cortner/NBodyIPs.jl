@@ -4,6 +4,7 @@ include("invariants_generator.jl")
 include("misc.jl")
 
 # Parameters
+#TODO: check that prefix are the same as the ones in generate_invariants.sh
 NBody = 5;
 Deg = 6;
 prefsec = "SEC" #prefix for the secondaries
