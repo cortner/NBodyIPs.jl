@@ -14,8 +14,8 @@ NBlengths = Int(NBody*(NBody-1)/2);
 # Generate irreducible secondaries
 #
 # -------------------------------------------
-filename = "data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text.jl";
-filenamedata = "data/NB_$NBody""_deg_$Deg""_irr_invariants.jl";
+filename = "magma/data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text.jl";
+filenamedata = "magma/data/NB_$NBody""_deg_$Deg""_irr_invariants.jl";
 preword = "# Irreducible secondaries for NBody=$NBody"*"and deg=$Deg \n"
 pref = "IS"
 
