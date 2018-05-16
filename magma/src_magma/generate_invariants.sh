@@ -4,9 +4,8 @@ NBODY=5
 NBlengths=$((($NBODY*($NBODY-1))/2))
 DEGREE=6
 
-PREFPRIM = "P"
-PREFSEC = "SEC"
-PREFIRRSEC = "IS"
+PREFSEC="SEC"
+PREFIRRSEC="IS"
 
 ECHO Nbody order= $NBODY
 ECHO Nb of lengths= $NBlengths
@@ -118,10 +117,18 @@ sed -i '' 's/SYYM/ /' $fn_jl_prim_inv
 # Generate a file with relations between irreducible and secondary invariants
 # ---------------------------------------------------------
 sed -i '' '/ v\[/!d' $fn_jl_sec_rel_inv
+sed -i '' "s/pv\[/$PREFIRRSEC/g" $fn_jl_sec_rel_inv
+sed -i '' "s/v\[/$PREFSEC/g" $fn_jl_sec_rel_inv
+sed -i '' "s/\]/ /g" $fn_jl_sec_rel_inv
+# gsed -i "s/pv\[/$PREFIRRSEC/g" $fn_jl_sec_rel_inv
+# gsed -i "s/ v\[/$PREFSEC/" $fn_jl_sec_rel_inv
+# gsed -i "s/\]/ /" $fn_jl_sec_rel_inv
 
 # Moving lines starting with +
 # ---------------------------------------------------------
 gsed -i '$!N;s/\n\s*+/ +/;P;D' $fn_jl_check
+
+
 
 mv $filename_log ../data/$filename_log
 mv $fn_jl_check ../data/$fn_jl_check
