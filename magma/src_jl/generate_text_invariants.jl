@@ -33,3 +33,11 @@ preword = "# Primary invariants for NBody=$NBody"*"and deg=$Deg \n"
 pref = "P"
 
 generate_invariants(filenamedata,filename,NBlengths,Deg,preword,pref)
+
+
+# -------------------------------------------
+#
+# Generate function with all invariants
+#
+# -------------------------------------------
+prefix_file = "using StaticArrays \n using BenchmarkTools: @btime \n\n include(\"fastpolys.jl\") \n using FastPolys \n"

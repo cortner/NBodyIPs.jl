@@ -1,18 +1,48 @@
 using Combinatorics, StaticArrays
-# , NBodyIPs
 include("misc.jl")
 
-prefix_file = "using StaticArrays \n using BenchmarkTools: @btime \n\n include(\"fastpolys.jl\") \n using FastPolys \n"
+function perm_2_indice(Perms)
+   L = length(Perms);
+   deg = length(find(Perms[1]));
+   M = length(Perms[1]);
 
+   Indices = Array{Int64, 2}(L,deg);
+   # zeros(L,deg);
 
+      for j=1:L
+         Ind_temp = sortperm(Perms[j],rev=true)
+         Indices[j,:] = Ind_temp[1:deg]
+      end
+   return Indices
+end
+
+# # for one monomial
+# function perm_2_indice(monomial::SVector)
+#    deg = length(find(monomial));
+#    Ind = sortperm(monomial,rev=true)
+#    return deg, Ind
+# end
+
+perm_2_indice([SVector(1,2,3,0,0,0)])
+
+function monomial_2_vec_exp(monomial,monomial_simple)
+    perm_deg = length(find(monomial))
+    Ind = perm_2_indice(unique(simplex_permutations(monomial)))
+    Exponent = sort(monomial,rev=true)[1:perm_deg]
+    return Exponent, Ind
+end
+
+monomial_2_vec_exp(SVector(4,1,1,0,0,0),SVector(1,1,1,0,0,0))
+
+2
 
 
 function generate_monomials(filename,NBlengths,Deg=10)
     # Deg is the max. degree
-    NB_sec_inv = countlines(filename);
+    NB_inv = countlines(filename); #nb of invariants
 
-    Monomials = [];
-    Monomials_simple = [];
+    Monomials = []; #indices with exponents
+    Monomials_simple = []; #indices without exponents (all 1)
 
     file = open(filename)
     line = readlines(file)
@@ -38,57 +68,10 @@ function generate_monomials(filename,NBlengths,Deg=10)
         push!(Monomials,Mono_temp);
         push!(Monomials_simple,Mono_sim_temp);
     end
-    return NB_sec_inv,Monomials,Monomials_simple
+    return NB_inv,Monomials,Monomials_simple
 end
 
 
-
-# function generate_monomials_irr_sec(NBody,Deg)
-#     NBlengths = Int(NBody*(NBody-1)/2);
-#     return generate_monomials("data/NB_$NBody""_deg_$Deg""_irr_invariants.jl",NBlengths)
-# end
-
-
-function printmatrix(filename,A)
-    M = size(A,1);
-    N = size(A,2);
-    open(filename, "a") do f
-       write(f, "[")
-       for m=1:(M-1)
-           for n=1:N
-               element = A[m,n]
-                write(f, "$element")
-                write(f, " ")
-            end
-            write(f, "; ")
-        end
-            for n=1:N
-            element = A[M,n]
-             write(f, "$element")
-             write(f, " ")
-         end
-        write(f, "]\n")
-    end
-end
-
-function _generate_matrix_Deg_2(NBlengths,Perms)
-    Ind = perm_2_indice(unique(simplex_permutations(Perms)))
-    A = zeros(Int64, NBlengths,NBlengths);
-    for i=1:size(Ind, 1)
-        A[Ind[i,1],Ind[i,2]] = 1;
-    end
-    return A
-end
-
-# function generate_all_irr_sec(NBody,Deg)
-#     NBlengths = Int(NBody*(NBody-1)/2);
-#     filename = "data/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text.jl";
-#     # filenamedata = "../data/NB_$NBody""_deg_$Deg""_irr_invariants.jl";
-#     filenamedata = "data/NB_$NBody""_deg_$Deg""_irr_invariants.jl";
-#     preword = "# Irreducible secondaries for NBody=$NBody"*"and deg=$Deg \n"
-#     return generate_invariants(filenamedata,filename,NBlengths,Deg,preword)
-#
-# end
 
 function generate_invariants(filenamedata,filename,NBlengths,Deg,preword,preff)
     (NB_sec_inv,Monomials,Monomials_simple) = generate_monomials(filenamedata,NBlengths,Deg)
@@ -181,18 +164,33 @@ function generate_invariants(filenamedata,filename,NBlengths,Deg,preword,preff)
 
 end
 
+# function printmatrix(filename,A)
+#     M = size(A,1);
+#     N = size(A,2);
+#     open(filename, "a") do f
+#        write(f, "[")
+#        for m=1:(M-1)
+#            for n=1:N
+#                element = A[m,n]
+#                 write(f, "$element")
+#                 write(f, " ")
+#             end
+#             write(f, "; ")
+#         end
+#             for n=1:N
+#             element = A[M,n]
+#              write(f, "$element")
+#              write(f, " ")
+#          end
+#         write(f, "]\n")
+#     end
+# end
 
-function perm_2_indice(Perms)
-   L = length(Perms);
-   deg = length(find(Perms[1]));
-   M = length(Perms[1]);
-
-   Indices = Array{Int64, 2}(L,deg);
-   # zeros(L,deg);
-
-      for j=1:L
-         Ind_temp = sortperm(Perms[j],rev=true)
-         Indices[j,:] = Ind_temp[1:deg]
-      end
-   return Indices
-end
+# function _generate_matrix_Deg_2(NBlengths,Perms)
+#     Ind = perm_2_indice(unique(simplex_permutations(Perms)))
+#     A = zeros(Int64, NBlengths,NBlengths);
+#     for i=1:size(Ind, 1)
+#         A[Ind[i,1],Ind[i,2]] = 1;
+#     end
+#     return A
+# end

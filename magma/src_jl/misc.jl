@@ -58,7 +58,7 @@ const πb3 = collect(permutations(1:3))
 convert a permutation of simplex corners into a permutation of
 simplex edges (for 4 body)
 """
-S4_to_S6(π::Vector{Int}, b4_e_inds=NBodyIPs.b4_e_inds) = Int[
+S4_to_S6(π::Vector{Int}, b4_e_inds=b4_e_inds) = Int[
    b4_e_inds[π[1], π[2]], b4_e_inds[π[1], π[3]], b4_e_inds[π[1], π[4]],
    b4_e_inds[π[2], π[3]], b4_e_inds[π[2], π[4]], b4_e_inds[π[3], π[4]] ]
 
@@ -66,7 +66,7 @@ S4_to_S6(π::Vector{Int}, b4_e_inds=NBodyIPs.b4_e_inds) = Int[
 convert a permutation of simplex corners into a permutation of
 simplex edges (for 5 body)
 """
-S5_to_S10(π::Vector{Int}, b5_e_inds=NBodyIPs.b5_e_inds) = Int[
+S5_to_S10(π::Vector{Int}, b5_e_inds=b5_e_inds) = Int[
    b5_e_inds[π[1], π[2]], b5_e_inds[π[1], π[3]], b5_e_inds[π[1], π[4]],
    b5_e_inds[π[1], π[5]], b5_e_inds[π[2], π[3]], b5_e_inds[π[2], π[4]],
    b5_e_inds[π[2], π[5]], b5_e_inds[π[3], π[4]], b5_e_inds[π[3], π[5]],
