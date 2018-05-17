@@ -30,7 +30,7 @@ const cutsp_d = JuLIP.Potentials.fcut_d
 
 import Base: length
 import JuLIP: cutoff, energy, forces
-import JuLIP.Potentials: evaluate, evaluate_d, @analytic
+import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
 import NBodyIPs: NBodyIP, bodyorder, fast
 
 const Tup{M} = NTuple{M, Int}
@@ -193,9 +193,9 @@ function fcut_analyse(args::Tuple)
    elseif Symbol(sym) == :twosided
       af =
       return let rnn=args[1], rcut = args[2]
-         f = @analytic r -> ( ((rnn/r)^3 - (rnn/rcut)^3) * ((rnn/r)^3 - (1.0/0.75)^3) )
-         AnalyticFunction(r -> f.f(r) * (0.75*rnn < r < rcut),
-                          r -> f.f_d(r) * (0.75*rnn < r < rcut),
+         f = @analytic r -> ( ((rnn/r)^3 - (rnn/rcut)^3)^2 * ((rnn/r)^3 - (1.0/0.7)^3)^2 )
+         AnalyticFunction(r -> f.f(r) * (0.7*rnn < r < rcut),
+                          r -> f.f_d(r) * (0.7*rnn < r < rcut),
                           nothing) end, args[2]
 
    else
@@ -498,5 +498,38 @@ poly_basis(ts::VecTup, D::Dictionary) = [NBody(t, 1.0, D) for t in ts]
 # deprecate this
 gen_basis = poly_basis
 
+
+"""
+`regularise_2b(B, r0, r1; creg = 1e-2, Nquad = 20)`
+
+construct a regularising stabilising matrix that acts only on 2-body
+terms.
+
+* `B` : basis
+* `r0, r1` : upper and lower bound over which to integrate
+* `creg` : multiplier
+* `Nquad` : number of quadrature / sample points
+
+```
+   I = ∑_r h | ∑_j c_j ϕ_j''(r) |^2
+     = ∑_{i,j} c_i c_j  ∑_r h ϕ_i''(r) ϕ_j''(r)
+     = c' * M * c
+   M_ij = ∑_r h ϕ_i''(r) ϕ_j''(r) = h * Φ'' * Φ''
+   Φ''_ri = ϕ_i''(r)
+```
+"""
+function regularise_2b(B::Vector, r0, r1; creg = 1e-2, Nquad = 20)
+   I2 = find(bodyorder.(B) .== 2)
+   B2 = B[I2]
+   rr = linspace(r0, r1, Nquad)
+   Φ = zeros(Nquad, length(B2))
+   for (ib, b) in enumerate(B2), (iq, r) in enumerate(rr)
+      Φ[iq, ib] = evaluate_dd(b, r)
+   end
+   h = (r1 - r0) / (Nquad-1)
+   M = zeros(length(B), length(B))
+   M[I2, I2] = (creg * h) * (Φ' * Φ)
+   return M
+end
 
 end # module
