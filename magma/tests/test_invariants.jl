@@ -8,13 +8,17 @@ Deg = 6;
 
 NBlengths = Int(Nbody*(Nbody-1)/2);
 
+include("../../src/fastpolys.jl")
+using FastPolys
+
 include("../data/NB_$Nbody"*"_deg_$Deg/NB_$Nbody"*"_deg_$Deg"*"_non_efficient_invariants.jl")
 include("../data/NB_$Nbody"*"_deg_$Deg/NB_$Nbody"*"_deg_$Deg"*"_invariants.jl")
 
-include("fastpolys.jl")
-using FastPolys
+
 
 x = @SVector rand(NBlengths)
+
+@btime invariants_ed_gen($x)
 
 (Primary_slow, Sec_slow, Irr_sec_slow) = invariants_Q10_check(x)
 (Primary_fast,Sec_fast) = invariants_gen(x)
@@ -39,7 +43,7 @@ display(maximum(abs.(SVector(Sec_slow...) - Sec_fast)))
 # ------------------
 # Timings
 # ------------------
-
+@btime invariants_ed_gen($x)
 @btime invariants_Q10_check($x)
 @btime invariants_gen($x)
 @btime invariants_d_gen($x)

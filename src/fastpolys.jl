@@ -216,13 +216,14 @@ end
    for I in zip(A...)
       append_str!(exprs, _mon_muladd_ed_(I))
    end
-   # collect the m and dm variables into an SVector
-   coll = "SVector( m ),
-   SVector(" * prod("dm_$n, " for n = 1:N) * ")"
+   # # collect the m and dm variables into an SVector
+   # coll = "SVector( m ) ,
+   # SVector(" * prod("dm_$n, " for n = 1:N) * ")"
+   coll = "SVector(" * prod("dm_$n, " for n = 1:N) * ")"
    quote
       $(Expr(:meta, :inline))
       @inbounds $(Expr(:block, exprs...))
-      $(parse(coll))
+      return m, $(parse(coll))
    end
 end
 

@@ -119,8 +119,8 @@ echo "function invariants_Q$NBlengths""_check(x)" | cat - $fn_jl_check > /tmp/te
 echo "return prim, v, pv"  >> $fn_jl_check
 echo "" >> $fn_jl_check
 echo "end" >> $fn_jl_check
-echo "x = rand($NBlengths"")"  >> $fn_jl_check
-echo "display(invariants_Q$NBlengths""_check(x))"  >> $fn_jl_check
+# echo "x = rand($NBlengths"")"  >> $fn_jl_check
+# echo "display(invariants_Q$NBlengths""_check(x))"  >> $fn_jl_check
 
 # Generate a file with only monomials of irreducible secondaries
 # ---------------------------------------------------------
