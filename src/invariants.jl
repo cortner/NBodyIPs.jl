@@ -73,6 +73,9 @@ invariants(r::SVector{1, T}) where {T} =
 invariants_d(r::SVector{1, T}) where {T} =
    (@SMatrix [one(T)]), (@SMatrix [zero(T)])
 
+invariants_ed(r::SVector{1,T}) where {T} =
+   copy(r), SVector{1, T}(1.0), (@SMatrix [one(T)]), (@SMatrix [zero(T)])
+
 # tdegrees(::Val{2}) = (1,), (0,)
 
 degrees(::Val{2}) = (SVector(1,),), (SVector(0,),)
@@ -98,6 +101,21 @@ invariants_d(  r::SVector{3, T}) where {T} =
                    r[2]+r[3]  r[1]+r[3]   r[1]+r[2];
                    r[2]*r[3]  r[1]*r[3]   r[1]*r[2] ]),
       (@SMatrix T[ 0.0        0.0         0.0  ])
+
+function invariants_ed(r::SVector{3, T}) where {T}
+   r1 = r[1]
+   r2 = r[2]
+   r3 = r[3]
+   r12 = r[1]*r[2]
+   r13 = r[1]*r[3]
+   r23 = r[2]*r[3]
+   return (@SVector T[ r1+r2+r3, r12 + r13 + r23, r12*r3 ]),
+      (@SVector T[ 1.0 ]),
+      (@SMatrix T[ 1.0    1.0     1.0;
+                   r2+r3  r1+r3   r1+r2;
+                   r23    r13     r12 ]),
+      (@SMatrix T[ 0.0        0.0         0.0  ])
+end
 
 # tdegrees(::Val{3}) = (1, 2, 3), (0,)
 
@@ -182,6 +200,51 @@ function invariants_d(x::SVector{6, T}) where {T}
           hcat(z, ∇PV1, ∇PV2, ∇PV3, 2*PV1*∇PV1, PV3*∇PV2 + PV2*∇PV3)'
 end
 
+
+function invariants_ed(x::SVector{6, T}) where {T}
+   x2 = x.*x
+   x3 = x2.*x
+   x4 = x3.*x
+   o = @SVector ones(T, 6)
+   z = @SVector zeros(T, 6)
+
+   # primary invariants
+   I1 = sum(x)
+   I2 = x[1]*x[6] + x[2]*x[5] + x[3]*x[4]
+   I3 = sum(x2)
+   x23 = x[2]*x[3]
+   x45 = x[4]*x[5]
+   x24 = x[2]*x[4]
+   x35 = x[3]*x[5]
+   I4 = x[1]*(x23 + x45) + (x24+x35)*x[6]
+   I5 = sum(x3)
+   I6 = sum(x4)
+
+   # secondary invariants
+   Ax = A*x
+   PV1 = dot(x2, Ax)
+   PV2 = dot(x3, Ax)
+   PV3 = dot(x4, x)
+   I11 = PV1 * PV1
+   I12 = PV2 * PV3
+
+   # gradient precomputations
+   ∇I2 = @SVector [x[6], x[5], x[4], x[3], x[2], x[1]]
+   ∇I4 = @SVector [ x23+x45,
+                    x[1]*x[3]+x[4]*x[6],
+                    x[1]*x[2]+x[5]*x[6],
+                    x[1]*x[5]+x[2]*x[6],
+                    x[1]*x[4]+x[3]*x[6],
+                    x24+x35 ]
+   ∇PV1 = A * x2 + 2 * (x .* Ax)
+   ∇PV2 = A * x3 + 3 * (x2 .* Ax)
+   ∇PV3 = 5 * x4
+
+   return SVector(I1, I2, I3, I4, I5, I6),
+         SVector(one(T), PV1, PV2, PV3, I11, I12),
+         hcat(o, ∇I2, 2*x, ∇I4, 3*x2, 4*x3)',
+         hcat(z, ∇PV1, ∇PV2, ∇PV3, 2*PV1*∇PV1, PV3*∇PV2 + PV2*∇PV3)'
+end
 
 
 # ------------------------------------------------------------------------
