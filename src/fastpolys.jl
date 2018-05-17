@@ -93,7 +93,7 @@ _mon_muladd_d_(I::NTuple{5, Int}) =
     "dm_$(I[4]) = muladd( a123,  dx4_$(I[4]) *  x5_$(I[5]), dm_$(I[4]))",
     "dm_$(I[5]) = muladd( a123,   x4_$(I[4]) * dx5_$(I[5]), dm_$(I[5]))" ]
 
-_mon_muladd_d_(I::NTuple{5, Int}) =
+_mon_muladd_ed_(I::NTuple{5, Int}) =
    ["a12 = x1_$(I[1]) * x2_$(I[2])",
    "a123 = a12 * x3_$(I[3])",
    "a45 = x4_$(I[4]) * x5_$(I[5])",
