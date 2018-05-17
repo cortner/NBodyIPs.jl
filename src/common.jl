@@ -1,10 +1,10 @@
 
-using StaticArrays
+using StaticArrays, ForwardDiff
 
-using JuLIP: AbstractCalculator, Atoms, neighbourlist
+using JuLIP: AbstractCalculator, Atoms, neighbourlist, @D
 using NeighbourLists: nbodies, maptosites!, maptosites_d!, virial!
-using JuLIP.Potentials: evaluate, evaluate_d
 
+import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd
 import JuLIP: cutoff, energy, forces, site_energies, virial
 
 export NBodyIP,
@@ -81,3 +81,16 @@ turn a potentially slow representation of an IP into a fast one,
 by switching to a different representation.
 """
 fast(IP::NBodyIP) = NBodyIP( fast.(IP.orders) )
+
+
+# generics
+
+evaluate(V::NBodyFunction{2}, r::Number) = evaluate(V, SVector(r))
+
+evaluate_d(V::NBodyFunction{2}, r::Number) = evaluate_d(V, SVector(r))[1]
+
+evaluate_dd(V::NBodyFunction{2}, r::Number) =
+      ((@D V(r+1e-5)) - (@D V(r-1e-5))) / 1e-5
+
+evaluate(V::NBodyFunction{3}, r1::Number, r2::Number, r3::Number) =
+      evaluate(V, SVector(r1, r2, r3))
