@@ -259,12 +259,17 @@ end
 # in total 133 secondary of degree less than 9. That’s quite a lot. Some of
 # them have very long expressions.
 
-degrees(::Val{5}) = ( 1, 2, 2, 3, 3, 4, 4, 5, 5, 6), (0, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-7)
 
-# include("invariants5.jl")
 
+include("../magma/data/NB_5_deg_7/NB_5_deg_7_invariants.jl")
+@inline invariants(x::SVector{10}) = invariants_gen(x)
+@inline invariants_d(x::SVector{10}) = invariants_d_gen(x)
+@inline invariants_ed(x::SVector{10}) = invariants_ed_gen(x)
+
+
+# ------------------------------------------------------------------------
+#      Utility Functions
+# ------------------------------------------------------------------------
 
 
 function ispure(vN::Val{N}, t::NTuple{K, Int}) where {N, K}

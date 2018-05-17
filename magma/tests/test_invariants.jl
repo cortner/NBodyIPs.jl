@@ -4,7 +4,7 @@ using ForwardDiff
 using NBodyIPs
 
 Nbody = 5;
-Deg = 6;
+Deg = 7;
 
 NBlengths = Int(Nbody*(Nbody-1)/2);
 

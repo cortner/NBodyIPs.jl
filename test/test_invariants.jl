@@ -5,7 +5,7 @@ using BenchmarkTools
 using NBodyIPs.Polys: invariants, invariants_d
 using JuLIP.Potentials: evaluate, evaluate_d
 
-all_invariants(r) = vcat(invariants(r)...)
+all_invariants(r) = vcat(invariants(r)...)  # [I1; I2]
 ad_invariants(r) = ForwardDiff.jacobian(all_invariants, r)
 
 println("-------------------------------------------")
@@ -13,48 +13,53 @@ println("   Testing implementation of `invariants`")
 println("-------------------------------------------")
 
 println("[1] Quick profiling:")
-for r in [ (@SVector rand(3)), (@SVector rand(6)) ]
+for r in [ (@SVector rand(3)),
+           (@SVector rand(6)),
+           (@SVector rand(10)) ]
    println("dim = $(length(r))")
    print("     invariants: ")
    @btime invariants($r)
    print("   invariants_d: ")
    @btime invariants_d($r)
-   # print("  ad_invariants: ")
-   # @btime ad_invariants($r)
+   print("   invariants_ed: ")
+   @btime invariants_ed($r)
 end
 
 # TODO: test correctness of the invariants implementation
 #       against the MAGMA output
 
 println("[2] Correctness of gradients")
-for dim in [3, 6]
+for dim in [3, 6, 10]
    for ntests = 1:3
       r = 1.0 + SVector(rand(dim)...)
       dI1, dI2 = invariants_d(r)
-      @test [dI1; dI2] ≈ ad_invariants(r)
+      @test [hcat(dI1...)'; hcat(dI2...)'] ≈ ad_invariants(r)
       print(".")
    end
 end
 println()
 
 println("[3] Symmetry")
-for n = 1:10
-   r = 1.0 + (@SVector rand(3))
-   I = all_invariants(r)
-   for rπ in NBodyIPs.simplex_permutations(r)
-      @test I ≈ all_invariants(SVector{3}(rπ))
+for dim in [3, 6, 10]
+   for n = 1:3
+      r = 1.0 + SVector(rand(dim)...)
+      I = all_invariants(r)
+      for rπ in NBodyIPs.simplex_permutations(r)
+         @test I ≈ all_invariants(SVector(rπ...))
+      end
+      print(".")
    end
-   print(".")
 end
-for n = 1:10
-   r = 1.0 + (@SVector rand(6))
-   I = all_invariants(r)
-   for rπ in NBodyIPs.simplex_permutations(r)
-      Iπ = all_invariants(SVector{6}(rπ))
-      @test I ≈ Iπ
-   end
-   print(".")
-end
+
+# for n = 1:10
+#    r = 1.0 + (@SVector rand(6))
+#    I = all_invariants(r)
+#    for rπ in NBodyIPs.simplex_permutations(r)
+#       Iπ = all_invariants(SVector{6}(rπ))
+#       @test I ≈ Iπ
+#    end
+#    print(".")
+# end
 println()
 
 

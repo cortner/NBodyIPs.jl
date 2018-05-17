@@ -315,8 +315,7 @@ function evaluate_d(V::NBody, r::SVector{M, T}) where {M, T}
    dM = zero(SVector{M, T})
    dE = zero(SVector{M, T})
    D = V.D
-   I1, I2 = invariants(D, r)              # SVectors
-   dI1, dI2 = invariants_d(D, r)          # SMatrices
+   I1, I2, dI1, dI2 = invariants_ed(D, r)
    #
    for (α, c) in zip(V.t, V.c)
       m, m_d = monomial_d(α, I1)
