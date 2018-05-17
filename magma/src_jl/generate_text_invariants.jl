@@ -65,7 +65,12 @@ end
 
 fileI = open(filenamesec)
 line = readlines(fileI)
-for i=1:length(line)
+part1,part2 = split(line[1], "=")
+repl1 = replace(part1, prefsec, "d"*prefsec)
+open(filenamesec_d, "a") do f
+    write(f, repl1, " = @SVector zeros($NBlengths) \n") 
+end
+for i=2:length(line)
     if contains(line[i], "*")
         part1,part2 = split(line[i], "=")
         part2_1,part2_2 = split(part2, "*")
