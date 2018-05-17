@@ -2,7 +2,7 @@ using NBodyIPs
 using JuLIP, Base.Test, StaticArrays, ForwardDiff, Combinatorics
 using BenchmarkTools
 
-using NBodyIPs.Polys: invariants, invariants_d
+using NBodyIPs.Polys: invariants, invariants_d, invariants_ed
 using JuLIP.Potentials: evaluate, evaluate_d
 
 all_invariants(r) = vcat(invariants(r)...)  # [I1; I2]
@@ -13,17 +13,17 @@ println("   Testing implementation of `invariants`")
 println("-------------------------------------------")
 
 println("[1] Quick profiling:")
-for r in [ (@SVector rand(3)),
-           (@SVector rand(6)),
-           (@SVector rand(10)) ]
-   println("dim = $(length(r))")
-   print("     invariants: ")
-   @btime invariants($r)
-   print("   invariants_d: ")
-   @btime invariants_d($r)
-   print("   invariants_ed: ")
-   @btime invariants_ed($r)
-end
+# for r in [ (@SVector rand(3)),
+#            (@SVector rand(6)),
+#            (@SVector rand(10)) ]
+#    println("dim = $(length(r))")
+#    print("     invariants: ")
+#    @btime invariants($r)
+#    print("   invariants_d: ")
+#    @btime invariants_d($r)
+#    print("  invariants_ed: ")
+#    @btime invariants_ed($r)
+# end
 
 # TODO: test correctness of the invariants implementation
 #       against the MAGMA output
@@ -33,11 +33,13 @@ for dim in [3, 6, 10]
    for ntests = 1:3
       r = 1.0 + SVector(rand(dim)...)
       dI1, dI2 = invariants_d(r)
-      @test [hcat(dI1...)'; hcat(dI2...)'] ≈ ad_invariants(r)
+      adI = ad_invariants(r)
+      @test [hcat(dI1...)'; hcat(dI2...)'] ≈ adI
       print(".")
    end
 end
 println()
+quit()
 
 println("[3] Symmetry")
 for dim in [3, 6, 10]

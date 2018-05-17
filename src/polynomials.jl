@@ -44,14 +44,13 @@ export NBody, Dictionary,
 # TODO: rethink whether to rename this to PolyDictionary
 @pot struct Dictionary{TT, TDT, TC, TDC, T}
    transform::TT              # distance transform
-   transform_d::TDT            # derivative of distance transform
+   transform_d::TDT           # derivative of distance transform
    fcut::TC                   # cut-off function
-   fcut_d::TDC                 # cut-off function derivative
+   fcut_d::TDC                # cut-off function derivative
    rcut::T                    # cutoff radius
-   s::Tuple{String,String}  # string to serialise it
+   s::Tuple{String,String}    # string to serialise it
 end
 
-include("fastpolys.jl")
 
 # generated functions for fast evaluation of monomials
 include("fast_monomials.jl")

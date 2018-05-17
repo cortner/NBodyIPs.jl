@@ -21,6 +21,11 @@ function invariants end
 function invariants_d end
 
 """
+TODO
+"""
+function invariants_ed end
+
+"""
 `tdegrees(::Val{N})` where `N` is the body-order returns a
 tuple of polynomial <vector degrees> corresponding to the degrees of the
 individual invariants.  E.g. for 3-body, the primary invariants are
@@ -97,10 +102,10 @@ invariants(r::SVector{3, T}) where {T} =
 
 
 invariants_d(  r::SVector{3, T}) where {T} =
-      (@SMatrix T[ 1.0        1.0         1.0;
-                   r[2]+r[3]  r[1]+r[3]   r[1]+r[2];
-                   r[2]*r[3]  r[1]*r[3]   r[1]*r[2] ]),
-      (@SMatrix T[ 0.0        0.0         0.0  ])
+      SVector( (@SVector [1.0, 1.0, 1.0]),
+               (@SVector [r[2]+r[3], r[1]+r[3], r[1]+r[2]]),
+               (@SVector [r[2] * r[3], r[1] * r[3], r[1] * r[2]]) ),
+      (@SVector [ (@SVector [0.0, 0.0, 0.0]) ] )
 
 function invariants_ed(r::SVector{3, T}) where {T}
    r1 = r[1]
@@ -111,10 +116,10 @@ function invariants_ed(r::SVector{3, T}) where {T}
    r23 = r[2]*r[3]
    return (@SVector T[ r1+r2+r3, r12 + r13 + r23, r12*r3 ]),
       (@SVector T[ 1.0 ]),
-      (@SMatrix T[ 1.0    1.0     1.0;
-                   r2+r3  r1+r3   r1+r2;
-                   r23    r13     r12 ]),
-      (@SMatrix T[ 0.0        0.0         0.0  ])
+      SVector( (@SVector [1.0, 1.0, 1.0]),
+               (@SVector [r2+r3, r1+r3, r1+r2]),
+               (@SVector [r23, r13, r12]) ),
+      (@SVector [ (@SVector [0.0, 0.0, 0.0]) ] )
 end
 
 # tdegrees(::Val{3}) = (1, 2, 3), (0,)
@@ -196,8 +201,8 @@ function invariants_d(x::SVector{6, T}) where {T}
    ∇PV2 = A * x3 + 3 * (x2 .* Ax)
    ∇PV3 = 5 * x4
 
-   return hcat(o, ∇I2, 2*x, ∇I4, 3*x2, 4*x3)',
-          hcat(z, ∇PV1, ∇PV2, ∇PV3, 2*PV1*∇PV1, PV3*∇PV2 + PV2*∇PV3)'
+   return SVector(o, ∇I2, 2*x, ∇I4, 3*x2, 4*x3),
+          SVector(z, ∇PV1, ∇PV2, ∇PV3, 2*PV1*∇PV1, PV3*∇PV2 + PV2*∇PV3)
 end
 
 
@@ -242,8 +247,8 @@ function invariants_ed(x::SVector{6, T}) where {T}
 
    return SVector(I1, I2, I3, I4, I5, I6),
          SVector(one(T), PV1, PV2, PV3, I11, I12),
-         hcat(o, ∇I2, 2*x, ∇I4, 3*x2, 4*x3)',
-         hcat(z, ∇PV1, ∇PV2, ∇PV3, 2*PV1*∇PV1, PV3*∇PV2 + PV2*∇PV3)'
+         SVector(o, ∇I2, 2*x, ∇I4, 3*x2, 4*x3),
+         SVector(z, ∇PV1, ∇PV2, ∇PV3, 2*PV1*∇PV1, PV3*∇PV2 + PV2*∇PV3)
 end
 
 
@@ -262,9 +267,9 @@ end
 
 
 include("../magma/data/NB_5_deg_7/NB_5_deg_7_invariants.jl")
-@inline invariants(x::SVector{10}) = invariants_gen(x)
-@inline invariants_d(x::SVector{10}) = invariants_d_gen(x)
-@inline invariants_ed(x::SVector{10}) = invariants_ed_gen(x)
+@inline invariants(x::SVector{10}) = NB5I.invariants_gen(x)
+@inline invariants_d(x::SVector{10}) = NB5I.invariants_d_gen(x)
+@inline invariants_ed(x::SVector{10}) = NB5I.invariants_ed_gen(x)
 
 
 # ------------------------------------------------------------------------
