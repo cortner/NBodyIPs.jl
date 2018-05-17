@@ -22,6 +22,7 @@ using Reexport
 using JuLIP, NeighbourLists, StaticArrays, ForwardDiff
 using JuLIP.Potentials: cutsw, cutsw_d, coscut, coscut_d
 using NBodyIPs: NBodyFunction
+using NBodyIPs.FastPolys: fpoly, fpoly_d 
 
 import StaticPolynomials
 

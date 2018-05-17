@@ -1,5 +1,6 @@
 
 
+
 """
 `invariants(r::SVector{M,T}) -> SVector` : computes the invariant descriptors as a function of the
 lengths in a simplex. The order is lexicographical, i.e.,
@@ -157,13 +158,15 @@ const A = @SMatrix [0 1 1 1 1 0
                     1 0 1 1 0 1
                     0 1 1 1 1 0]
 
+const P42 = Val(( (1,2,3), (6,5,4) ))
+
 function invariants(x::SVector{6, T}) where {T}
-   x2 = x.*x
+   x2 = x .*x
    x3 = x2.*x
    x4 = x3.*x
 
    I1 = sum(x)
-   I2 = x[1]*x[6] + x[2]*x[5] + x[3]*x[4]
+   I2 = fpoly( (x,x), P42 )  # x[1]*x[6] + x[2]*x[5] + x[3]*x[4]
    I3 = sum(x2)
    I4 = x[1]*x[2]*x[3] + x[1]*x[4]*x[5] + x[2]*x[4]*x[6] + x[3]*x[5]*x[6]
    I5 = sum(x3)
@@ -186,7 +189,8 @@ function invariants_d(x::SVector{6, T}) where {T}
    x4 = x3.*x
    o = @SVector ones(T, 6)
    z = @SVector zeros(T, 6)
-   ∇I2 = @SVector [x[6], x[5], x[4], x[3], x[2], x[1]]
+   # ∇I2 = @SVector [x[6], x[5], x[4], x[3], x[2], x[1]]
+   ∇I2 = fpoly_d( (x, x), (o, o), P42 )
    ∇I4 = @SVector [ x[2]*x[3]+x[4]*x[5],
                     x[1]*x[3]+x[4]*x[6],
                     x[1]*x[2]+x[5]*x[6],

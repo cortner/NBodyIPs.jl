@@ -13,33 +13,49 @@ println("   Testing implementation of `invariants`")
 println("-------------------------------------------")
 
 println("[1] Quick profiling:")
-# for r in [ (@SVector rand(3)),
-#            (@SVector rand(6)),
-#            (@SVector rand(10)) ]
-#    println("dim = $(length(r))")
-#    print("     invariants: ")
-#    @btime invariants($r)
-#    print("   invariants_d: ")
-#    @btime invariants_d($r)
-#    print("  invariants_ed: ")
-#    @btime invariants_ed($r)
-# end
+for r in [ (@SVector rand(3)),
+           (@SVector rand(6)),
+           (@SVector rand(10)) ]
+   println("dim = $(length(r))")
+   print("     invariants: ")
+   @btime invariants($r)
+   print("   invariants_d: ")
+   @btime invariants_d($r)
+   print("  invariants_ed: ")
+   @btime invariants_ed($r)
+end
 
 # TODO: test correctness of the invariants implementation
 #       against the MAGMA output
 
 println("[2] Correctness of gradients")
 for dim in [3, 6, 10]
-   for ntests = 1:3
-      r = 1.0 + SVector(rand(dim)...)
-      dI1, dI2 = invariants_d(r)
-      adI = ad_invariants(r)
-      @test [hcat(dI1...)'; hcat(dI2...)'] ≈ adI
-      print(".")
+   r = 1.0 + SVector(rand(dim)...)
+   println("---------------")
+   println("dim = $dim")
+   println("---------------")
+
+   I = all_invariants(r)
+   dI1, dI2 = invariants_d(r)
+   dI = [hcat(dI1...)'; hcat(dI2...)']
+   dIh = zeros(size(dI))
+   r0 = Vector(r)
+   for p = 2:9
+      h = .1^p
+      dIh = zeros(size(dI))
+      for j = 1:length(r)
+         r0[j] += h
+         Ih = all_invariants(SVector(r0...))
+         dIh[:, j] = (Ih - I) / h
+         r0[j] -= h
+      end
+      @printf(" %d | %.2e \n", p, vecnorm(dIh - dI, Inf))
    end
+   println("---------------")
 end
 println()
-quit()
+
+
 
 println("[3] Symmetry")
 for dim in [3, 6, 10]
@@ -52,17 +68,8 @@ for dim in [3, 6, 10]
       print(".")
    end
 end
-
-# for n = 1:10
-#    r = 1.0 + (@SVector rand(6))
-#    I = all_invariants(r)
-#    for rπ in NBodyIPs.simplex_permutations(r)
-#       Iπ = all_invariants(SVector{6}(rπ))
-#       @test I ≈ Iπ
-#    end
-#    print(".")
-# end
 println()
+
 
 
 println("----------------------------------------")
