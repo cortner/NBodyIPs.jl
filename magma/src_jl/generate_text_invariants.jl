@@ -18,11 +18,11 @@ NBlengths = Int(NBody*(NBody-1)/2);
 # Generate irreducible secondaries
 #
 # -------------------------------------------
-filenameirrsec1 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/irr_sec_text1.jl";
-filenameirrsec2 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/irr_sec_text2.jl";
-filenameirrsec3 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/irr_sec_text3.jl";
-filenameirrsec4 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/irr_sec_text4.jl";
-filenameirrsecdata = "magma/data/NB_$NBody""_deg_$Deg""/irr_invariants.jl";
+filenameirrsec1 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text1.jl";
+filenameirrsec2 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text2.jl";
+filenameirrsec3 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text3.jl";
+filenameirrsec4 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text4.jl";
+filenameirrsecdata = "magma/data/NB_$NBody""_deg_$Deg""/NB_$NBody"*"_deg_$Deg"*"_irr_invariants.jl";
 preword = "# Irreducible secondaries for NBody=$NBody"*"and deg=$Deg \n"
 
 NB_irrsec = countlines(filenameirrsecdata)
@@ -35,11 +35,11 @@ max_exp_irrsec = generate_invariants(filenameirrsecdata,filenameirrsec1,filename
 # Generate primary invariants
 #
 # -------------------------------------------
-filenameprim1 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/prim_text1.jl";
-filenameprim2 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/prim_text2.jl";
-filenameprim3 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/prim_text3.jl";
-filenameprim4 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/prim_text4.jl";
-filenameprimdata = "magma/data/NB_$NBody""_deg_$Deg""/prim_invariants.jl";
+filenameprim1 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text1.jl";
+filenameprim2 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text2.jl";
+filenameprim3 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text3.jl";
+filenameprim4 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text4.jl";
+filenameprimdata = "magma/data/NB_$NBody""_deg_$Deg""/NB_$NBody"*"_deg_$Deg"*"_prim_invariants.jl";
 preword = "# Primary invariants for NBody=$NBody"*"and deg=$Deg \n"
 NB_prim = countlines(filenameprimdata)
 
@@ -49,14 +49,14 @@ max_exp_prim = generate_invariants(filenameprimdata,filenameprim1,filenameprim2,
 # Secondary invariants (relations with irreducible secondaries)
 #
 # -------------------------------------------
-filenamesec = "magma/data/NB_$NBody"*"_deg_$Deg"*"/relations_invariants.jl";
+filenamesec = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_relations_invariants.jl";
 NB_secondary = countlines(filenamesec);
 # -------------------------------------------
 #
 # Derivatives of secondary invariants (relations with irreducible secondaries)
 #
 # -------------------------------------------
-filenamesec_d = "magma/data/NB_$NBody"*"_deg_$Deg"*"/relations_invariants_derivatives.jl";
+filenamesec_d = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_relations_invariants_derivatives.jl";
 
 open(filenamesec_d, "w") do f
 end
@@ -88,7 +88,7 @@ end
 # Generate function with all invariants
 #
 # -------------------------------------------
-file = "magma/data/NB_$NBody"*"_deg_$Deg"*"_invariants.jl";
+file = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_invariants.jl";
 
 open(file, "w") do f
     write(f, "using StaticArrays \n")
@@ -218,14 +218,14 @@ open(file, "w") do f
     write(f, ")\n end")
 
 #Remove the temporary files
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/irr_sec_text1.jl");
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/irr_sec_text2.jl");
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/irr_sec_text3.jl");
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/irr_sec_text4.jl");
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text1.jl");
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text2.jl");
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text3.jl");
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text4.jl");
 
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/prim_text1.jl");
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/prim_text2.jl");
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/prim_text3.jl");
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/prim_text4.jl");
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text1.jl");
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text2.jl");
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text3.jl");
+rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text4.jl");
 
 end

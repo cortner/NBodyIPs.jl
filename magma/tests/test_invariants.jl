@@ -3,39 +3,21 @@ using StaticArrays, BenchmarkTools, Combinatorics, Base.Test
 using ForwardDiff
 using NBodyIPs
 
-# include("../data/NB_5_deg_6_non_efficient_invariants.jl")
-# include("../data/NB_5_deg_6_invariants.jl")
+Nbody = 5;
+Deg = 6;
 
-include("../data/NB_4_deg_10_non_efficient_invariants.jl")
-include("../data/NB_4_deg_10_invariants.jl")
+NBlengths = Int(Nbody*(Nbody-1)/2);
+
+include("../data/NB_$Nbody"*"_deg_$Deg/NB_$Nbody"*"_deg_$Deg"*"_non_efficient_invariants.jl")
+include("../data/NB_$Nbody"*"_deg_$Deg/NB_$Nbody"*"_deg_$Deg"*"_invariants.jl")
 
 include("fastpolys.jl")
 using FastPolys
 
-
-function d_invariants_Q6_check(x)
-   return ForwardDiff.gradient(invariants_Q6_check, x)
-end
-
-all_invariants(r) = vcat(invariants_gen(r)...)
-ad_invariants(r) = ForwardDiff.jacobian(all_invariants, r)
-r = 1.0 + SVector(rand(10)...)
-# dI1, dI2 = invariants_d(r)
-dI1, dI2 = ad_invariants(r)
-display(dI1)
-display(dI2)
-@test [dI1; dI2] ≈ ad_invariants(r)
-print(".")
-
-
-x = @SVector rand(10)
-epsi = 1e-4;
-h = epsi*(@SVector rand(10))
+x = @SVector rand(NBlengths)
 
 (Primary_slow, Sec_slow, Irr_sec_slow) = invariants_Q10_check(x)
-(Primary_fast,Sec_fast) = invariants(x)
-gradi = d_invariants_check(x)
-
+(Primary_fast,Sec_fast) = invariants_gen(x)
 
 # ------------------
 # Invariant check vs slow version
@@ -59,5 +41,27 @@ display(maximum(abs.(SVector(Sec_slow...) - Sec_fast)))
 # ------------------
 
 @btime invariants_Q10_check($x)
-@btime invariants($x)
-@btime invariants_d($x)
+@btime invariants_gen($x)
+@btime invariants_d_gen($x)
+
+
+# function d_invariants_Q6_check(x)
+#    return ForwardDiff.gradient(invariants_Q6_check, x)
+# end
+#
+# all_invariants(r) = vcat(invariants_gen(r)...)
+# ad_invariants(r) = ForwardDiff.jacobian(all_invariants, r)
+# r = 1.0 + SVector(rand(6)...)
+# # dI1, dI2 = invariants_d(r)
+# dI1, dI2 = ad_invariants(r)
+# display(dI1)
+# display(dI2)
+# @test [dI1; dI2] ≈ ad_invariants(r)
+# print(".")
+#
+#
+#
+# epsi = 1e-4;
+# h = epsi*(@SVector rand(10))
+#
+#
