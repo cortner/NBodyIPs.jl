@@ -1,105 +1,76 @@
-#
-# This set of tests indicates that maybe we should go back
-# to using StaticPolynomials everywhere. Their performance has
-# improved very much
-#
+using NBodyIPs, StaticArrays, JuLIP, BenchmarkTools
 
+using NBodyIPs.Polys: invariants, invariants_d, invariants_ed
+using JuLIP.Potentials: evaluate, evaluate_d
 
-include("../src/fastpolys.jl")
-using FastPolys
-using StaticArrays, BenchmarkTools, StaticPolynomials
-
-IS17_1 = (1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10, 10, 10, 10, 10, 10)
-IS17_2 = (2, 3, 4, 5, 6, 7, 1, 3, 4, 5, 8, 9, 1, 2, 4, 6, 8, 10, 1, 2, 3, 7, 9, 10, 1, 2, 6, 7, 8, 9, 1, 3, 5, 7, 8, 10, 1, 4, 5, 6, 9, 10, 2,3, 5, 6, 9, 10, 2, 4, 5, 7, 8, 10, 3, 4, 6, 7, 8, 9)
-const IS17 = Val((IS17_1, IS17_2))
-
-IS15_1 = (1,1,1,1,1,1,2,2,3,4,3,4,2,2,3,4,3,4,2,2,3,4,3,4,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,2,2,2,2,3,3,2,2,3,4,3,4,1,1,1,1,1,1,3,4,2,2,4,3,3,4,2,2,4,3,5,5,6,7,6,7,5,5,5,5,6,6,6,7,5,5,7,6,8,9,8,8,9,8,5,5,6,7,6,7,5,5,5,5,6,6,6,7,5,5,7,6,8,9,8,8,9,8,)
-IS15_2 = (5,5,6,7,6,7,5,5,6,7,6,7,8,9,8,9,10,10,8,9,8,9,10,10,2,2,3,4,3,4,2,2,3,4,3,4,3,4,3,4,4,4,3,4,3,4,4,4,5,5,6,7,6,7,5,5,6,7,6,7,8,9,8,9,10,10,8,9,8,9,10,10,8,9,8,9,10,10,6,7,6,7,7,7,8,9,8,9,10,10,10,10,9,9,10,10,8,9,8,9,10,10,6,7,6,7,7,7,8,9,8,9,10,10,10,10,9,9,10,10,)
-IS15_3 = (3,4,2,2,4,3,3,4,2,2,4,3,1,1,1,1,1,1,4,3,4,3,2,2,6,7,5,5,7,6,8,9,8,9,10,10,5,5,6,7,6,7,9,8,10,10,8,9,6,7,5,5,7,6,8,9,8,9,10,10,5,5,6,7,6,7,9,8,10,10,8,9,1,1,1,1,1,1,2,2,3,4,3,4,2,2,3,4,3,4,2,2,3,4,3,4,7,6,7,6,5,5,9,8,10,10,8,9,9,8,10,10,8,9,5,5,6,7,6,7,)
-const IS15 = Val((IS15_1, IS15_2, IS15_3))
-
-P6_1 = (1,1,1,1,1,1,1,1,1,2,2,2,1,1,1,1,1,1,2,2,3,4,3,4,2,2,3,4,3,4,2,2,3,4,3,4,1,1,1,2,2,3,3,2,2,1,1,1,4,3,2,4,3,4,3,2,2,1,1,1,)
-P6_2 = (2,2,2,2,3,3,2,2,3,3,3,3,5,5,5,5,6,6,5,5,6,7,6,7,5,5,6,6,5,5,7,6,7,6,5,5,4,3,2,4,3,4,4,3,4,2,3,4,5,5,5,5,5,6,7,6,7,5,6,7,)
-P6_3 = (3,4,3,4,4,4,3,4,4,4,4,4,6,7,6,7,7,7,8,9,8,8,9,8,7,6,7,7,6,7,8,8,8,9,8,9,5,5,6,5,5,6,7,6,7,8,8,9,6,6,6,8,8,8,9,8,9,8,8,9,)
-P6_4 = (10,10,9,8,9,8,7,6,5,7,6,5,10,10,9,8,9,8,10,10,9,9,10,10,8,9,8,9,10,10,9,9,10,10,10,10,6,7,7,8,9,8,9,10,10,9,10,10,7,7,7,9,9,10,10,10,10,9,10,10,)
-const P6 = Val((P6_1, P6_2, P6_3, P6_4))
-
-
-function exps17()
-   E = zeros(Int, length(IS17_1), 10)
-   for (j, (i1,i2)) in enumerate(zip(IS17_1, IS17_2))
-      E[j, i1] = 4
-      E[j, i2] = 2
-   end
-   return E
+println("----------------------------------------")
+println("  [1] Single Invariants Evaluation:")
+println("----------------------------------------")
+for r in [ (@SVector rand(3)),
+           (@SVector rand(6)),
+           (@SVector rand(10)) ]
+   println("dim = $(length(r))")
+   print("     invariants: ")
+   @btime invariants($r)
+   print("   invariants_d: ")
+   @btime invariants_d($r)
+   print("  invariants_ed: ")
+   @btime invariants_ed($r)
 end
 
 
-function exps15()
-   E = zeros(Int, length(IS15_1), 10)
-   for (j, (i1,i2,i3)) in enumerate(zip(IS15_1, IS15_2, IS15_3))
-      E[j, i1] = 2
-      E[j, i2] = 2
-      E[j, i3] = 1
-   end
-   return E
+println("----------------------------------------")
+println("   [2] `NBody` Evaluation")
+println("----------------------------------------")
+
+r0 = rnn(:Cu)
+TRANSFORM = let r0 = r0
+   (@analytic r -> (r0/r)^3)
+end
+rcut3 = 3.1 * r0
+D3 = Dictionary(TRANSFORM, (:cos, 0.66*rcut3, rcut3) )
+rcut4 = 2.1 * r0
+D4 = Dictionary(TRANSFORM, (:cos, 0.66*rcut4, rcut4) )
+rcut5 = 1.5 * r0
+D5 = Dictionary(TRANSFORM, (:cos, 0.66*rcut5, rcut5) )
+
+n = 10
+println("[1] Quick profiling for a N-body with $n basis functions")
+at = rattle!(bulk(:Cu, cubic=true) * 2, 0.02)
+@show length(at)
+r = 1.0 + rand(SVector{3, Float64})
+V3 = NBody( [tuple([rand(0:4, 3);0]...) for n = 1:n], 1.0+rand(n), D3 )
+print("     V3: "); @btime evaluate($V3, $r)
+print("  @D V3: "); @btime evaluate_d($V3, $r)
+print("  nlist: "); @btime neighbourlist($at, $rcut3)
+print(" energy: "); @btime energy($V3, $at)
+print(" forces: "); @btime forces($V3, $at)
+
+function rand_tuple_4b()
+   t = rand(0:5, 7)
+   t[rand(1:6, 5)] = 0
+   return tuple(t...)
 end
 
-function exps6()
-   E = zeros(Int, length(P6_1), 10)
-   for (j, (i1,i2,i3,i4)) in enumerate(zip(P6_1, P6_2, P6_3, P6_4))
-      E[j, i1] = 1
-      E[j, i2] = 1
-      E[j, i3] = 1
-      E[j, i4] = 1
-   end
-   return E
+r = 1.0 + rand(SVector{6, Float64})
+V4 = NBody( [rand_tuple_4b() for _ = 1:n], 1.0+rand(n), D4 )
+print("     V4: "); @btime evaluate($V4, $r)
+print("  @D V4: "); @btime evaluate_d($V4, $r)
+print("  nlist: "); @btime neighbourlist(at, rcut4)
+print(" energy: "); @btime energy(V4, at)
+print(" forces: "); @btime forces(V4, at)
+
+function rand_tuple_5b()
+   t = rand(0:6, 11)
+   t[rand(1:10, 9)] = 0
+   return tuple(t...)
 end
 
-
-x = @SVector rand(10)
-x2 = x .* x
-x3 = x2 .* x
-x4 = x2 .* x2
-dx4 = 3 * x3
-o = @SVector ones(10)
-
-
-println("Test 1: 2nd-order")
-C17 = rand(length(IS17_1))
-E17 = exps17()
-SP17 = StaticPolynomials.Polynomial(C17, E17')
-
-println("fpoly without overhead")
-@btime FastPolys.fpoly($((x4,x2)), $IS17)
-@btime FastPolys.fpoly_d($((x2,x4)), $((2*x,dx4)), $IS17)
-println("StaticPolynomials")
-@btime StaticPolynomials.evaluate($SP17, $x)
-@btime StaticPolynomials.gradient($SP17, $x)
-
-println("Test 2: 3-rd order")
-
-C15 = ones(length(IS15_1))
-E15 = exps15()
-SP15 = StaticPolynomials.Polynomial(C15, E15')
-
-println("fpoly without overhead")
-@btime FastPolys.fpoly($((x.*x,x.*x,x)), $IS15)
-@btime FastPolys.fpoly_d($((x.*x,x.*x,x)), $((2*x,2*x,o)), $IS15)
-println("StaticPolynomials")
-@btime StaticPolynomials.evaluate($SP15, $x)
-@btime StaticPolynomials.gradient($SP15, $x)
-
-
-println("Test 3: 4-th order")
-
-C6 = ones(length(P6_1))
-E6 = exps6()
-SP6 = StaticPolynomials.Polynomial(C6, E6')
-
-println("fpoly without overhead")
-@btime FastPolys.fpoly($((x,x,x,x)), $P6)
-@btime FastPolys.fpoly_d($((x,x,x,x)), $((o,o,o,o)), $P6)
-println("StaticPolynomials")
-@btime StaticPolynomials.evaluate($SP6, $x)
-@btime StaticPolynomials.gradient($SP6, $x)
+# r = 1.0 + rand(SVector{10, Float64})
+# t
+# V4 = NBody( [rand_tuple_5b() for _ = 1:n], 1.0+rand(n), D5 )
+# print("     V4: "); @btime evaluate($V4, $r)
+# print("  @D V4: "); @btime evaluate_d($V4, $r)
+# print("  nlist: "); @btime neighbourlist(at, rcut4)
+# print(" energy: "); @btime energy(V4, at)
+# print(" forces: "); @btime forces(V4, at)
