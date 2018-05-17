@@ -22,6 +22,7 @@ x = @SVector rand(NBlengths)
 
 (Primary_slow, Sec_slow, Irr_sec_slow) = invariants_Q10_check(x)
 (Primary_fast,Sec_fast) = invariants_gen(x)
+(Primary_fast2,Sec_fast2,Prim_d,Sec_d) = invariants_ed_gen(x)
 
 # ------------------
 # Invariant check vs slow version

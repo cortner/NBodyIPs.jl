@@ -68,7 +68,7 @@ line = readlines(fileI)
 part1,part2 = split(line[1], "=")
 repl1 = replace(part1, prefsec, "d"*prefsec)
 open(filenamesec_d, "a") do f
-    write(f, repl1, " = @SVector zeros($NBlengths) \n") 
+    write(f, repl1, " = @SVector zeros($NBlengths) \n")
 end
 for i=2:length(line)
     if contains(line[i], "*")
@@ -278,23 +278,23 @@ open(file, "w") do f
 
     #write the return part
     write(f, "\n\n")
-    write(f, "return (")
+    write(f, "return (@SVector [")
     for i=1:NB_prim
         write(f, prefprim, "$i,")
     end
-    write(f, "), (")
+    write(f, "]), (@SVector [")
     for i=1:NB_secondary
         write(f, prefsec, "$i,")
     end
-    write(f, "), (")
+    write(f, "]), (@SVector [")
     for i=1:NB_prim
         write(f, "d", prefprim, "$i,")
     end
-    write(f, "), (")
+    write(f, "]), (@SVector [")
     for i=1:NB_secondary
         write(f, "d", prefsec, "$i,")
     end
-    write(f, ")\n end")
+    write(f, "])\n end")
 
 
 
