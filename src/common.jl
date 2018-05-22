@@ -140,7 +140,10 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
    # @assert isleaftype{TB}
    nlist = neighbourlist(at, cutoff(B[1]))
    z = _alloc_svec(JVec{T}, length(B))
-   Fpre = maptosites_d!(r -> evaluate_d(B, r),
+   temp = ( _alloc_mvec(T, length(B)),
+            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
+            _alloc_mmat(T, (N*(N-1))÷2, length(B)) )
+   Fpre = maptosites_d!(r -> evaluate_many_d!(temp, B, r),
                       [ copy(z) for _ = 1:length(at) ],
                       nbodies(N, nlist))
    F = [ [ -Fpre[i][j] for i = 1:length(Fpre) ]  for j = 1:length(B) ]
