@@ -9,12 +9,7 @@ import JuLIP: cutoff, energy, forces, site_energies, virial
 
 export NBodyIP,
        bodyorder,
-       fast,
-       NBBasis
-
-# two auxiliary functions to make for easier assembly of the code
-push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
-append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
+       fast
 
 
 """

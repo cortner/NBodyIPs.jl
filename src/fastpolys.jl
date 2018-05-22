@@ -3,11 +3,10 @@ module FastPolys
 
 using StaticArrays
 
+using NBodyIPs: push_str!, append_str!
+
 export fpoly, fpoly_d, fpoly_ed
 
-# two auxiliary functions to make for easier assembly of the code
-Base.push!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
-append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
 
 # ACCUMULATOR FUNCTIONS
 # ----------------------
@@ -131,13 +130,13 @@ TODO: write documentation
    #     for very small monomials, this could be the bottleneck, but for
    #     reasonably large ones it should make no difference
    for d = 1:D, n = 1:N
-      push!(exprs, "x$(d)_$(n) = x[$(d)][$(n)]")
+      push_str!(exprs, "x$(d)_$(n) = x[$(d)][$(n)]")
    end
    # also initialise the output
-   push!(exprs, "m = zero($T)")
+   push_str!(exprs, "m = zero($T)")
    # evaluate the monomial
    for I in zip(A...)
-      push!(exprs, _mon_muladd_(I))
+      push_str!(exprs, _mon_muladd_(I))
    end
    quote
       $(Expr(:meta, :inline))
@@ -167,13 +166,13 @@ TODO: write documentation
    #     for very small monomials, this could be the bottleneck, but for
    #     reasonably large ones it should make no difference
    for d = 1:D, n = 1:N
-      push!(exprs, "x$(d)_$(n) = x[$(d)][$(n)]")
-      push!(exprs, "dx$(d)_$(n) = dx[$(d)][$(n)]")
+      push_str!(exprs, "x$(d)_$(n) = x[$(d)][$(n)]")
+      push_str!(exprs, "dx$(d)_$(n) = dx[$(d)][$(n)]")
    end
    # initialise the output
-   push!(exprs, "m = zero($T)")
+   push_str!(exprs, "m = zero($T)")
    for n = 1:N
-      push!(exprs, "dm_$(n) = zero($T)")
+      push_str!(exprs, "dm_$(n) = zero($T)")
    end
    # evaluate the monomial and its derivative
    for I in zip(A...)
@@ -204,13 +203,13 @@ end
    #     for very small monomials, this could be the bottleneck, but for
    #     reasonably large ones it should make no difference
    for d = 1:D, n = 1:N
-      push!(exprs, "x$(d)_$(n) = x[$(d)][$(n)]")
-      push!(exprs, "dx$(d)_$(n) = dx[$(d)][$(n)]")
+      push_str!(exprs, "x$(d)_$(n) = x[$(d)][$(n)]")
+      push_str!(exprs, "dx$(d)_$(n) = dx[$(d)][$(n)]")
    end
    # initialise the output
-   push!(exprs, "m = zero($T)")
+   push_str!(exprs, "m = zero($T)")
    for n = 1:N
-      push!(exprs, "dm_$(n) = zero($T)")
+      push_str!(exprs, "dm_$(n) = zero($T)")
    end
    # evaluate the monomial and its derivative
    for I in zip(A...)

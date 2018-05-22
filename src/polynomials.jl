@@ -110,11 +110,11 @@ Dictionary
 # end
 
 @generated function _sdot(a::T, B::SVector{N, T}) where {N, T}
-   code = "SVector{$N, $T}("
+   code = "@SVector $T["
    for n = 1:N
       code *= "a .* B[$n],"
    end
-   code = code[1:end-1] * ")"
+   code = code[1:end-1] * "]"
    ex = parse(code)
    quote
       $ex

@@ -2,7 +2,7 @@ using NBodyIPs, JuLIP
 using BenchmarkTools
 using Base.Test
 
-profile = false
+profile = true
 
 if profile
    nbasis3 = 50
