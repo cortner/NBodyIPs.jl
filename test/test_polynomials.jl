@@ -2,7 +2,7 @@ using NBodyIPs, JuLIP
 using BenchmarkTools
 using Base.Test
 
-profile = true
+profile = false
 
 if profile
    nbasis3 = 50
@@ -78,7 +78,7 @@ end
 
 
 
-# println("[4] `NBody` gradient-test on simplices")
+# println("`NBody` gradient-test on simplices")
 # for n = [1, 3]
 #    V3 = NBody( [tuple([rand(0:3, 3); 0]...) for n = 1:n], 1.0 + rand(n), D3 )
 #    for _  = 1:10
@@ -87,7 +87,7 @@ end
 #       print(".")
 #    end
 # end
-#
+
 # for n = [1, 3]
 #    V4 = NBody( [tuple(rand(0:3, 7)...) for n = 1:n], 1.0 + rand(n), D4 )
 #    for _  = 1:10
