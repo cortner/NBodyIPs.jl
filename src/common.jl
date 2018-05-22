@@ -9,8 +9,8 @@ import JuLIP: cutoff, energy, forces, site_energies, virial
 
 export NBodyIP,
        bodyorder,
-       fast,
-       NBBasis
+       fast
+
 
 # two auxiliary functions to make for easier assembly of the code
 push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
@@ -112,8 +112,6 @@ evaluate(V::NBodyFunction{3}, r1::Number, r2::Number, r3::Number) =
 # sub-module, but it would be good if this can be fixed, so we keep this
 # "interface" here.
 
-# abstract type NBBasis{N} end
-
 function evaluate_many! end
 function evaluate_many_d! end
 
@@ -131,8 +129,8 @@ function energy(B::AbstractVector{TB}, at::Atoms{T}
    # @assert isleaftype{TB}
    nlist = neighbourlist(at, cutoff(B[1]))
    z = _alloc_svec(T, length(B))
-   return let temp = _alloc_mvec(T, length(B))
-      maptosites!(r -> evaluate_many!(temp, B, r),
+   temp = _alloc_mvec(T, length(B))
+   return maptosites!(r -> evaluate_many!(temp, B, r),
                       [ copy(z) for _ = 1:length(at) ],
                       nbodies(N, nlist)) |> sum
    end
@@ -153,23 +151,24 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
    return F
 end
 
-# import NeighbourLists._m2s_mul_
-#
-# @generated function _m2s_mul_(X::SVector{M,T}, S::SVector{N,T}) where {M,N,T}
-#    exprs = Expr[]
-#    for i = 1:M
-#       push_str!(exprs, "xS_$i = X[$i] * S")
-#    end
-#    coll = "p = @SVector ["
-#    for i = 1:M
-#       coll *= "xS_$i, "
-#    end
-#    coll *= "]"
-#    push_str!(exprs, coll)
-#
-#    quote
-#       $(Expr(:meta, :inline))
-#       @inbounds $(Expr(:block, exprs...))
-#       return p
-#    end
-# end
+
+import NeighbourLists._m2s_mul_
+
+@generated function _m2s_mul_(X::SVector{M,T}, S::SVector{N,T}) where {M,N,T}
+   exprs = Expr[]
+   for i = 1:M
+      push_str!(exprs, "xS_$i = X[$i] * S")
+   end
+   coll = "p = @SVector ["
+   for i = 1:M
+      coll *= "xS_$i, "
+   end
+   coll *= "]"
+   push_str!(exprs, coll)
+
+   quote
+      $(Expr(:meta, :inline))
+      @inbounds $(Expr(:block, exprs...))
+      return p
+   end
+end
