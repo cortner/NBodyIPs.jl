@@ -133,7 +133,6 @@ function energy(B::AbstractVector{TB}, at::Atoms{T}
    return maptosites!(r -> evaluate_many!(temp, B, r),
                       [ copy(z) for _ = 1:length(at) ],
                       nbodies(N, nlist)) |> sum
-   end
 end
 
 function forces(B::AbstractVector{TB}, at::Atoms{T}
