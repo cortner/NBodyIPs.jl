@@ -149,3 +149,25 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
    F = [ [ -Fpre[i][j] for i = 1:length(Fpre) ]  for j = 1:length(B) ]
    return F
 end
+
+
+import NeighbourLists._m2s_mul_
+
+@generated function _m2s_mul_(X::SVector{M,T}, S::SVector{N,T}) where {M,N,T}
+   exprs = Expr[]
+   for i = 1:M
+      push_str!(exprs, "xS_$i = X[$i] * S")
+   end
+   coll = "p = @SVector ["
+   for i = 1:M
+      coll *= "xS_$i, "
+   end
+   coll *= "]"
+   push_str!(exprs, coll)
+
+   quote
+      $(Expr(:meta, :inline))
+      @inbounds $(Expr(:block, exprs...))
+      return p
+   end
+end
