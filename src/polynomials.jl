@@ -578,10 +578,13 @@ function evaluate_many!(temp::MVector, B::Vector{TB}, r::SVector{M, T}) where {T
 end
 
 function evaluate_many_d!(temp, B::Vector{TB}, r::SVector{M, T}) where {TB <: NBody{N}} where {N, M, T}
-   # E = zeros(T, length(B))
-   # dM = zeros(M, length(B))
-   # dE = zeros(M, length(B))
-   E, dM, dE = temp[1], temp[2], temp[3]
+   E = zeros(T, length(B))
+   dM = zeros(M, length(B))
+   dE = zeros(M, length(B))
+   # E, dM, dE = temp[1], temp[2], temp[3]
+   # fill!(E, 0.0)
+   # fill!(dM, 0.0)
+   # fill!(dE, 0.0)
 
    D = B[1].D
    # it is assumed implicitly that all basis functions use the same dictionary!
@@ -603,7 +606,7 @@ function evaluate_many_d!(temp, B::Vector{TB}, r::SVector{M, T}) where {TB <: NB
       end
       dE[:,ib] = dE[:,ib] * fc + E[ib] * fc_d
    end
-   return [ SVector(dE[i, :]) for i = 1:M ]
+   return [ dE[i, :] for i = 1:M ]
 end
 
 
