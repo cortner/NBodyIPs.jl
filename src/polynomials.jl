@@ -103,12 +103,37 @@ Known symbols for the cutoff are
 """
 Dictionary
 
+# @generated function _sdot(a::T, B::SVector{N, T}) where {N, T}
+#    quote
+#       (@SVector [ a .* B[n]  for n = 1:$N ])
+#    end
+# end
+
+@generated function _sdot(a::T, B::SVector{N, T}) where {N, T}
+   code = "SVector{$N, $T}("
+   for n = 1:N
+      code *= "a .* B[$n],"
+   end
+   code = code[1:end-1] * ")"
+   ex = parse(code)
+   quote
+      $ex
+   end
+end
+
 @inline invariants(D::Dictionary, r) = invariants(D.transform.(r))
 
 @inline function invariants_d(D::Dictionary, r)
    DI1, DI2 = invariants_d(D.transform.(r))
-   t_d = D.transform_d.(r)'
-   return DI1 .* t_d, DI2 .* t_d
+   t_d = D.transform_d.(r)
+   return _sdot(t_d, DI1), _sdot(t_d, DI2)
+end
+
+@inline function invariants_ed(D::Dictionary, r)
+   t = D.transform.(r)
+   I1, I2, DI1, DI2 = invariants_ed(t)
+   t_d = D.transform_d.(r)
+   return I1, I2, _sdot(t_d, DI1), _sdot(t_d, DI2)
 end
 
 @inline fcut(D::Dictionary, r::Number) = D.fcut(r)
@@ -323,10 +348,12 @@ function evaluate_d(V::NBody, r::SVector{M, T}) where {M, T}
       m, m_d = monomial_d(α, I1)
       E += c * I2[1+α[end]] * m        # just the value of the function itself
       dM += (c * I2[1+α[end]]) * m_d   # the I2 * ∇m term without the chain rule
-      dE += (c * m) * dI2[1+α[end],:]  # the ∇I2 * m term
+      dE += (c * m) * dI2[1+α[end]]  # the ∇I2 * m term
    end
    # chain rule
-   dE += dI1' * dM
+   for i = 1:length(dI1)   # dI1' * dM
+      dE += dM[i] * dI1[i]
+   end
 
    fc, fc_d = fcut_d(D, r)
    return dE * fc + E * fc_d
@@ -548,6 +575,36 @@ function evaluate(B::Vector{TB}, r::SVector{M, T}) where {TB <: NBody{N}} where 
    fc = fcut(D, r)
    return E * fc
 end
+
+function evaluate_d(B::Vector{TB}, r::SVector{M, T}) where {TB <: NBody{N}} where {N, M, T}
+   E = zeros(T, length(B))
+   dM = zeros(M, length(B))
+   dE = zeros(M, length(B))
+
+   D = B[1].D
+   # it is assumed implicitly that all basis functions use the same dictionary!
+   # and that each basis function NBody contains just a single c and a single t
+   I1, I2, dI1, dI2 = invariants_ed(D, r)
+   for (ib, b) in enumerate(B)
+      α = b.t[1]
+      c = b.c[1]
+      m, m_d = monomial_d(α, I1)
+      E[ib] += c * I2[1+α[end]] * m        # just the value of the function itself
+      dM[:,ib] += (c * I2[1+α[end]]) * m_d   # the I2 * ∇m term without the chain rule
+      dE[:,ib] += (c * m) * dI2[1+α[end]]  # the ∇I2 * m term
+   end
+   # chain rule
+   fc, fc_d = fcut_d(D, r)
+   for ib = 1:length(B)
+      for i = 1:M    # dE[ib] += dI1' * dM[ib]
+         dE[:,ib] += dI1[i] * dM[i,ib]
+      end
+      dE[:,ib] = dE[:,ib] * fc + E[ib] * fc_d
+   end
+   return [ dE[i, :] for i = 1:M ]
+end
+
+
 
 
 

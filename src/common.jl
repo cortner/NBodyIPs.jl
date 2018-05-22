@@ -109,8 +109,10 @@ evaluate(V::NBodyFunction{3}, r1::Number, r2::Number, r3::Number) =
 
 # abstract type NBBasis{N} end
 
-_alloc_svec(T::Type, ::Val{N}) where {N} = zero(SVector{N, T})
-_alloc_svec(T::Type, N::Integer) = _alloc_svec(T, Val(N))
+# _alloc_svec(T::Type, ::Val{N}) where {N} = zero(SVector{N, T})
+# _alloc_svec(T::Type, N::Integer) = _alloc_svec(T, Val(N))
+
+_alloc_svec(T::Type, N::Integer) = zeros(T, N)
 
 function energy(B::AbstractVector{TB}, at::Atoms{T}
               ) where {TB <: NBodyFunction{N}, T} where {N}
@@ -120,4 +122,16 @@ function energy(B::AbstractVector{TB}, at::Atoms{T}
    return maptosites!(r -> evaluate(B, r),
                       [ copy(z) for _ = 1:length(at) ],
                       nbodies(N, nlist)) |> sum
+end
+
+function forces(B::AbstractVector{TB}, at::Atoms{T}
+              ) where {TB <: NBodyFunction{N}, T} where {N}
+   # @assert isleaftype{TB}
+   nlist = neighbourlist(at, cutoff(B[1]))
+   z = _alloc_svec(JVec{T}, length(B))
+   Fpre = maptosites_d!(r -> evaluate_d(B, r),
+                      [ copy(z) for _ = 1:length(at) ],
+                      nbodies(N, nlist))
+   F = [ [ -Fpre[i][j] for i = 1:length(Fpre) ]  for j = 1:length(B) ]
+   return F 
 end
