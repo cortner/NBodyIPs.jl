@@ -1,6 +1,8 @@
 
 
+
 using StaticArrays
+using NBodyIPs: push_str!, append_str!
 
 # univariate monomial
 @inline _m1(α::Number, x::T) where {T <: Number} =
@@ -21,46 +23,49 @@ end
 
 
 @generated function monomial_d(α, x::SVector{K, T}) where {K, T}
+   exprs = Expr[]
+
    # @assert length(α) >= K
    # evaluate the scalar monomials
    #  f = SVector{...}( x[1]^α[1], ...)
    # df = SVector{...}( α[1] * x[1]^(α[1]-1), ...)
-   ex_f = "f = SVector{$K, $T}("
-   ex_df = "df = SVector{$K, $T}("
+   ex_f = "f = @SVector $T["
+   ex_df = "df = @SVector $T["
    for i = 1:K
       ex_f  *= " _m1(α[$i], x[$i]), "
       ex_df *= "_m1d(α[$i], x[$i]), "
    end
-   ex_f  =  ex_f[1:end-2] * ")"
-   ex_df = ex_df[1:end-2] * ")"
+   ex_f  =  ex_f[1:end-2] * "]"
+   ex_df = ex_df[1:end-2] * "]"
 
-   # evaluate the multi-variate monomial
-   ex_m = "m = "
-   for i = 1:K
-      ex_m *= "f[$i] * "
+   push_str!(exprs, ex_f)
+   push_str!(exprs, ex_df)
+   push_str!(exprs, "m = 1.0")
+   for j = 1:K
+      push_str!(exprs, "m *= f[$j]")
    end
-   ex_m = ex_m[1:end-3]
 
    # evaluate the derivative
-   ex_dm = "m_d = SVector{$K, $T}("
    for i = 1:K
-      dmj = ""
+      push_str!(exprs, "dm_$i = 1.0")
       for j = 1:K
          if i == j
-            dmj *= " df[$j] *"
+            push_str!(exprs, "dm_$i *= df[$j]")
          else
-            dmj *= "  f[$j] *"
+            push_str!(exprs, "dm_$i *= f[$j]")
          end
       end
-      ex_dm *= dmj[1:end-2] * ", "
    end
-   ex_dm = ex_dm[1:end-2] * ")"
+   ex_dm = "m_d = @SVector $T["
+   for i = 1:K
+      ex_dm *= "dm_$i, "
+   end
+   ex_dm = ex_dm[1:end-2] * "]"
+   push_str!(exprs, ex_dm)
 
    quote
-      $(parse(ex_f))
-      $(parse(ex_df))
-      $(parse(ex_m))
-      $(parse(ex_dm))
+      $(Expr(:meta, :inline))
+      @inbounds $(Expr(:block, exprs...))
       return m, m_d
    end
 end
@@ -82,6 +87,7 @@ end
 
 
 @generated function fcut_d(D::Dictionary, r::SVector{M, T}) where {M, T}
+   exprs = Expr[]
 
    # evaluate the scalar monomials
    #  f = SVector{...}( x[1]^α[1], ...)
@@ -95,33 +101,40 @@ end
    ex_f  =  ex_f[1:end-2] * ")"
    ex_df = ex_df[1:end-2] * ")"
 
+   push_str!(exprs, ex_f)
+   push_str!(exprs, ex_df)
+
+
    # evaluate the multi-variate monomial
-   ex_m = "fc = "
+   # ex_m = "fc = "
+   # for i = 1:M
+   #    ex_m *= "f[$i] * "
+   # end
+   # ex_m = ex_m[1:end-3]
+   push_str!(exprs, "fc = prod(f)")
+
    for i = 1:M
-      ex_m *= "f[$i] * "
+      push_str!(exprs, "fc_d_$i = 1.0")
+      for j = 1:M
+         if i == j
+            push_str!(exprs, "fc_d_$i *= df[$j]")
+         else
+            push_str!(exprs, "fc_d_$i *= f[$j]")
+         end
+      end
    end
-   ex_m = ex_m[1:end-3]
 
    # evaluate the derivative
    ex_dm = "fc_d = SVector{$M, $T}("
    for i = 1:M
-      dmj = ""
-      for j = 1:M
-         if i == j
-            dmj *= " df[$j] *"
-         else
-            dmj *= "  f[$j] *"
-         end
-      end
-      ex_dm *= dmj[1:end-2] * ", "
+      ex_dm *= "fc_d_$i, "
    end
    ex_dm = ex_dm[1:end-2] * ")"
+   push_str!(exprs, ex_dm)
 
    quote
-      $(parse(ex_f))
-      $(parse(ex_df))
-      $(parse(ex_m))
-      $(parse(ex_dm))
+      $(Expr(:meta, :inline))
+      @inbounds $(Expr(:block, exprs...))
       return fc, fc_d
    end
 end

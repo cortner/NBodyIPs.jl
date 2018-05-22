@@ -115,7 +115,8 @@ function invariants_ed(r::SVector{3, T}) where {T}
    r12 = r[1]*r[2]
    r13 = r[1]*r[3]
    r23 = r[2]*r[3]
-   return (@SVector T[ r1+r2+r3, r12 + r13 + r23, r12*r3 ]),
+   r123 = r12*r3
+   return (@SVector T[ r1+r2+r3, r12 + r13 + r23, r123 ]),
           (@SVector T[ 1.0 ]),
       (@SVector [ (@SVector [1.0, 1.0, 1.0]),
                   (@SVector [r2+r3, r1+r3, r1+r2]),
