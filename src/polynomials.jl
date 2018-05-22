@@ -32,7 +32,7 @@ const cutsp_d = JuLIP.Potentials.fcut_d
 import Base: length
 import JuLIP: cutoff, energy, forces
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
-import NBodyIPs: NBodyIP, bodyorder, fast
+import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!
 
 
 
@@ -563,8 +563,9 @@ end
 # ---------------------- auxiliary type to
 
 
-function evaluate(B::Vector{TB}, r::SVector{M, T}) where {TB <: NBody{N}} where {N, M, T}
-   E = zeros(T, length(B))
+function evaluate_many!(temp::MVector, B::Vector{TB}, r::SVector{M, T}
+               ) where {TB <: NBody{N}} where {N, M, T}
+   E = temp # zeros(T, length(B))
    D = B[1].D
    # it is assumed implicitly that all basis functions use the same dictionary!
    # and that each basis function NBody contains just a single c and a single t
@@ -573,7 +574,8 @@ function evaluate(B::Vector{TB}, r::SVector{M, T}) where {TB <: NBody{N}} where 
       E[ib] = b.c[1] * I2[1+b.t[1][end]] * monomial(b.t[1], I1)
    end
    fc = fcut(D, r)
-   return E * fc
+   scale!(E, fc)
+   return SVector(E)
 end
 
 function evaluate_d(B::Vector{TB}, r::SVector{M, T}) where {TB <: NBody{N}} where {N, M, T}

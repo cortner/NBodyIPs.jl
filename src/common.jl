@@ -12,6 +12,11 @@ export NBodyIP,
        fast,
        NBBasis
 
+# two auxiliary functions to make for easier assembly of the code
+push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
+append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
+
+
 """
 `NBodyFunction` : abstract supertype of all "pure" N-body functions.
 concrete subtypes must implement
@@ -107,19 +112,25 @@ evaluate(V::NBodyFunction{3}, r1::Number, r2::Number, r3::Number) =
 # sub-module, but it would be good if this can be fixed, so we keep this
 # "interface" here.
 
-# abstract type NBBasis{N} end
+function evaluate_many! end
+function evaluate_many_d! end
 
-# _alloc_svec(T::Type, ::Val{N}) where {N} = zero(SVector{N, T})
-# _alloc_svec(T::Type, N::Integer) = _alloc_svec(T, Val(N))
+_alloc_svec(T::Type, ::Val{N}) where {N} = zero(SVector{N, T})
+_alloc_svec(T::Type, N::Integer) = _alloc_svec(T, Val(N))
 
-_alloc_svec(T::Type, N::Integer) = zeros(T, N)
+_alloc_mvec(T::Type, ::Val{N}) where {N} = zero(MVector{N, T})
+_alloc_mvec(T::Type, N::Integer) = _alloc_mvec(T, Val(N))
+
+_alloc_mmat(T::Type, ::Val{N}, ::Val{M}) where {N, M} = zero(MMatrix{N, M, T})
+_alloc_mmat(T::Type, N, M) = _alloc_mmat(T, Val(N), Val(M))
 
 function energy(B::AbstractVector{TB}, at::Atoms{T}
               ) where {TB <: NBodyFunction{N}, T} where {N}
    # @assert isleaftype{TB}
    nlist = neighbourlist(at, cutoff(B[1]))
    z = _alloc_svec(T, length(B))
-   return maptosites!(r -> evaluate(B, r),
+   temp = _alloc_mvec(T, length(B))
+   return maptosites!(r -> evaluate_many!(temp, B, r),
                       [ copy(z) for _ = 1:length(at) ],
                       nbodies(N, nlist)) |> sum
 end
@@ -133,5 +144,5 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
                       [ copy(z) for _ = 1:length(at) ],
                       nbodies(N, nlist))
    F = [ [ -Fpre[i][j] for i = 1:length(Fpre) ]  for j = 1:length(B) ]
-   return F 
+   return F
 end

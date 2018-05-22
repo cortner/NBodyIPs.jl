@@ -2,7 +2,7 @@ using NBodyIPs, JuLIP
 using BenchmarkTools
 using Base.Test
 
-profile = true
+profile = false
 
 if profile
    nbasis3 = 50
@@ -29,10 +29,11 @@ B3 = [ NBody( [tuple([rand(0:4, 3);0]...)], [1.0+rand()], D3 )
       for n = 1:nbasis3 ]
 E1 = [energy(b, at) for b in B3]
 E2 = energy( B3, at )
-@test E1 ≈ E2
+(@test E1 ≈ E2) |> println
 F1 = [forces(b, at) for b in B3]
 F2 = forces(B3, at)
-@test F1 ≈ F2
+(@test F1 ≈ F2) |> println
+
 
 println("4-body")
 rcut4 = 2.1 * r0
@@ -41,10 +42,10 @@ B4 = [ NBody( [tuple(rand(0:3, 7)...)], [1.0+rand()], D4 )
       for n = 1:nbasis4 ]
 E1 = [energy(b, at) for b in B4]
 E2 = energy( B4, at )
-@test E1 ≈ E2
+(@test E1 ≈ E2) |> println;
 F1 = [forces(b, at) for b in B4]
 F2 = forces(B4, at)
-@test F1 ≈ F2
+(@test F1 ≈ F2) |> println;
 
 println("5-body")
 rcut5 = 1.5 * r0
@@ -53,10 +54,10 @@ B5 = [ NBody( [tuple(rand(0:5, 11)...)], [1.0+rand()], D5 )
       for n = 1:nbasis5 ]
 E1 = [energy(b, at) for b in B5]
 E2 = energy( B5, at )
-@test E1 ≈ E2
+(@test E1 ≈ E2) |> println;
 F1 = [forces(b, at) for b in B5]
 F2 = forces(B5, at)
-@test F1 ≈ F2
+(@test F1 ≈ F2) |> println;
 
 if profile
    println("Performance")
