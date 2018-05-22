@@ -2,7 +2,7 @@ using NBodyIPs, JuLIP
 using BenchmarkTools
 using Base.Test
 
-println("Testing NBBasis")
+println("Testing Collective Assembly across a Basis Set")
 r0 = rnn(:Cu)
 TRANSFORM = let r0 = r0
    # (@analytic r -> (r0/r)^3)

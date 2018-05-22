@@ -32,7 +32,7 @@ const cutsp_d = JuLIP.Potentials.fcut_d
 import Base: length
 import JuLIP: cutoff, energy, forces
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
-import NBodyIPs: NBodyIP, bodyorder, fast, NBBasis
+import NBodyIPs: NBodyIP, bodyorder, fast
 
 
 
