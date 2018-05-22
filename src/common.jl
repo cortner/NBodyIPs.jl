@@ -9,7 +9,8 @@ import JuLIP: cutoff, energy, forces, site_energies, virial
 
 export NBodyIP,
        bodyorder,
-       fast
+       fast,
+       NBBasis
 
 """
 `NBodyFunction` : abstract supertype of all "pure" N-body functions.
@@ -94,3 +95,29 @@ evaluate_dd(V::NBodyFunction{2}, r::Number) =
 
 evaluate(V::NBodyFunction{3}, r1::Number, r2::Number, r3::Number) =
       evaluate(V, SVector(r1, r2, r3))
+
+
+# For assembling the LSQ system efficiently we need a way to evaluate all basis
+# functions of the same body-order at the same time. Otherwise we would be
+# re-computing the invariants many many times, which is very expensive.
+# To achieve this we just wrap all basis functions of a body-order into
+# a new type `NBBasis` which evaluates to a long vector
+#
+# at the moment, it seems we need to hard-code this to the Polys
+# sub-module, but it would be good if this can be fixed, so we keep this
+# "interface" here.
+
+# abstract type NBBasis{N} end
+
+_alloc_svec(T::Type, ::Val{N}) where {N} = zero(SVector{N, T})
+_alloc_svec(T::Type, N::Integer) = _alloc_svec(T, Val(N))
+
+function energy(B::AbstractVector{TB}, at::Atoms{T}
+              ) where {TB <: NBodyFunction{N}, T} where {N}
+   # @assert isleaftype{TB}
+   nlist = neighbourlist(at, cutoff(B[1]))
+   z = _alloc_svec(T, length(B))
+   return maptosites!(r -> evaluate(B, r),
+                      [ copy(z) for _ = 1:length(at) ],
+                      nbodies(N, nlist)) |> sum
+end

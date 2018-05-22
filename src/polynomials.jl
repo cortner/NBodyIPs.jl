@@ -22,7 +22,7 @@ using Reexport
 using JuLIP, NeighbourLists, StaticArrays, ForwardDiff
 using JuLIP.Potentials: cutsw, cutsw_d, coscut, coscut_d
 using NBodyIPs: NBodyFunction
-using NBodyIPs.FastPolys: fpoly, fpoly_d 
+using NBodyIPs.FastPolys: fpoly, fpoly_d
 
 import StaticPolynomials
 
@@ -32,7 +32,9 @@ const cutsp_d = JuLIP.Potentials.fcut_d
 import Base: length
 import JuLIP: cutoff, energy, forces
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
-import NBodyIPs: NBodyIP, bodyorder, fast
+import NBodyIPs: NBodyIP, bodyorder, fast, NBBasis
+
+
 
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
@@ -91,7 +93,7 @@ Known symbols for the cutoff are
 
 ## Developer Doc: Methods associated with a `D::Dictionary`:
 
-* `invariants`, `jac_invariants`: compute invariants and jacobian
+* `invariants`, `invariants_d`, `invariants_ed`: compute invariants and jacobian
    in transformed coordinates defined by `D.transform`
 * `evaluate`, `evaluate_d`: evaluate the (univariate) basis
    function associated with this dictionary; at the moment only
@@ -530,5 +532,23 @@ function regularise_2b(B::Vector, r0, r1; creg = 1e-2, Nquad = 20)
    M[I2, I2] = (creg * h) * (Φ' * Φ)
    return M
 end
+
+# ---------------------- auxiliary type to
+
+
+function evaluate(B::Vector{TB}, r::SVector{M, T}) where {TB <: NBody{N}} where {N, M, T}
+   E = zeros(T, length(B))
+   D = B[1].D
+   # it is assumed implicitly that all basis functions use the same dictionary!
+   # and that each basis function NBody contains just a single c and a single t
+   I1, I2 = invariants(D, r)
+   for (ib, b) in enumerate(B)
+      E[ib] = b.c[1] * I2[1+b.t[1][end]] * monomial(b.t[1], I1)
+   end
+   fc = fcut(D, r)
+   return E * fc
+end
+
+
 
 end # module

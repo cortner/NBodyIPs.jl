@@ -72,39 +72,3 @@ for dim in [3, 6, 10]
    end
 end
 println()
-
-
-# println("[4] `NBody` gradient-test on simplices")
-# for n = [1, 3]
-#    V3 = NBody( [tuple([rand(0:3, 3); 0]...) for n = 1:n], 1.0 + rand(n), D3 )
-#    for _  = 1:10
-#       r = 1.0 + rand(SVector{3,Float64})
-#       @test (@D V3(r)) ≈ ForwardDiff.gradient(r_ -> V3(r_), r)
-#       print(".")
-#    end
-# end
-#
-# for n = [1, 3]
-#    V4 = NBody( [tuple(rand(0:3, 7)...) for n = 1:n], 1.0 + rand(n), D4 )
-#    for _  = 1:10
-#       r = 1.0 + rand(SVector{6,Float64})
-#       @test evaluate_d(V4, r) ≈ ForwardDiff.gradient(r_ -> V4(r_), r)
-#       print(".")
-#    end
-# end
-# println()
-#
-# println("[5] `NBody` finite-difference test on configurations")
-# nb = 3
-# at1 = rattle!(bulk(:Cu, cubic=true) * (1,2,2), 0.02)
-# at2 = bulk(:Cu, cubic=true) * (1,1,2)
-# set_constraint!(at2, VariableCell(at2, free = []))
-# for at in [at1, at2]
-#    println("  3-body")
-#    V3 = NBody( [tuple([rand(0:5, 3); 0]...) for n = 1:nb], 1.0+rand(nb), D3 )
-#    @test JuLIP.Testing.fdtest(V3, at)
-#
-#    println("  4-body")
-#    V4 = NBody( [tuple(rand(0:5, 7)...) for n = 1:nb], 1.0 + rand(nb), D4 )
-#    @test JuLIP.Testing.fdtest(V4, at)
-# end
