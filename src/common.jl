@@ -139,9 +139,12 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
    # @assert isleaftype{TB}
    nlist = neighbourlist(at, cutoff(B[1]))
    z = _alloc_svec(JVec{T}, length(B))
+   z2 = _alloc_svec(T, length(B))
    temp = ( _alloc_mvec(T, length(B)),
             _alloc_mmat(T, (N*(N-1))÷2, length(B)),
-            _alloc_mmat(T, (N*(N-1))÷2, length(B)) )
+            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
+            _alloc_mvec(typeof(z2), (N*(N-1))÷2)
+          )
    Fpre = maptosites_d!(r -> evaluate_many_d!(temp, B, r),
                       [ copy(z) for _ = 1:length(at) ],
                       nbodies(N, nlist))
@@ -152,9 +155,12 @@ end
 function stress(B::AbstractVector{TB}, at::Atoms{T}
               ) where {TB <: NBodyFunction{N}, T} where {N}
    nlist = neighbourlist(at, cutoff(B[1]))
+   z2 = _alloc_svec(T, length(B))
    temp = ( _alloc_mvec(T, length(B)),
             _alloc_mmat(T, (N*(N-1))÷2, length(B)),
-            _alloc_mmat(T, (N*(N-1))÷2, length(B)) )
+            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
+            _alloc_mvec(typeof(z2), (N*(N-1))÷2)
+          )
    out = fill((@SMatrix zeros(3,3)), length(B))
    virial!( r -> evaluate_many_d!(temp, B, r),
             out,
@@ -194,20 +200,6 @@ end
 # teach NeighbourLists.jl how to assemble collections of stresses
 #
 import NeighbourLists._inc_stress_!
-
-# function _inc_stress_!(out::Vector{T1}, s::T, df::SVector{T}, S::SVec{T}
-#          ) where T1 <: SMatrix{3,3,T} where T
-#    for n = 1:length(df)
-#       out[n] -= (s*df[n]) * (S * S')
-#    end
-# end
-
-# using BenchmarkTools
-# function _inner_(out, df, A)
-#    for n = 1:length(df)
-#       out[n] -= df[n] * A
-#    end
-# end
 
 function _inc_stress_!(out::Vector{T1}, s::Float64, df::SVector{N,Float64}, S::SVector{3,Float64}
          ) where T1 <: SMatrix{3,3,Float64} where N

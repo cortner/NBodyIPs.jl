@@ -2,7 +2,8 @@ using NBodyIPs, JuLIP
 using BenchmarkTools
 using Base.Test
 
-profile = true
+profile = false
+
 if profile
    nbasis3 = 50
    nbasis4 = 100
@@ -126,18 +127,3 @@ end
 #    V4 = NBody( [tuple(rand(0:5, 7)...) for n = 1:nb], 1.0 + rand(nb), D4 )
 #    @test JuLIP.Testing.fdtest(V4, at)
 # end
-
-
-
-
-# at = rattle!(bulk(:Cu, cubic=true) * 2, 0.02)
-#
-# @btime ([stress(b, $at) for b in $B3])
-# @btime stress( $B3, $at )
-#
-# Profile.clear()
-# @profile stress( B3, at );
-#
-# Profile.print()
-#
-# stress(B3, at)
