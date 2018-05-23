@@ -74,13 +74,19 @@ edges2bo(M::Integer) = (M <= 0) ? 1 : round(Int, 0.5 + sqrt(0.25 + 2 * M))
 # r = (r12,)
 
 invariants(r::SVector{1, T}) where {T} =
-   copy(r), SVector{1, T}(1.0)
+      copy(r),
+      SVector{1, T}(1.0)
 
 invariants_d(r::SVector{1, T}) where {T} =
-   (@SMatrix [one(T)]), (@SMatrix [zero(T)])
+      (@SVector [ SVector(one(T))  ]),
+      (@SVector [ SVector(zero(T)) ])
 
 invariants_ed(r::SVector{1,T}) where {T} =
-   copy(r), SVector{1, T}(1.0), (@SMatrix [one(T)]), (@SMatrix [zero(T)])
+      copy(r),
+      SVector{1, T}(1.0),
+      (@SVector [ SVector(one(T))  ]),
+      (@SVector [ SVector(zero(T)) ])
+
 
 # tdegrees(::Val{2}) = (1,), (0,)
 
