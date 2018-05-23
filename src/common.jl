@@ -13,11 +13,6 @@ export NBodyIP,
        fast
 
 
-# two auxiliary functions to make for easier assembly of the code
-push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
-append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
-
-
 """
 `NBodyFunction` : abstract supertype of all "pure" N-body functions.
 concrete subtypes must implement
@@ -160,7 +155,7 @@ function stress(B::AbstractVector{TB}, at::Atoms{T}
    temp = ( _alloc_mvec(T, length(B)),
             _alloc_mmat(T, (N*(N-1))÷2, length(B)),
             _alloc_mmat(T, (N*(N-1))÷2, length(B)) )
-   out = zeros(SMatrix{3,3,T}, length(B))
+   out = fill((@SMatrix zeros(3,3)), length(B))
    virial!( r -> evaluate_many_d!(temp, B, r),
             out,
             nbodies(N, nlist) )
@@ -200,7 +195,24 @@ end
 #
 import NeighbourLists._inc_stress_!
 
-function _inc_stress_!(out::Vector{T1}, s, df::SVector, S) where {T1 <: SMatrix}
+# function _inc_stress_!(out::Vector{T1}, s::T, df::SVector{T}, S::SVec{T}
+#          ) where T1 <: SMatrix{3,3,T} where T
+#    for n = 1:length(df)
+#       out[n] -= (s*df[n]) * (S * S')
+#    end
+# end
+
+# using BenchmarkTools
+# function _inner_(out, df, A)
+#    for n = 1:length(df)
+#       out[n] -= df[n] * A
+#    end
+# end
+
+function _inc_stress_!(out::Vector{T1}, s::Float64, df::SVector{N,Float64}, S::SVector{3,Float64}
+         ) where T1 <: SMatrix{3,3,Float64} where N
+   # @assert length(out) == length(df)
+   # error("stop here")
    for n = 1:length(df)
       out[n] -= (s*df[n]) * (S * S')
    end
