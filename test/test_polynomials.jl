@@ -3,7 +3,6 @@ using BenchmarkTools
 using Base.Test
 
 profile = false
-
 if profile
    nbasis3 = 50
    nbasis4 = 100
@@ -33,6 +32,13 @@ E2 = energy( B3, at )
 F1 = [forces(b, at) for b in B3]
 F2 = forces(B3, at)
 (@test F1 ≈ F2) |> println
+
+S1 = [stress(b, at) for b in B3]
+S2 = stress(B3, at)
+
+
+
+
 
 
 println("4-body")

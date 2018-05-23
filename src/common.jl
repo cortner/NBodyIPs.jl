@@ -4,8 +4,9 @@ using StaticArrays, ForwardDiff
 using JuLIP: AbstractCalculator, Atoms, neighbourlist, @D
 using NeighbourLists: nbodies, maptosites!, maptosites_d!, virial!
 
+
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd
-import JuLIP: cutoff, energy, forces, site_energies, virial
+import JuLIP: cutoff, energy, forces, site_energies, virial, stress
 
 export NBodyIP,
        bodyorder,
@@ -118,6 +119,9 @@ function evaluate_many_d! end
 _alloc_svec(T::Type, ::Val{N}) where {N} = zero(SVector{N, T})
 _alloc_svec(T::Type, N::Integer) = _alloc_svec(T, Val(N))
 
+_alloc_smat(T::Type, ::Val{N}, ::Val{M}) where {N, M} = zero(SMatrix{N, M, T})
+_alloc_smat(T::Type, N, M) = _alloc_smat(T, Val(N), Val(M))
+
 _alloc_mvec(T::Type, ::Val{N}) where {N} = zero(MVector{N, T})
 _alloc_mvec(T::Type, N::Integer) = _alloc_mvec(T, Val(N))
 
@@ -150,7 +154,25 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
    return F
 end
 
+function stress(B::AbstractVector{TB}, at::Atoms{T}
+              ) where {TB <: NBodyFunction{N}, T} where {N}
+   nlist = neighbourlist(at, cutoff(B[1]))
+   temp = ( _alloc_mvec(T, length(B)),
+            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
+            _alloc_mmat(T, (N*(N-1))÷2, length(B)) )
+   out = zeros(SMatrix{3,3,T}, length(B))
+   virial!( r -> evaluate_many_d!(temp, B, r),
+            out,
+            nbodies(N, nlist) )
+   # stress = - virial(c, a) / det(defm(a))
+   scale!(out, -1/det(defm(at)))
+   return out
+end
 
+
+#
+# teach NeighbourLists.jl how to assemble collections of forces
+#
 import NeighbourLists._m2s_mul_
 
 @generated function _m2s_mul_(X::SVector{M,T}, S::SVector{N,T}) where {M,N,T}
@@ -169,5 +191,17 @@ import NeighbourLists._m2s_mul_
       $(Expr(:meta, :inline))
       @inbounds $(Expr(:block, exprs...))
       return p
+   end
+end
+
+
+#
+# teach NeighbourLists.jl how to assemble collections of stresses
+#
+import NeighbourLists._inc_stress_!
+
+function _inc_stress_!(out::Vector{T1}, s, df::SVector, S) where {T1 <: SMatrix}
+   for n = 1:length(df)
+      out[n] -= (s*df[n]) * (S * S')
    end
 end
