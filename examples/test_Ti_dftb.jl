@@ -1,7 +1,7 @@
 
 using NBodyIPs, JuLIP
 
-datafile = "~/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_vartemp_virials_ASE.xyz"
+datafile = homedir() * "/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_vartemp_virials_ASE.xyz"
 data = NBodyIPs.Data.read(datafile, index=":")
 train_data = data
 test_data = data[1:5:end]

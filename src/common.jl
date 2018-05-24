@@ -134,6 +134,10 @@ function energy(B::AbstractVector{TB}, at::Atoms{T}
                       nbodies(N, nlist)) |> sum
 end
 
+energy(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
+   [ energy(b, at) for b in B ]
+
+
 function forces(B::AbstractVector{TB}, at::Atoms{T}
               ) where {TB <: NBodyFunction{N}, T} where {N}
    # @assert isleaftype{TB}
@@ -152,7 +156,11 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
    return F
 end
 
-function stress(B::AbstractVector{TB}, at::Atoms{T}
+forces(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
+   [ forces(b, at) for b in B ]
+
+
+function virial(B::AbstractVector{TB}, at::Atoms{T}
               ) where {TB <: NBodyFunction{N}, T} where {N}
    nlist = neighbourlist(at, cutoff(B[1]))
    z2 = _alloc_svec(T, length(B))
@@ -166,9 +174,12 @@ function stress(B::AbstractVector{TB}, at::Atoms{T}
             out,
             nbodies(N, nlist) )
    # stress = - virial(c, a) / det(defm(a))
-   scale!(out, -1/det(defm(at)))
+   # scale!(out, -1/det(defm(at)))
    return out
 end
+
+virial(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
+   [ virial(b, at) for b in B ]
 
 
 #
