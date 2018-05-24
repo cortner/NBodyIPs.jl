@@ -26,13 +26,13 @@ CUTOFF4 = (:cos, 0.66*rcut4, rcut4)
 D4 = Dictionary(TRANSFORM, CUTOFF4)
 B4 = gen_basis(4, D4, 8)
 
-# rcut5 = 1.5 * rnn(:Ti)
-# CUTOFF5 = (:cos, 0.66*rcut5, rcut5)
-# D5 = Dictionary(TRANSFORM, CUTOFF5)
-# B5 = gen_basis(5, D5, 6)
+rcut5 = 1.5 * rnn(:Ti)
+CUTOFF5 = (:cos, 0.66*rcut5, rcut5)
+D5 = Dictionary(TRANSFORM, CUTOFF5)
+B5 = gen_basis(5, D5, 6)
 
 
-B = [B1; B2; B3; B4]
+B = [B1; B2; B3; B4; B5]
 
 Ψold, Yold, _ = NBodyIPs.assemble_lsq_old(B, data[1:10], nforces = Inf)
 Ψ, Y, _ = NBodyIPs.assemble_lsq(B, data[1:10], nforces = Inf)
