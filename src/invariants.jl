@@ -276,7 +276,6 @@ end
 # them have very long expressions.
 
 
-
 include("../magma/data/NB_5_deg_7/NB_5_deg_7_invariants.jl")
 @inline invariants(x::SVector{10}) = NB5I.invariants_gen(x)
 @inline invariants_d(x::SVector{10}) = NB5I.invariants_d_gen(x)
@@ -288,18 +287,18 @@ include("../magma/data/NB_5_deg_7/NB_5_deg_7_invariants.jl")
 # ------------------------------------------------------------------------
 
 
-function ispure(vN::Val{N}, t::NTuple{K, Int}) where {N, K}
-   deg1, deg2 = degrees(vN)
-   d = sum( deg1[n] * t[n] for n = 1:K-1 ) + deg2[t[end]+1]
-   contains_x = zeros(Int, N)
-   c = corners(vN)
-   for n = 1:length(d)
-      if d[n] != 0
-         contains_x[c[n]] += 1
-      end
-   end
-   if length(find(contains_x)) == N
-      return true
-   end
-   return false
-end
+# function ispure(vN::Val{N}, t::NTuple{K, Int}) where {N, K}
+#    deg1, deg2 = degrees(vN)
+#    d = sum( deg1[n] * t[n] for n = 1:K-1 ) + deg2[t[end]+1]
+#    contains_x = zeros(Int, N)
+#    c = corners(vN)
+#    for n = 1:length(d)
+#       if d[n] != 0
+#          contains_x[c[n]] += 1
+#       end
+#    end
+#    if length(find(contains_x)) == N
+#       return true
+#    end
+#    return false
+# end
