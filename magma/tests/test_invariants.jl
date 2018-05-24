@@ -18,11 +18,11 @@ include("../data/NB_$Nbody"*"_deg_$Deg/NB_$Nbody"*"_deg_$Deg"*"_invariants.jl")
 
 x = @SVector rand(NBlengths)
 
-@btime invariants_ed_gen($x)
+@btime NB5I.invariants_ed_gen($x)
 
 (Primary_slow, Sec_slow, Irr_sec_slow) = invariants_Q10_check(x)
-(Primary_fast,Sec_fast) = invariants_gen(x)
-(Primary_fast2,Sec_fast2,Prim_d,Sec_d) = invariants_ed_gen(x)
+(Primary_fast,Sec_fast) = NB5I.invariants_gen(x)
+(Primary_fast2,Sec_fast2,Prim_d,Sec_d) = NB5I.invariants_ed_gen(x)
 
 # ------------------
 # Invariant check vs slow version
@@ -44,10 +44,10 @@ display(maximum(abs.(SVector(Sec_slow...) - Sec_fast)))
 # ------------------
 # Timings
 # ------------------
-@btime invariants_ed_gen($x)
+@btime NB5I.invariants_ed_gen($x)
 @btime invariants_Q10_check($x)
-@btime invariants_gen($x)
-@btime invariants_d_gen($x)
+@btime NB5I.invariants_gen($x)
+@btime NB5I.invariants_d_gen($x)
 
 
 # function d_invariants_Q6_check(x)

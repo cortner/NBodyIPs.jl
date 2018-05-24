@@ -37,6 +37,31 @@ function generate_monomials(filename,NBlengths,Deg=10)
     return NB_inv,Monomials,Monomials_simple
 end
 
+function generate_degrees(filename,filenametot,filenamepart,NBlengths,Deg=10)
+    (NB_inv,Monomials,Monomials_simple) = generate_monomials(filename,NBlengths,Deg)
+    Total_degrees = [];
+    for i=1:length(Monomials)
+        push!(Total_degrees, sum(Monomials[i]))
+    end
+    open(filenametot, "w") do f
+         write(f, "Total_degrees = [ ")
+        for i=1:NB_inv
+            temp = Total_degrees[i]
+            write(f, "$temp, ")
+        end
+        write(f, "]")
+    end
+    open(filenamepart, "w") do f
+         write(f, "Partial_degrees = [ ")
+        for i=1:NB_inv
+            temp = Monomials[i]
+            write(f, "$temp, \n")
+        end
+        write(f, "]")
+    end
+    return Total_degrees, Monomials
+end
+
 function perm_2_indice(Perms)
    # convert a list of tuples into an array of indices with non-zero entries in reverse order. All the tuples should have the same number of nonzero entries.
    L = length(Perms);
