@@ -33,6 +33,9 @@ E2 = energy( B3, at )
 F1 = [forces(b, at) for b in B3]
 F2 = forces(B3, at)
 (@test F1 ≈ F2) |> println
+S1 = [stress(b, at) for b in B3]
+S2 = stress(B3, at)
+(@test S1 ≈ S2) |> println;
 
 
 println("4-body")
@@ -46,6 +49,9 @@ E2 = energy( B4, at )
 F1 = [forces(b, at) for b in B4]
 F2 = forces(B4, at)
 (@test F1 ≈ F2) |> println;
+S1 = [stress(b, at) for b in B4]
+S2 = stress(B4, at)
+(@test S1 ≈ S2) |> println;
 
 println("5-body")
 rcut5 = 1.5 * r0
@@ -58,6 +64,9 @@ E2 = energy( B5, at )
 F1 = [forces(b, at) for b in B5]
 F2 = forces(B5, at)
 (@test F1 ≈ F2) |> println;
+S1 = [stress(b, at) for b in B5]
+S2 = stress(B5, at)
+(@test S1 ≈ S2) |> println;
 
 if profile
    println("Performance")
@@ -65,14 +74,20 @@ if profile
    print(" E 3-body new:" ); @btime energy( B3, at )
    print(" F 3-body old:" ); @btime ([forces(b, at) for b in B3])
    print(" F 3-body new:" ); @btime forces( B3, at )
+   print(" S 3-body old:" ); @btime ([stress(b, at) for b in B3])
+   print(" S 3-body new:" ); @btime stress( B3, at )
    print(" E 4-body old:" ); @btime ([energy(b, at) for b in B4])
    print(" E 4-body new:" ); @btime energy( $B4, $at )
    print(" F 4-body old:" ); @btime ([forces(b, at) for b in B4])
    print(" F 4-body new:" ); @btime forces( $B4, $at )
+   print(" S 4-body old:" ); @btime ([stress(b, at) for b in B4])
+   print(" S 4-body new:" ); @btime stress( $B4, $at )
    print(" E 5-body old:" ); @btime ([energy(b, at) for b in B5])
    print(" E 5-body new:" ); @btime energy( $B5, $at )
    print(" F 5-body old:" ); @btime ([forces(b, at) for b in B5])
    print(" F 5-body new:" ); @btime forces( $B5, $at )
+   print(" S 5-body old:" ); @btime ([stress(b, at) for b in B5])
+   print(" S 5-body new:" ); @btime stress( $B5, $at )
 end
 
 

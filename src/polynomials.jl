@@ -486,7 +486,7 @@ function gen_tuples(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where {N, K
    A = Tup{K}[]
    degs1, degs2 = tdegrees(vN)
 
-   α = @MVector zeros(K)
+   α = @MVector zeros(Int, K)
    α[1] = 1
    lastinc = 1
 
@@ -578,9 +578,10 @@ function evaluate_many!(temp::MVector, B::Vector{TB}, r::SVector{M, T}
    return SVector(E)
 end
 
+
 function evaluate_many_d!(temp, B::Vector{TB}, r::SVector{M, T}
                ) where {TB <: NBody{N}} where {N, M, T}
-   E, dM, dE = temp
+   E, dM, dE, dEfinal = temp
    fill!(E, 0.0)
    fill!(dE, 0.0)
    fill!(dM, 0.0)
@@ -605,7 +606,11 @@ function evaluate_many_d!(temp, B::Vector{TB}, r::SVector{M, T}
       end
       dE[:,ib] = dE[:,ib] * fc + E[ib] * fc_d
    end
-   return [ dE[i, :] for i = 1:M ]
+   # write into an output vector
+   for i = 1:M
+      dEfinal[i] = dE[i,:]
+   end
+   return dEfinal
 end
 
 

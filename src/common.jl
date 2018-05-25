@@ -4,17 +4,13 @@ using StaticArrays, ForwardDiff
 using JuLIP: AbstractCalculator, Atoms, neighbourlist, @D
 using NeighbourLists: nbodies, maptosites!, maptosites_d!, virial!
 
+
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd
-import JuLIP: cutoff, energy, forces, site_energies, virial
+import JuLIP: cutoff, energy, forces, site_energies, virial, stress
 
 export NBodyIP,
        bodyorder,
        fast
-
-
-# two auxiliary functions to make for easier assembly of the code
-push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
-append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
 
 
 """
@@ -118,6 +114,9 @@ function evaluate_many_d! end
 _alloc_svec(T::Type, ::Val{N}) where {N} = zero(SVector{N, T})
 _alloc_svec(T::Type, N::Integer) = _alloc_svec(T, Val(N))
 
+_alloc_smat(T::Type, ::Val{N}, ::Val{M}) where {N, M} = zero(SMatrix{N, M, T})
+_alloc_smat(T::Type, N, M) = _alloc_smat(T, Val(N), Val(M))
+
 _alloc_mvec(T::Type, ::Val{N}) where {N} = zero(MVector{N, T})
 _alloc_mvec(T::Type, N::Integer) = _alloc_mvec(T, Val(N))
 
@@ -135,14 +134,21 @@ function energy(B::AbstractVector{TB}, at::Atoms{T}
                       nbodies(N, nlist)) |> sum
 end
 
+energy(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
+   [ energy(b, at) for b in B ]
+
+
 function forces(B::AbstractVector{TB}, at::Atoms{T}
               ) where {TB <: NBodyFunction{N}, T} where {N}
    # @assert isleaftype{TB}
    nlist = neighbourlist(at, cutoff(B[1]))
    z = _alloc_svec(JVec{T}, length(B))
+   z2 = _alloc_svec(T, length(B))
    temp = ( _alloc_mvec(T, length(B)),
             _alloc_mmat(T, (N*(N-1))÷2, length(B)),
-            _alloc_mmat(T, (N*(N-1))÷2, length(B)) )
+            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
+            _alloc_mvec(typeof(z2), (N*(N-1))÷2)
+          )
    Fpre = maptosites_d!(r -> evaluate_many_d!(temp, B, r),
                       [ copy(z) for _ = 1:length(at) ],
                       nbodies(N, nlist))
@@ -150,7 +156,35 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
    return F
 end
 
+forces(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
+   [ forces(b, at) for b in B ]
 
+
+function virial(B::AbstractVector{TB}, at::Atoms{T}
+              ) where {TB <: NBodyFunction{N}, T} where {N}
+   nlist = neighbourlist(at, cutoff(B[1]))
+   z2 = _alloc_svec(T, length(B))
+   temp = ( _alloc_mvec(T, length(B)),
+            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
+            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
+            _alloc_mvec(typeof(z2), (N*(N-1))÷2)
+          )
+   out = fill((@SMatrix zeros(3,3)), length(B))
+   virial!( r -> evaluate_many_d!(temp, B, r),
+            out,
+            nbodies(N, nlist) )
+   # stress = - virial(c, a) / det(defm(a))
+   # scale!(out, -1/det(defm(at)))
+   return out
+end
+
+virial(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
+   [ virial(b, at) for b in B ]
+
+
+#
+# teach NeighbourLists.jl how to assemble collections of forces
+#
 import NeighbourLists._m2s_mul_
 
 @generated function _m2s_mul_(X::SVector{M,T}, S::SVector{N,T}) where {M,N,T}
@@ -169,5 +203,20 @@ import NeighbourLists._m2s_mul_
       $(Expr(:meta, :inline))
       @inbounds $(Expr(:block, exprs...))
       return p
+   end
+end
+
+
+#
+# teach NeighbourLists.jl how to assemble collections of stresses
+#
+import NeighbourLists._inc_stress_!
+
+function _inc_stress_!(out::Vector{T1}, s::Float64, df::SVector{N,Float64}, S::SVector{3,Float64}
+         ) where T1 <: SMatrix{3,3,Float64} where N
+   # @assert length(out) == length(df)
+   # error("stop here")
+   for n = 1:length(df)
+      out[n] -= (s*df[n]) * (S * S')
    end
 end
