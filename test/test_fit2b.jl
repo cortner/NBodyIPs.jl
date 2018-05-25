@@ -4,6 +4,8 @@ using NBodyIPs, JuLIP, Base.Test
 using JuLIP.Potentials: evaluate_d
 using NBodyIPs.Data: Dat
 
+srand(1)
+
 # generate random data
 function generate_data(species, L, rmax, N, calc)
    data = Dat[]
@@ -39,7 +41,7 @@ rr = linspace(0.9*r0, cutoff(calc), 200)
 for d in degrees
    B2 = [B1; gen_basis(2, D2, d)]
    @show length(B2)
-   c = regression(B2, data, nforces = Inf, cstab = 0.0)
+   c = regression(B2, data, nforces = Inf, cstab = 0.0, weights=:I)
    @show norm(c, Inf)
    IP = NBodyIP(B2, c)
    rE, rF, mE, mF = fiterrors(IP, data)

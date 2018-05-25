@@ -6,7 +6,7 @@ path = homedir() * "/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_vartemp.xyz"
 
 # Loading the training data
 data = NBodyIPs.Data.read(path)
-data_sm = data[1:20]
+data_sm = data[1:10]
 
 println("generating basis functions...")
 r0 = rnn(:W)
@@ -23,7 +23,7 @@ B = vcat(NBody(1.0), gen_basis.([2,3,4], dicts, degrees, purify=false)...)
 B3 = B[ find(bodyorder.(B) .< 4) ]
 # normalize_basis!(B3, data_sm)
 
-Ψ, Y, _ = NBodyIPs.assemble_lsq(B, data_sm; verbose=true, nforces=Inf)
+Ψ, Y, _ = NBodyIPs.assemble_lsq(B, data_sm; verbose=true, nforces=3)
 
 Q, R = qr(Ψ)
 A = R' * R
@@ -31,11 +31,17 @@ A = R' * R
 n = size(Q,1)
 m = size(Q,2)
 
-w_vec = (m/n)./diag(Q * Q')
+# w_vec = (m/n)./diag(Q * Q')
+w_vec = (m/n) * [ 1/norm(Q[n,:])^2 for n = 1:size(Q,1) ]
+@show w_vec
+@show minimum(w_vec)
+@show maximum(w_vec)
+
+Wopt = (size(Q,2)/size(Q,1)) * Diagonal([ 1/(norm(Q[n,:])^2) for n = 1:size(Q,1) ])
 
 
 
-Wopt = diagm(w_vec)
+# Wopt = diagm(w_vec)
 
 cstab=0
 
@@ -43,10 +49,43 @@ Aopt = Q' * (Wopt * Q) + cstab * eye(size(R, 1))
 bopt = Q' * (Wopt * Y)
 copt = R \ (Aopt \ bopt)
 
-zopt = Ψ * copt - Y
-rmsopt = sqrt(dot( zopt, zopt) / length(Y))
+sqrtW = sqrt.(W)
+sqrtWopt = sqrt(size(Q,2)/size(Q,1)) * Diagonal([ 1/sqrt(norm(Q[n,:])^2) for n = 1:size(Q,1) ])
+tildeΨ = sqrtWopt * Ψ
+tildeQ, tildeR = qr(tildeΨ)
+tildeY = sqrtWopt * Y
 
-println("naive rms error on training set with Wopt: ", rms)
+A = (1 + cstab) * tildeR' * tildeR
+b = tildeR' * tildeQ' * tildeY
+cnew = A \ b
+
+norm(copt-cnew,Inf)
+
+copt2 = ((R' * Aopt) * R) \ (R' * bopt)
+copt2b = R' \ (((R' * Aopt) * R) \ bopt)
+copt3 =  (Aopt * R) \  bopt
+
+A = R' * (Aopt * R)
+b = R' * bopt
+c = A \ b
+
+
+zopt = Ψ * copt - Y
+maximum(abs.(zopt))
+@show norm(zopt.^2)
+rmsopt = sqrt(dot( zopt, zopt) / length(Y))
+rmsoptw = sqrt(dot( Wopt * zopt, zopt) / length(Y))
+
+println("naive rms error on training set with Wopt: ", rmsoptw)
+
+
+
+regression(B, data_sm;
+                    verbose = true,
+                    nforces=3, usestress=false,
+                    stabstyle=:basis, cstab=0.,
+                    weights=:CM,
+                    regulariser = nothing)
 
 Wnaive = eye(length(w_vec),length(w_vec));
 
@@ -55,6 +94,8 @@ bnaive = Q' * (Wnaive * Y)
 cnaive = R \ (Anaive \ bnaive)
 
 znaive = Ψ * cnaive - Y
+@show norm(znaive.^2)
+maximum(abs.(znaive))
 rmsnaive = sqrt(dot(Wnaive * znaive, znaive) / length(Y))
 println("naive rms error on training set with W=Id: ", rmsnaive)
 

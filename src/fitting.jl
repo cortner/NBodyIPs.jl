@@ -126,17 +126,41 @@ function regression(basis, data;
    # compute coefficients
    verbose && println("solve $(size(Ψ)) LSQ system using QR factorisation")
    Q, R = qr(Ψ)
+   # @show cond(R)
+
+   if weights == :CM
+      W = (size(Q,2)/size(Q,1)) * Diagonal([ 1/norm(Q[n,:])^2 for n = 1:size(Q,1) ])
+      sqrtW = sqrt.(W)
+   end
+
    if W == I && regulariser == nothing
       c = (R \ (Q' * Y)) ./ (1+cstab)
-   elseif regulariser == nothing
-      A = Q' * (W * Q) + cstab * eye(size(R, 1))
-      b = Q' * (W * Y)
-      c = R \ (A \ b)
-   else
-      @assert W == I
+   elseif W == I
       A = (1 + cstab) * R' * R + regulariser
       b = R' * Q' * Y
       c = A \ b
+   elseif regulariser == nothing
+      Ψt = sqrtW * Ψ
+      Yt = sqrtW * Y
+      Qt, Rt = qr(Ψt)
+      A = (1 + cstab) * Rt' * Rt
+      b = Rt' * Qt' * Yt
+      c = A \ b
+   else
+      Ψt = sqrtW * Ψ
+      Yt = sqrtW * Y
+      Qt, Rt = qr(Ψt)
+      A = (1 + cstab) * Rt' * Rt + regulariser
+      b = Rt' * Qt' * Yt
+      c = A \ b
+      # A = Q' * (W * Q) + cstab * eye(size(R, 1))
+      # b = Q' * (W * Y)
+      # c = R \ (A \ b)
+   # else
+   #    @assert W == I
+   #    A = (1 + cstab) * R' * R + regulariser
+   #    b = R' * Q' * Y
+   #    c = A \ b
    end
    # check error on training set
    z = Ψ * c - Y
