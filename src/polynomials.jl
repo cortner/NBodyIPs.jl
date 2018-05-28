@@ -218,11 +218,10 @@ function fcut_analyse(args::Tuple)
       return let rcut=rcut; (@analytic r -> (r - rcut)^2); end, rcut
 
    elseif Symbol(sym) == :twosided
-      af =
-      return let rnn=args[1], rcut = args[2]
-         f = @analytic r -> ( ((rnn/r)^3 - (rnn/rcut)^3)^2 * ((rnn/r)^3 - (1.0/0.7)^3)^2 )
-         AnalyticFunction(r -> f.f(r) * (0.7*rnn < r < rcut),
-                          r -> f.f_d(r) * (0.7*rnn < r < rcut),
+      return let rnn=args[1], rin = args[2], rcut = args[3], p = args[4]
+         f = @analytic r -> ( ((rnn/r)^p - (rnn/rcut)^p)^2 * ((rnn/r)^p - (rnn/rin)^p)^2 )
+         AnalyticFunction(r -> f.f(r) * (0.8*rnn < r < rcut),
+                          r -> f.f_d(r) * (0.8*rnn < r < rcut),
                           nothing) end, args[2]
 
    else
@@ -427,17 +426,19 @@ fast(Vn::NBody{1}) = Vn
 
 
 function NBodyIP(basis, coeffs)
-   orders = NBody[]
-   bos = bodyorder.(basis)
-   for N = 1:maximum(bos)
-      Ibo = find(bos .== N)  # find all basis functions that have the right bodyorder
-      if length(Ibo) > 0
-         D = basis[Ibo[1]].D
-         V_N = NBody(basis[Ibo], coeffs[Ibo], D)
-         push!(orders, V_N)  # collect them
-      end
+   components = NBody[]
+   tps = typeof.(basis)
+   for tp in unique(tps)
+      # find all basis functions that have the same type, which in particular
+      # incorporated the body-order
+      Itp = find(tps .== tp)
+      # construct a new basis function by combining all of them in one
+      # (this assumes that we have NBody types)
+      D = basis[Itp[1]].D
+      V_N = NBody(basis[Itp], coeffs[Itp], D)
+      push!(components, V_N)
    end
-   return NBodyIP(orders)
+   return NBodyIP(components)
 end
 
 
