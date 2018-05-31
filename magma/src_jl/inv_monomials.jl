@@ -1,6 +1,7 @@
-using Combinatorics, StaticArrays
+using Combinatorics, StaticArrays, NBodyIPs
 include("misc.jl")
 include("invariants_generator.jl")
+include("../../src/polynomials.jl")
 
 
 # Determine the representant of a monomial
@@ -110,6 +111,29 @@ function prod_mon(mon1_list,coef1_list,mon2_list,coef2_list)
     return check_dupl_add(mon_list_out,coef_list_out)
 end
 
+# compute the power of a function given by monomials
+# function power(mon_list,coef_list,::Val{1})
+#     return check_dupl_add(mon_list,coef_list)
+# end
+#
+# function power(mon_list,coef_list,::Val{2})
+#     return prod_mon(mon_list,coef_list,mon_list,coef_list)
+# end
+
+# compute the power of a function given by monomials (not compacted)
+function power(mon_list,coef_list,p)
+    if p == 1
+         return check_dupl_add(mon_list,coef_list)
+    elseif p == 2
+         mon_list_out,coef_list_out = prod_mon(mon_list,coef_list,mon_list,coef_list)
+         return check_dupl_add(mon_list_out,coef_list_out)
+    else
+        mon_list_temp, coef_list_temp = power(mon_list,coef_list,p-1)
+        mon_list_out,coef_list_out = prod_mon(mon_list,coef_list,mon_list_temp, coef_list_temp)
+        return check_dupl_add(mon_list_out,coef_list_out)
+    end
+end
+
 
 multisets(k, n) = map(A -> [sum(A .== i) for i in 1:n],
                       with_replacement_combinations(1:n, k))
@@ -132,10 +156,14 @@ function generate_rep_mon(NBlengths,d)
 end
 
 
+function invariant_2_monomials(inv_tuple,Invariants)
+    
 
-Mon = (0,0,2,0,0,0)
+end
 
-generate_rep_mon(6,5)
+Mon = (0,0,1,0,0,0)
+
+
 
 
 USP = unique(simplex_permutations(SVector(Mon...)))
@@ -150,3 +178,11 @@ prod_mon(USP,[1,1,1,1,1,1], USP,[1,1,1,1,1,1])
 compact_form_mon([USP; USP],[1,1,1,1,1,1,2,2,2,2,2,2])
 
 expanded_form_mon([Mon],[1])
+
+NBodyIPs.gen_tuples(5,5)
+
+generate_rep_mon(10,5)
+
+mon_list,coef_list = power(USP,[1,1,1,1,1,1],3)
+
+compact_form_mon(mon_list,coef_list)

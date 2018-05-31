@@ -41,6 +41,7 @@ const VecTup{M} = Vector{NTuple{M, Int}}
 
 export NBody, Dictionary,
        gen_basis, poly_basis,
+       gen_tuples,
        @analytic
 
 
