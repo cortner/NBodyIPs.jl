@@ -1,8 +1,8 @@
 
 using StaticArrays, ForwardDiff
 
-using JuLIP: AbstractCalculator, Atoms, neighbourlist, @D
-using NeighbourLists: nbodies, maptosites!, maptosites_d!, virial!
+using JuLIP: AbstractCalculator, Atoms, neighbourlist, @D, JVec
+using NeighbourLists: nbodies, maptosites!, maptosites_d!, virial!, max_neigs
 
 
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd
@@ -27,77 +27,7 @@ abstract type NBodyFunction{N} <: AbstractCalculator end
 function bodyorder end
 
 
-@generated function simplex_edges(Rs::AbstractVector, J::SVector{K, Int}) where K
-   # note K = N-1 ]
-   code = Expr[]
-   idx = 0
-   for n = 1:K
-      idx += 1
-      push_str!(code, "s_$idx = norm(Rs[J[$n]])")  # r_0n
-      push_str!(code, "S_$idx = Rs[J[$n]] / s_$idx")
-   end
-   for n = 1:K-1, m = (n+1):K
-      idx += 1
-      push_str!(code, "s_$idx = norm(Rs[J[$n]] - Rs[J[$m]])")   # r_nm
-      push_str!(code, "S_$idx = (Rs[J[$n]] - Rs[J[$m]])/s_$idx")   # S_nm ∝ Rn - Rm
-   end
-   str_s = "s = @SVector [s_1"
-   str_S = "S = @SVector [S_1"
-   for i = 2:idx
-      str_s *= ", s_$i"
-      str_S *= ", S_$i"
-   end
-   push_str!(code, str_s * "]")
-   push_str!(code, str_S * "]")
-   quote
-      $(Expr(:meta, :inline))
-      @inbounds $(Expr(:block, code...))
-      return s, S
-   end
-end
-
-@generated function eval_site(V::NBodyFunction{N},
-                              Rs::AbstractVector{JVec{T}}) where {N, T}
-   code = Expr[]
-   # initialise the output
-   push_str!(code, "E = zero(T)")
-   push_str!(code, "nR = length(Rs)")
-
-   # generate the expression for the multiple for loops, e.g. for 4B:
-   # for i_1 = 1:(nR-2), i_2 = (i_1+1):(nR-1), i_3 = (i_2+1):nR
-   str_loop = "for i_1 = 1:(nR-$(N-2))"
-   for n = 2:N-1
-      str_loop *= ", i_$n = (i_$(n-1)+1):(nR-$(N-1-n))"
-   end
-   str_loop *= "\n end"
-   ex_loop = parse(str_loop)
-
-   # inside the loop
-   code_inner = Expr[]
-   # inside these N-1 loops we collect the loop indices into an SVector, e.g.
-   # J = @SVector [i_1, i_2, i_3]
-   str = "J = @SVector [i_1"
-   for n = 2:N-1; str *= ", i_$n"; end
-   push_str!(code_inner, str * "]")
-   # collect the edge lengths and edge directions (lexicographical ordering)
-   push_str!(code_inner, "s, S = simplex_edges(Rs, J)")
-   # now call `V` with the simplex-lengths and add this to the site energy
-   # the normalisation is due to the fact that this term actually appears
-   # in N site energies. (once for each corner of the simplex)
-   push_str!(code_inner, "E += evaluate(V, s) / $N")
-
-   # put code_inner into the loop expression
-   ex_loop.args[2] = Expr(:block, code_inner...)
-
-   # now append the loop to the main code
-   push!(code, ex_loop)
-
-   quote
-      # $(Expr(:meta, :inline))
-      @inbounds $(Expr(:block, code...))
-      return E
-   end
-end
+include("eval_nbody.jl")
 
 
 function site_energies(V::NBodyFunction, at::Atoms{T}) where {T}
@@ -108,20 +38,43 @@ function site_energies(V::NBodyFunction, at::Atoms{T}) where {T}
    return Es
 end
 
+# REVISIT using maptosites!
 # site_energies(V::NBodyFunction, at::Atoms{T}) where {T} =
 #    maptosites!( (i,j,r,R) -> eval_site(V, R),
 #                 zeros(T, length(at)),
 #                 sites(at, cutoff(V)) )
 
+
+# this is probably already in JuLIP??? if not, it should be moved to JuLIP??
 energy(V::NBodyFunction, at::Atoms) =
       sum_kbn(site_energies(V, at))
 
+
+
+# this appears to be a nice generic implementation of forces with a
+# temporary array => move this to JuLIP!
 function forces(V::NBodyFunction, at::Atoms{T}) where {T}
    nlist = neighbourlist(at, cutoff(V))
-   return scale!(maptosites_d!(r -> evaluate_d(V, r),
-                 zeros(SVector{3, T}, length(at)),
-                 nbodies(bodyorder(V), nlist)), -1)
+   maxneigs = max_neigs(nlist)
+   F = zeros(JVec{T}, length(at))
+   dVsite = zeros(JVec{T}, maxneigs)
+   for (i, j, r, R) in sites(nlist)
+      eval_site_d!(dVsite, V, R)
+      for n = 1:length(j)
+         F[j[n]] -= dVsite[n]
+         F[i] += dVsite[n]
+      end
+   end
+   return F
 end
+
+
+# function forces(V::NBodyFunction, at::Atoms{T}) where {T}
+#    nlist = neighbourlist(at, cutoff(V))
+#    return scale!(maptosites_d!(r -> evaluate_d(V, r),
+#                  zeros(SVector{3, T}, length(at)),
+#                  nbodies(bodyorder(V), nlist)), -1)
+# end
 
 function virial(V::NBodyFunction, at::Atoms{T}) where {T}
    nlist = neighbourlist(at, cutoff(V))
