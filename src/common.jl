@@ -30,13 +30,17 @@ function bodyorder end
 include("eval_nbody.jl")
 
 
-function site_energies(V::NBodyFunction, at::Atoms{T}) where {T}
+
+function site_energies(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    Es = zeros(T, length(at))
    for (i, j, r, R) in sites(at, cutoff(V))
-      Es[i] = eval_site(V, R)
+      Es[i] = eval_site_nbody!(Val(N), R, cutoff(V),
+                               ((out, s, S, _1, _2) -> out + evaluate(V, s)/N),
+                               zero(T), nothing)
    end
    return Es
 end
+
 
 # REVISIT using maptosites!
 # site_energies(V::NBodyFunction, at::Atoms{T}) where {T} =
@@ -53,13 +57,19 @@ energy(V::NBodyFunction, at::Atoms) =
 
 # this appears to be a nice generic implementation of forces with a
 # temporary array => move this to JuLIP!
-function forces(V::NBodyFunction, at::Atoms{T}) where {T}
+function forces(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    nlist = neighbourlist(at, cutoff(V))
    maxneigs = max_neigs(nlist)
    F = zeros(JVec{T}, length(at))
    dVsite = zeros(JVec{T}, maxneigs)
    for (i, j, r, R) in sites(nlist)
-      eval_site_d!(dVsite, V, R)
+      dVsite .*= 0.0
+      # eval_site_d!(dVsite, V, R)
+      eval_site_nbody!(
+            Val(N), R, cutoff(V),
+            (out, s, S, J, _) -> _grad_len2pos!(out, evaluate_d(V, s)/N, J, S),
+            dVsite, nothing )
+      # write site energy gradient into forces
       for n = 1:length(j)
          F[j[n]] -= dVsite[n]
          F[i] += dVsite[n]
@@ -78,13 +88,18 @@ end
 
 
 
-function virial(V::NBodyFunction, at::Atoms{T}) where {T}
+function virial(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    nlist = neighbourlist(at, cutoff(V))
    maxneigs = max_neigs(nlist)
    S = @SMatrix zeros(3,3)
    dVsite = zeros(JVec{T}, maxneigs)
    for (i, j, r, R) in sites(nlist)
-      eval_site_d!(dVsite, V, R)
+      dVsite .*= 0.0
+      # eval_site_d!(dVsite, V, R)
+      eval_site_nbody!(
+            Val(N), R, cutoff(V),
+            (out, s, S, J, _) -> _grad_len2pos!(out, evaluate_d(V, s)/N, J, S),
+            dVsite, nothing )
       S += JuLIP.Potentials.site_virial(dVsite, R)
    end
    return S
@@ -111,9 +126,9 @@ virial(V::NBodyFunction{1}, at::Atoms{T}) where {T} =
 
 """
 `NBodyIP` : wraps `NBodyFunction`s into a JuLIP calculator, defining
-`energy`, `forces` and `cutoff`.
+`energy`, `forces`, `virial` and `cutoff`.
 
-TODO: `stress`, `site_energies`, etc.
+TODO: `site_energies`, etc.
 """
 struct NBodyIP <: AbstractCalculator
    orders::Vector{NBodyFunction}
@@ -176,36 +191,69 @@ _alloc_mvec(T::Type, N::Integer) = _alloc_mvec(T, Val(N))
 _alloc_mmat(T::Type, ::Val{N}, ::Val{M}) where {N, M} = zero(MMatrix{N, M, T})
 _alloc_mmat(T::Type, N, M) = _alloc_mmat(T, Val(N), Val(M))
 
-function energy(B::AbstractVector{TB}, at::Atoms{T}
-              ) where {TB <: NBodyFunction{N}, T} where {N}
-   # @assert isleaftype{TB}
-   nlist = neighbourlist(at, cutoff(B[1]))
-   z = _alloc_svec(T, length(B))
-   temp = _alloc_mvec(T, length(B))
-   return maptosites!(r -> evaluate_many!(temp, B, r),
-                      [ copy(z) for _ = 1:length(at) ],
-                      nbodies(N, nlist)) |> sum
-end
 
 energy(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
    [ energy(b, at) for b in B ]
 
+function energy(B::AbstractVector{TB}, at::Atoms{T}
+                ) where {TB <: NBodyFunction{N}, T} where {N}
+   rcut = cutoff(B[1])
+   nlist = neighbourlist(at, rcut)
+   temp = zeros(T, length(B))
+   E = zeros(T, length(B))
+   for (i, j, r, R) in sites(nlist)
+      # evaluate all the site energies at the same time
+      # for each simples, write the nB energies into temp
+      # then add them to E, which is just passed through all the
+      # various loops, so no need to update it here again
+      eval_site_nbody!(Val(N), R, rcut,
+                       (out, s, S, _1, temp) -> (out .+= evaluate_many!(temp, B, s)/N),
+                       E, temp)
+   end
+   return E
+end
+
+
+function _many_grad_len2pos!(dVsite, dV, J, S)
+   for ib = 1:length(dVsite)
+      _grad_len2pos!(dVsite[ib], dV[ib], J, S)
+   end
+end
 
 function forces(B::AbstractVector{TB}, at::Atoms{T}
               ) where {TB <: NBodyFunction{N}, T} where {N}
-   # @assert isleaftype{TB}
-   nlist = neighbourlist(at, cutoff(B[1]))
-   z = _alloc_svec(JVec{T}, length(B))
-   z2 = _alloc_svec(T, length(B))
-   temp = ( _alloc_mvec(T, length(B)),
-            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
-            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
-            _alloc_mvec(typeof(z2), (N*(N-1))÷2)
-          )
-   Fpre = maptosites_d!(r -> evaluate_many_d!(temp, B, r),
-                      [ copy(z) for _ = 1:length(at) ],
-                      nbodies(N, nlist))
-   F = [ [ -Fpre[i][j] for i = 1:length(Fpre) ]  for j = 1:length(B) ]
+   rcut = cutoff(B[1])
+   nlist = neighbourlist(at, rcut)
+   maxneigs = max_neigs(nlist)
+   nedges = (N*(N-1))÷2
+   # forces
+   F =      [ zeros(JVec{T}, length(at)) for n = 1:length(B) ]
+   # site gradient
+   dVsite = [ zeros(JVec{T}, maxneigs)   for n = 1:length(B) ]
+   # n-body gradients
+   dV =     [ zeros(T, nedges)      for n = 1:length(B) ]
+   # temporary arrays to compute the site gradients
+   temp = ( zeros(T, length(B)),
+            zeros(T, nedges, length(B)),
+            zeros(T, nedges, length(B)),
+            dV )
+   for (i, j, r, R) in sites(nlist)
+      # clear dVsite
+      for n = 1:length(dVsite)
+         dVsite[n] .*= 0.0
+      end
+      # fill dVsite
+      eval_site_nbody!(
+            Val(N), R, rcut,
+            (out, s, S, J, temp) -> _many_grad_len2pos!(out,
+                                       evaluate_many_d!(temp, B, s)/N, J, S),
+            dVsite, temp)
+      # write it into the force vectors
+      for ib = 1:length(B), n = 1:length(j)
+         F[ib][j[n]] -= dVsite[ib][n]
+         F[ib][i] += dVsite[ib][n]
+      end
+   end
    return F
 end
 

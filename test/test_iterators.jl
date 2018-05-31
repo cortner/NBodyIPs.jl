@@ -101,30 +101,43 @@ for N in MM
    @test Emr ≈ Enaive
 end
 
+# using BenchmarkTools
+VN = gen_fnbody(3; r0 = rnn(:Cu))
+# at = bulk(:Cu, cubic=true, pbc = false) * 2
+# Es = zeros(length(at))
+# nlist = neighbourlist(at, cutoff(VN))
+# @btime NBodyIPs.site_energies!($Es, $nlist, $VN, $at)
+# @btime site_energies($VN, $at)
+# @code_warntype site_energies(VN, at)
+# @btime neighbourlist($at, $(cutoff(VN)))
 
-println("--------------------------------------")
-println("Finite-difference tests")
+println("----------------------------------------------")
+println("Finite-difference tests for forces and stress")
 MM = [2,3,4,5] # [2,3,4,5]  # body orders
 for N in MM
-   println(" [N = $N]")
-   VN = gen_fnbody(N; r0 = rnn(:Cu))
    # create N-body
+   VN = gen_fnbody(N; r0 = rnn(:Cu))
    # create a not-too-large copper cell
-   at = bulk(:Cu, cubic=true, pbc = (true, false, false)) * (1,2,2)
+   at = bulk(:Cu, cubic=true, pbc = true)
+   rattle!(at, 0.03)
+   set_constraint!(at, VariableCell(at))
+   set_calculator!(at, VN)
 
    nat = length(positions(at))
-   dE = -mat(forces(VN, at))[:]
-   E = energy(VN, at)
+   dE = gradient(at)
+   E = energy(at)
+   println("[N = $N]")
    @printf("    h    | error \n")
    @printf("---------|----------- \n")
-   x = mat(positions(at))[:]
+   x = dofs(at)
    errors = []
    for p = 2:11
       h = 0.1^p
       dEh = copy(dE)
-      for n = 1:length(dE)
+      for n = 1:length(x)
          x[n] += h
-         dEh[n] = (energy(VN, set_positions!(at, vecs(x))) - E) / h
+         set_dofs!(at, x)
+         dEh[n] = (energy(at) - E) / h
          x[n] -= h
       end
       push!(errors, vecnorm(dE - dEh, Inf))

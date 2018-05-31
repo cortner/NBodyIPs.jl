@@ -53,42 +53,6 @@ function _get_Jvec_ex(N)
 end
 
 
-@generated function eval_site(V::NBodyFunction{N},
-                              Rs::AbstractVector{JVec{T}}) where {N, T}
-   code = Expr[]
-   # initialise the output
-   push!(code, :( E = zero(T)      ))
-   push!(code, :( nR = length(Rs)  ))
-   push!(code, :( rcut = cutoff(V) ))
-
-   # generate the multiple for-loop
-   ex_loop = _get_loop_ex(N)
-
-   # inside the loop
-   code_inner = Expr[]
-   # collect the indices into a vector
-   push!(code_inner,      _get_Jvec_ex(N) )
-   # collect the edge lengths and edge directions (lexicographical ordering)
-   push!(code_inner, :(   (s, S) = simplex_edges(Rs, J) ))
-   push!(code_inner, :(   if maximum(s) > rcut; continue; end ))
-   # now call `V` with the simplex-lengths and add this to the site energy
-   # the normalisation is due to the fact that this term actually appears
-   # in N site energies. (once for each corner of the simplex)
-   push!(code_inner, :(   E += V(s) / $N ))
-
-   # put code_inner into the loop expression
-   ex_loop.args[2] = Expr(:block, code_inner...)
-
-   # now append the loop to the main code
-   push!(code, ex_loop)
-
-   quote
-      # $(Expr(:meta, :inline))
-      @inbounds $(Expr(:block, code...))
-      return E
-   end
-end
-
 
 """
 convert ∇V (where ∇ is the gradient w.r.t. bond-lengths) into forces, i.e., into
@@ -96,7 +60,7 @@ convert ∇V (where ∇ is the gradient w.r.t. bond-lengths) into forces, i.e., 
 
 J : neighbour (sub-) indices
 """
-@generated function _grad_len2pos!(dVsite, dV, J::SVector{K, Int}, s, S) where {K}
+@generated function _grad_len2pos!(dVsite, dV, J::SVector{K, Int}, S) where {K}
    # K is the number of neighbours, i.e. N = K+1 counting also the center atom
    # length(dV) == length(s) == length(S) == K * (K+1)/2
    # ------
@@ -113,23 +77,25 @@ J : neighbour (sub-) indices
       push!(code, :( dVsite[J[$n]] += dV[$idx] * S[$idx] ))
       push!(code, :( dVsite[J[$m]] -= dV[$idx] * S[$idx] ))
    end
-
    quote
-      # $(Expr(:meta, :inline))
+      $(Expr(:meta, :inline))
       @inbounds $(Expr(:block, code...))
-      return nothing
+      return dVsite
    end
 end
 
 
 
-@generated function eval_site_d!(dVsite::AbstractVector{JVec{T}},
-                                 V::NBodyFunction{N},
-                                 Rs::AbstractVector{JVec{T}}) where {N, T}
+
+@generated function eval_site_nbody!( ::Val{N},
+                                      Rs::AbstractVector{JVec{T}},
+                                      rcut::T,
+                                      accumfun,
+                                      out,
+                                      temp ) where {N, T}
    code = Expr[]
    # initialise the output
-   push!(code, :( nR = length(Rs) ))
-   push!(code, :( for n = 1:nR; dVsite[n] *= 0.0; end ))
+   push!(code, :( nR = length(Rs)  ))
 
    # generate the multiple for-loop
    ex_loop = _get_loop_ex(N)
@@ -137,17 +103,14 @@ end
    # inside the loop
    code_inner = Expr[]
    # collect the indices into a vector
-   push!(code_inner,     _get_Jvec_ex(N))
+   push!(code_inner,      _get_Jvec_ex(N) )
    # collect the edge lengths and edge directions (lexicographical ordering)
-   push!(code_inner, :(  (s, S) = simplex_edges(Rs, J) ))
-   push!(code_inner, :(  if maximum(s) > rcut; continue; end ))
+   push!(code_inner, :(   (s, S) = simplex_edges(Rs, J) ))
+   push!(code_inner, :(   if maximum(s) > rcut; continue; end ))
    # now call `V` with the simplex-lengths and add this to the site energy
    # the normalisation is due to the fact that this term actually appears
    # in N site energies. (once for each corner of the simplex)
-   push!(code_inner, :(  dV = evaluate_d(V, s) / $N ))
-   # still inside the loop: convert ∇V (where ∇ is the gradient w.r.t.
-   # bond-lengths) into ∇Vsite (where ∇ is the gradient w.r.t. positions)
-   push!(code_inner, :(  _grad_len2pos!(dVsite, dV, J, s, S) ))
+   push!(code_inner, :(   out = accumfun(out, s, S, J, temp) ))
 
    # put code_inner into the loop expression
    ex_loop.args[2] = Expr(:block, code_inner...)
@@ -156,8 +119,7 @@ end
    push!(code, ex_loop)
 
    quote
-      # $(Expr(:meta, :inline))
       @inbounds $(Expr(:block, code...))
-      return nothing
+      return out
    end
 end

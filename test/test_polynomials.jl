@@ -20,7 +20,7 @@ TRANSFORM = let r0 = r0
    # (@analytic r -> (r0/r)^3)
    (@analytic r -> exp( - 3 * ((r/r0) - 1)))
 end
-at = rattle!(bulk(:Cu, cubic=true) * 3, 0.02)
+at = rattle!(bulk(:Cu, cubic=true) * 2, 0.02)
 
 println("3-body")
 rcut3 = 3.1 * r0
@@ -33,9 +33,9 @@ E2 = energy( B3, at )
 F1 = [forces(b, at) for b in B3]
 F2 = forces(B3, at)
 (@test F1 ≈ F2) |> println
-S1 = [stress(b, at) for b in B3]
-S2 = stress(B3, at)
-(@test S1 ≈ S2) |> println;
+# S1 = [stress(b, at) for b in B3]
+# S2 = stress(B3, at)
+# (@test S1 ≈ S2) |> println;
 
 
 println("4-body")

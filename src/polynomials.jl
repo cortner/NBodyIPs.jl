@@ -564,7 +564,7 @@ end
 # ---------------------- auxiliary type to
 
 
-function evaluate_many!(temp::MVector, B::Vector{TB}, r::SVector{M, T}
+function evaluate_many!(temp, B::Vector{TB}, r::SVector{M, T}
                ) where {TB <: NBody{N}} where {N, M, T}
    E = temp # zeros(T, length(B))
    D = B[1].D
@@ -576,7 +576,7 @@ function evaluate_many!(temp::MVector, B::Vector{TB}, r::SVector{M, T}
    end
    fc = fcut(D, r)
    scale!(E, fc)
-   return SVector(E)
+   return E
 end
 
 
