@@ -76,12 +76,27 @@ end
 #                  nbodies(bodyorder(V), nlist)), -1)
 # end
 
+
+
 function virial(V::NBodyFunction, at::Atoms{T}) where {T}
    nlist = neighbourlist(at, cutoff(V))
-   temp = @MMatrix zeros(3,3)
-   virial!(r -> evaluate_d(V, r), temp, nbodies(bodyorder(V), nlist))
-   return SMatrix(temp)
+   maxneigs = max_neigs(nlist)
+   S = @SMatrix zeros(3,3)
+   dVsite = zeros(JVec{T}, maxneigs)
+   for (i, j, r, R) in sites(nlist)
+      eval_site_d!(dVsite, V, R)
+      S += JuLIP.Potentials.site_virial(dVsite, R)
+   end
+   return S
 end
+
+
+# function virial(V::NBodyFunction, at::Atoms{T}) where {T}
+#    nlist = neighbourlist(at, cutoff(V))
+#    temp = @MMatrix zeros(3,3)
+#    virial!(r -> evaluate_d(V, r), temp, nbodies(bodyorder(V), nlist))
+#    return SMatrix(temp)
+# end
 
 # ------ special treatment of 1-body functions
 
@@ -118,7 +133,7 @@ by switching to a different representation.
 fast(IP::NBodyIP) = NBodyIP( fast.(IP.orders) )
 
 
-# generics
+# some simplified access functions
 
 evaluate(V::NBodyFunction{2}, r::Number) = evaluate(V, SVector(r))
 
@@ -130,6 +145,11 @@ evaluate_dd(V::NBodyFunction{2}, r::Number) =
 evaluate(V::NBodyFunction{3}, r1::Number, r2::Number, r3::Number) =
       evaluate(V, SVector(r1, r2, r3))
 
+
+# TODO: implement direct n-body access for NBodyIP
+
+
+# ========================= assembly support for LSQ system ====================
 
 # For assembling the LSQ system efficiently we need a way to evaluate all basis
 # functions of the same body-order at the same time. Otherwise we would be
