@@ -29,6 +29,19 @@ function check_dupl_add(mon_list,coef_list)
     return mon_list_out,mon_coef_out
 end
 
+# Check duplicates in a list of monomials
+function check_dupl(mon_list)
+    mon_list_out = []
+
+    for i=1:length(mon_list)
+        if !(mon_list[i] in mon_list_out)
+            push!(mon_list_out,mon_list[i])
+        end
+    end
+    return mon_list_out
+end
+
+
 # Compute the compact form of a list of monomials
 function compact_form_mon(mon_list,coef_list)
     @assert length(mon_list) == length(coef_list)
@@ -48,6 +61,20 @@ function compact_form_mon(mon_list,coef_list)
         end
     end
     return mon_list_out,coef_list_out
+end
+
+# Compute the compact form of a list of monomials
+function compact_form_mon(mon_list)
+    # first simplification - remove duplicate monomials
+    mon_list_in = check_dupl(mon_list)
+    mon_list_out = []
+
+    for i=1:length(mon_list_in)
+        if !(monomial_repr(mon_list_in[i]) in mon_list_out)
+            push!(mon_list_out,monomial_repr(mon_list_in[i]))
+        end
+    end
+    return mon_list_out
 end
 
 # Compute the expanded version of a compact list of monomials
@@ -84,15 +111,38 @@ function prod_mon(mon1_list,coef1_list,mon2_list,coef2_list)
 end
 
 
+multisets(k, n) = map(A -> [sum(A .== i) for i in 1:n],
+                      with_replacement_combinations(1:n, k))
+
+# generate all monomial representants up to degree d
+function generate_rep_mon(NBlengths,d)
+    mon_list_out = []
+    for deg = 1:d
+        mon_list_out_deg = []
+        Decomp_deg = multisets(deg,NBlengths)
+        mon_list_in_deg = compact_form_mon(Decomp_deg)
+        for i=1:length(mon_list_in_deg)
+            if !(monomial_repr(mon_list_in_deg[i]) in mon_list_out_deg)
+                push!(mon_list_out_deg,monomial_repr(mon_list_in_deg[i]))
+            end
+        end
+        append!(mon_list_out,mon_list_out_deg)
+    end
+    return mon_list_out
+end
 
 
 
 Mon = (0,0,2,0,0,0)
 
+generate_rep_mon(6,5)
+
+
 USP = unique(simplex_permutations(SVector(Mon...)))
 
 check_dupl_add([USP; USP],[1,2,3,4,5,6,1,2,3,4,5,6])
 
+compact_form_mon(USP)
 
 prod_mon(USP,[1,1,1,1,1,1], USP,[1,1,1,1,1,1])
 
