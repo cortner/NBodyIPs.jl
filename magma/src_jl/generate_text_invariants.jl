@@ -2,11 +2,12 @@ using Combinatorics, StaticArrays
 
 include("invariants_generator.jl")
 include("misc.jl")
+include("inv_monomials.jl")
 
 # Parameters
 #TODO: check that prefix are the same as the ones in generate_invariants.sh
 NBody = 5;
-Deg = 8;
+Deg = 6;
 prefsec = "SEC" #prefix for the secondaries
 prefirrsec = "IS" #prefix for the irreducible secondaries
 prefprim = "P" #prefix for the primaries
@@ -297,7 +298,44 @@ open(file, "w") do f
     write(f, "])\n end")
 
 
+# Generate monomials with weights: for primaries, irreducible secondaries, and secondaries
+# for irreducible secondaries
+Mon_irrsec, coef_list_irrsec = generate_inv_mon(filenameirrsecdata,NBlengths,Deg)
+# for primaries
+Mon_prim, coef_list_prim = generate_inv_mon(filenameprimdata,NBlengths,Deg)
 
+Mon_sec = []
+coef_sec = []
+
+fileI = open(filenamesec)
+line = readlines(fileI)
+# first line contains sec invariant =1, we remove it
+for i=2:length(line)
+    part1,part2 = split(line[i], "=")
+    Part1 = replace(part1, prefsec, "")
+    @assert parse(Int64,Part1) == i
+    if contains(line[i], "*")
+        part2_1,part2_2 = split(part2, "*")
+        Part2_1 = replace(part2_1, prefirrsec, "")
+        Part2_2 = replace(part2_2, prefirrsec, "")
+        int1 = parse(Int64,Part2_1)
+        int2 = parse(Int64,Part2_2)
+        Mon_irrsec1 = [Mon_sec[int1]]
+        coef_list_irrsec1 = [coef_sec[int1]]
+        Mon_irrsec2 = [Mon_sec[int2]]
+        coef_list_irrsec2 = [coef_sec[int2]]
+        mon_list_out,coef_list_out = prod_mon_comp(Mon_irrsec1,coef_list_irrsec1,Mon_irrsec2,coef_list_irrsec2)
+        push!(Mon_sec,mon_list_out)
+        push!(coef_sec,coef_list_out)
+    else
+        Part2 = replace(part2, prefirrsec, "")
+        int = parse(Int64,Part2)
+        push!(Mon_sec,(Mon_irrsec[int]))
+        push!(coef_sec,(coef_list_irrsec[int]))
+    end
+end
+Mon_sec
+coef_sec
 
 
 #Remove the temporary files

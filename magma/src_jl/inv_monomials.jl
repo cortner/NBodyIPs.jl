@@ -98,6 +98,13 @@ function expanded_form_mon(mon_list,coef_list)
     return mon_list_out,coef_list_out
 end
 
+function prod_mon_comp(mon1_list,coef1_list,mon2_list,coef2_list)
+    mon1_list_ex,coef1_list_ex = expanded_form_mon(mon1_list,coef1_list)
+    mon2_list_ex,coef2_list_ex = expanded_form_mon(mon2_list,coef2_list)
+    mon_list_out,coef_list_out = prod_mon(mon1_list_ex,coef1_list_ex,mon2_list_ex,coef2_list_ex)
+    return compact_form_mon(mon_list_out,coef_list_out)
+end
+
 # compute the product of two list of monomials
 function prod_mon(mon1_list,coef1_list,mon2_list,coef2_list)
     mon_list_out = []
@@ -156,10 +163,14 @@ function generate_rep_mon(NBlengths,d)
 end
 
 
-function invariant_2_monomials(inv_tuple,Invariants)
-    
+# function invariant_2_monomials(inv_tuple,Invariants)
+#
+#
+# end
 
-end
+
+
+
 
 Mon = (0,0,1,0,0,0)
 
