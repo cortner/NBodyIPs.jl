@@ -167,33 +167,3 @@ end
 #
 #
 # end
-
-
-
-
-
-Mon = (0,0,1,0,0,0)
-
-
-
-
-USP = unique(simplex_permutations(SVector(Mon...)))
-
-check_dupl_add([USP; USP],[1,2,3,4,5,6,1,2,3,4,5,6])
-
-compact_form_mon(USP)
-
-prod_mon(USP,[1,1,1,1,1,1], USP,[1,1,1,1,1,1])
-
-
-compact_form_mon([USP; USP],[1,1,1,1,1,1,2,2,2,2,2,2])
-
-expanded_form_mon([Mon],[1])
-
-NBodyIPs.gen_tuples(5,5)
-
-generate_rep_mon(10,5)
-
-mon_list,coef_list = power(USP,[1,1,1,1,1,1],3)
-
-compact_form_mon(mon_list,coef_list)

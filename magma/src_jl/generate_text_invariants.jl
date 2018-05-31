@@ -338,6 +338,40 @@ Mon_sec
 coef_sec
 
 
+inv_tuples = NBodyIPs.gen_tuples(NBody,Deg)
+basis_fcts_mon = generate_rep_mon(NBlengths,Deg)
+@assert length(inv_tuples) == length(basis_fcts_mon)
+
+M_basis_change = zeros(Int64,length(inv_tuples),length(inv_tuples))
+# express all inv_tuples in terms of monomials
+for i=1:length(inv_tuples)
+    tup = inv_tuples[i]
+
+    # compute basis function in terms of monomials
+
+    # compute corresponding matrix elements
+
+end
+
+mon_list,coef_list = power(USP,[1,1,1,1,1,1],3)
+
+compact_form_mon(mon_list,coef_list)
+
+
+USP = unique(simplex_permutations(SVector(Mon...)))
+
+check_dupl_add([USP; USP],[1,2,3,4,5,6,1,2,3,4,5,6])
+
+compact_form_mon(USP)
+
+prod_mon(USP,[1,1,1,1,1,1], USP,[1,1,1,1,1,1])
+
+
+compact_form_mon([USP; USP],[1,1,1,1,1,1,2,2,2,2,2,2])
+
+expanded_form_mon([Mon],[1])
+
+
 #Remove the temporary files
 rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text1.jl");
 rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text2.jl");
