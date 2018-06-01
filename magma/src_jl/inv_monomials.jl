@@ -4,6 +4,14 @@ include("invariants_generator.jl")
 include("../../src/polynomials.jl")
 
 
+# struct Poly_mon{T}
+#    mon::  #monomials
+#    coef:: #coefficients
+#    compact::Bool  # compact form or not
+# end
+
+
+
 # Determine the representant of a monomial
 function monomial_repr(monomial)
     perms_unique = unique(simplex_permutations(SVector(monomial...)))

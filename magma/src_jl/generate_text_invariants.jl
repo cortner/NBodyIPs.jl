@@ -320,37 +320,63 @@ for i=2:length(line)
         Part2_2 = replace(part2_2, prefirrsec, "")
         int1 = parse(Int64,Part2_1)
         int2 = parse(Int64,Part2_2)
-        Mon_irrsec1 = [Mon_sec[int1]]
-        coef_list_irrsec1 = [coef_sec[int1]]
-        Mon_irrsec2 = [Mon_sec[int2]]
-        coef_list_irrsec2 = [coef_sec[int2]]
+        Mon_irrsec1 = [Mon_irrsec[int1]]
+        coef_list_irrsec1 = [coef_list_irrsec[int1]]
+        Mon_irrsec2 = [Mon_irrsec[int2]]
+        coef_list_irrsec2 = [coef_list_irrsec[int2]]
         mon_list_out,coef_list_out = prod_mon_comp(Mon_irrsec1,coef_list_irrsec1,Mon_irrsec2,coef_list_irrsec2)
         push!(Mon_sec,mon_list_out)
         push!(coef_sec,coef_list_out)
     else
         Part2 = replace(part2, prefirrsec, "")
         int = parse(Int64,Part2)
-        push!(Mon_sec,(Mon_irrsec[int]))
-        push!(coef_sec,(coef_list_irrsec[int]))
+        push!(Mon_sec,[(Mon_irrsec[int])])
+        push!(coef_sec,[(coef_list_irrsec[int])])
     end
 end
-Mon_sec
+Mon_sec[1]
 coef_sec
 
 
-inv_tuples = NBodyIPs.gen_tuples(NBody,Deg)
+invariant_tuples = NBodyIPs.gen_tuples(NBody,Deg)
 basis_fcts_mon = generate_rep_mon(NBlengths,Deg)
 @assert length(inv_tuples) == length(basis_fcts_mon)
 
 M_basis_change = zeros(Int64,length(inv_tuples),length(inv_tuples))
 # express all inv_tuples in terms of monomials
+
+Mon_basis_fcts = []
+coef_basis_fcts = []
+
 for i=1:length(inv_tuples)
-    tup = inv_tuples[i]
-
-    # compute basis function in terms of monomials
-
-    # compute corresponding matrix elements
-
+    tup = invariant_tuples[i]
+    ind_tup_non_zero = find(tup)
+    mon_tup = []
+    coef_tup = []
+    for k=1:(NBlengths-1)
+        if tup[k] != 0
+            if mon_tup != []
+                @show mon_tup
+                @show coef_tup
+                @show length([Mon_prim[k]])
+                @show length(coef_list_prim[k])
+                mon_tup = prod_mon_comp(mon_tup,coef_tup,[Mon_prim[k]],[coef_list_prim[k]])
+            else
+                mon_tup = [Mon_prim[k]]
+                coef_tup = [coef_list_prim[k]]
+            end
+        end
+    end
+    if tup[NBlengths] != 0
+        if mon_tup != []
+            mon_tup = prod_mon_comp(mon_tup,coef_tup,Mon_sec[tup[NBlengths]],coef_list_sec[tup[NBlengths]])
+        else
+            mon_tup = Mon_sec[tup[NBlengths]]
+            coef_tup = coef_list_sec[tup[NBlengths]]
+        end
+    end
+    push!(Mon_basis_fcts,mon_tup)
+    push!(coef_basis_fcts,coef_tup)
 end
 
 mon_list,coef_list = power(USP,[1,1,1,1,1,1],3)
