@@ -64,7 +64,6 @@ function forces(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    dVsite = zeros(JVec{T}, maxneigs)
    for (i, j, r, R) in sites(nlist)
       dVsite .*= 0.0
-      # eval_site_d!(dVsite, V, R)
       eval_site_nbody!(
             Val(N), R, cutoff(V),
             (out, s, S, J, _) -> _grad_len2pos!(out, evaluate_d(V, s)/N, J, S),
@@ -237,7 +236,7 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
    accum_fun = let B=B
       (out, s, S, J, temp) -> _acc_manyfrcs(B, out, s, S, J, temp)
    end
-   # cnt = 0
+   cnt = 0
    for (i, j, r, R) in sites(nlist)
       # clear dVsite
       for n = 1:nB
@@ -250,7 +249,7 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
          F[ib][j[n]] -= dVsite[ib][n]/N
          F[ib][i] += dVsite[ib][n]/N
       end
-      # cnt += 1
+      cnt += 1
       # if cnt == 10
       #    break
       # end
