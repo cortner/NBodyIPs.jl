@@ -608,8 +608,8 @@ function evaluate_many_d!(temp, B::Vector{TB}, r::SVector{M, T}
       dE[:,ib] = dE[:,ib] * fc + E[ib] * fc_d
    end
    # write into an output vector
-   for i = 1:M
-      dEfinal[i] = dE[i,:]
+   for i = 1:length(B)
+      dEfinal[i] = dE[:,i]
    end
    return dEfinal
 end

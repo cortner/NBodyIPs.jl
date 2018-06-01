@@ -218,6 +218,7 @@ function _many_grad_len2pos!(dVsite, dV, J, S)
    for ib = 1:length(dVsite)
       _grad_len2pos!(dVsite[ib], dV[ib], J, S)
    end
+   return dVsite
 end
 
 function forces(B::AbstractVector{TB}, at::Atoms{T}
