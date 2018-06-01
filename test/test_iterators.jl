@@ -101,15 +101,6 @@ for N in MM
    @test Emr ≈ Enaive
 end
 
-# using BenchmarkTools
-VN = gen_fnbody(3; r0 = rnn(:Cu))
-# at = bulk(:Cu, cubic=true, pbc = false) * 2
-# Es = zeros(length(at))
-# nlist = neighbourlist(at, cutoff(VN))
-# @btime NBodyIPs.site_energies!($Es, $nlist, $VN, $at)
-# @btime site_energies($VN, $at)
-# @code_warntype site_energies(VN, at)
-# @btime neighbourlist($at, $(cutoff(VN)))
 
 println("----------------------------------------------")
 println("Finite-difference tests for forces and stress")

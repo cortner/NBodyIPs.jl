@@ -35,18 +35,12 @@ function site_energies(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    Es = zeros(T, length(at))
    for (i, j, r, R) in sites(at, cutoff(V))
       Es[i] = eval_site_nbody!(Val(N), R, cutoff(V),
-                               ((out, s, S, _1, _2) -> out + evaluate(V, s)/N),
+                               ((out, s, S, _1, _2) -> (out += evaluate(V, s)/N)),
                                zero(T), nothing)
    end
    return Es
 end
 
-
-# REVISIT using maptosites!
-# site_energies(V::NBodyFunction, at::Atoms{T}) where {T} =
-#    maptosites!( (i,j,r,R) -> eval_site(V, R),
-#                 zeros(T, length(at)),
-#                 sites(at, cutoff(V)) )
 
 
 # this is probably already in JuLIP??? if not, it should be moved to JuLIP??
@@ -78,14 +72,6 @@ function forces(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
 end
 
 
-# function forces(V::NBodyFunction, at::Atoms{T}) where {T}
-#    nlist = neighbourlist(at, cutoff(V))
-#    return scale!(maptosites_d!(r -> evaluate_d(V, r),
-#                  zeros(SVector{3, T}, length(at)),
-#                  nbodies(bodyorder(V), nlist)), -1)
-# end
-
-
 
 function virial(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    nlist = neighbourlist(at, cutoff(V))
@@ -104,13 +90,6 @@ function virial(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    return S
 end
 
-
-# function virial(V::NBodyFunction, at::Atoms{T}) where {T}
-#    nlist = neighbourlist(at, cutoff(V))
-#    temp = @MMatrix zeros(3,3)
-#    virial!(r -> evaluate_d(V, r), temp, nbodies(bodyorder(V), nlist))
-#    return SMatrix(temp)
-# end
 
 # ------ special treatment of 1-body functions
 
@@ -236,7 +215,7 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
    accum_fun = let B=B
       (out, s, S, J, temp) -> _acc_manyfrcs(B, out, s, S, J, temp)
    end
-   cnt = 0
+
    for (i, j, r, R) in sites(nlist)
       # clear dVsite
       for n = 1:nB
@@ -249,10 +228,6 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
          F[ib][j[n]] -= dVsite[ib][n]/N
          F[ib][i] += dVsite[ib][n]/N
       end
-      cnt += 1
-      # if cnt == 10
-      #    break
-      # end
    end
    return F
 end
@@ -278,17 +253,17 @@ function virial(B::AbstractVector{TB}, at::Atoms{T}
             zeros(T, nedges, length(B)),
             zeros(T, nedges, length(B)),
             dV )
+   accum_fun = let B=B
+      (out, s, S, J, temp) -> _acc_manyfrcs(B, out, s, S, J, temp)
+   end
+
    for (i, j, r, R) in sites(nlist)
       # clear dVsite
       for n = 1:length(dVsite)
          dVsite[n] .*= 0.0
       end
       # fill dVsite
-      eval_site_nbody!(
-            Val(N), R, rcut,
-            (out, s, S, J, temp) -> _many_grad_len2pos!(out,
-                                       evaluate_many_d!(temp, B, s)/N, J, S),
-            dVsite, temp)
+      eval_site_nbody!(Val(N), R, rcut, accum_fun, dVsite, temp)
       # update the virials
       for iB = 1:length(B)
          S[iB] += JuLIP.Potentials.site_virial(dVsite[iB], R)

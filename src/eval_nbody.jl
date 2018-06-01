@@ -85,60 +85,17 @@ J : neighbour (sub-) indices
 end
 
 
-function _grad_len2pos!(
-         dVsite::Vector{SVector{3,T}},
-         dV::SVector{3,T},
-         J::SVector{2, Int},
-         S::SVector{3,T}
-      ) where {T}
-   dVsite[J[1]] += dV[1] * S[1]
-   dVsite[J[2]] += dV[2] * S[2]
-   dVsite[J[1]] += dV[3] * S[3]
-   dVsite[J[2]] -= dV[3] * S[3]
-end
-
-# #
-# # ∇_r Vn -> ∇_x Vsite  where the potential is a basis set
-# #
-# # dVsite :: Vector{Vector{JVecF}}  where the inner vector is a site gradient
-# # dV :: Vector{Vector}  where the inner vector is an n-body gradient
-# # the length of both is the length of the basis set
-# #
-# @generated function _grad_len2pos!(dVsite::Vector, dV::Vector,
-#                                    J::SVector{K, Int}, S) where {K}
-#    # K is the number of neighbours, i.e. N = K+1 counting also the center atom
-#    # length(dV) == length(s) == length(S) == K * (K+1)/2
-#    # ------
-#    loop = quote
-#       for iB = 1:length(dVsite)
-#       end
-#    end
-#
-#    # the code block that goes inside the loop
-#    code = Expr[]
-#    idx = 0
-#    # the first K entries of dV, s, S are the |Ri - 0|
-#    for k = 1:K
-#       idx += 1   # idx == k of course
-#       push!(code, :( dVsite[iB][J[$k]] += dV[iB][$idx] * S[$idx] ))
-#    end
-#    # the remaining ones are |R_i - R_j|
-#    for n = 1:K-1, m = (n+1):K
-#       idx += 1
-#       push!(code, :( dVsite[iB][J[$n]] += dV[iB][$idx] * S[$idx] ))
-#       push!(code, :( dVsite[iB][J[$m]] -= dV[iB][$idx] * S[$idx] ))
-#    end
-#
-#    # put the code inside the loop
-#
-#
-#    quote
-#       # $(Expr(:meta, :inline))
-#       @inbounds $loop
-#       return nothign
-#    end
+# function _grad_len2pos!(
+#          dVsite::Vector{SVector{3,T}},
+#          dV::SVector{3,T},
+#          J::SVector{2, Int},
+#          S::SVector{3,T}
+#       ) where {T}
+#    dVsite[J[1]] += dV[1] * S[1]
+#    dVsite[J[2]] += dV[2] * S[2]
+#    dVsite[J[1]] += dV[3] * S[3]
+#    dVsite[J[2]] -= dV[3] * S[3]
 # end
-
 
 
 
