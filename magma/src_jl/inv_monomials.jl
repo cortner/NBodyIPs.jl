@@ -25,6 +25,7 @@ abstract type PolyMonomial{M} end
 struct Monlist{M} <: AbstractMonomial{M}
     A::Vector{SVector{M, Int}}
 end
+Monlist(nothing) = Vector{SVector{M, Int}}[]
 
 struct CMonlist{M} <: AbstractMonomial{M}
     A::Vector{SVector{M, Int}}
@@ -76,11 +77,12 @@ end
 function check_dupl(monomiallist::AbstractMonomial)
     mon_list = Mon(monomiallist)
     @show mon_list
-    mon_list_out = Monlist([])
+    mon_list_out = Monlist(nothing)
 
     for i=1:length(mon_list)
         if !(mon_list[i] in mon_list_out)
             @show mon_list[i]
+            @show mon_list_out
             push!(mon_list_out,mon_list[i])
         end
     end
@@ -137,7 +139,9 @@ function compact(monomiallist::PolyMonomial)
     return PolyMonomial(mon_list_out,coef_list_out)
 end
 
-Monlist([])
+
+
+Monlist(nothing)
 
 M = 6
 mon = SVector(1,2,0,0,0,0)
