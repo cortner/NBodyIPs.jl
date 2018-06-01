@@ -195,9 +195,11 @@ function energy(B::AbstractVector{TB}, at::Atoms{T}
       # then add them to E, which is just passed through all the
       # various loops, so no need to update it here again
       eval_site_nbody!(Val(N), R, rcut,
-                       (out, s, S, _1, temp) -> (out .+= evaluate_many!(temp, B, s)/N),
+                       (out, s, S, _1, temp) -> (out .+= evaluate_many!(temp, B, s)),
                        E, temp)
    end
+   # rescale to account for permutations
+   E ./= N
    return E
 end
 
@@ -215,32 +217,33 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
    nlist = neighbourlist(at, rcut)
    maxneigs = max_neigs(nlist)
    nedges = (N*(N-1))÷2
+   nB = length(B)
    # forces
-   F =      [ zeros(JVec{T}, length(at)) for n = 1:length(B) ]
+   F =      [ zeros(JVec{T}, length(at)) for n = 1:nB ]
    # site gradient
-   dVsite = [ zeros(JVec{T}, maxneigs)   for n = 1:length(B) ]
+   dVsite = [ zeros(JVec{T}, maxneigs)   for n = 1:nB ]
    # n-body gradients
-   dV =     [ zeros(T, nedges)      for n = 1:length(B) ]
+   dV =     [ zeros(T, nedges)      for n = 1:nB ]
    # temporary arrays to compute the site gradients
-   temp = ( zeros(T, length(B)),
-            zeros(T, nedges, length(B)),
-            zeros(T, nedges, length(B)),
+   temp = ( zeros(T, nB),
+            zeros(T, nedges, nB),
+            zeros(T, nedges, nB),
             dV )
    for (i, j, r, R) in sites(nlist)
       # clear dVsite
-      for n = 1:length(dVsite)
+      for n = 1:nB
          dVsite[n] .*= 0.0
       end
       # fill dVsite
       eval_site_nbody!(
             Val(N), R, rcut,
-            (out, s, S, J, temp) -> _many_grad_len2pos!(out,
-                                       evaluate_many_d!(temp, B, s)/N, J, S),
+            (out, s, S, J, temp) ->  # out === dVsite
+                  _many_grad_len2pos!(out, evaluate_many_d!(temp, B, s), J, S),
             dVsite, temp)
       # write it into the force vectors
-      for ib = 1:length(B), n = 1:length(j)
-         F[ib][j[n]] -= dVsite[ib][n]
-         F[ib][i] += dVsite[ib][n]
+      for ib = 1:nB, n = 1:length(j)
+         F[ib][j[n]] -= dVsite[ib][n]/N
+         F[ib][i] += dVsite[ib][n]/N
       end
    end
    return F

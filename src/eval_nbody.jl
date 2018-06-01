@@ -110,7 +110,7 @@ end
    # now call `V` with the simplex-lengths and add this to the site energy
    # the normalisation is due to the fact that this term actually appears
    # in N site energies. (once for each corner of the simplex)
-   push!(code_inner, :(   out = accumfun(out, s, S, J, temp) ))
+   push!(code_inner, :(   accumfun(out, s, S, J, temp) ))
 
    # put code_inner into the loop expression
    ex_loop.args[2] = Expr(:block, code_inner...)
