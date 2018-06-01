@@ -126,7 +126,6 @@ for N = 2:5
    print("S: "); (@test S1 ≈ S2) |> println;
 end
 
-profile = true
 if profile
    println("Performance Tests")
    println("-----------------")

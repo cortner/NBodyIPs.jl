@@ -97,8 +97,8 @@ for N in MM
    # assemble energy naively
    Enaive = naive_n_body(positions(at), VN)
 
-   println("   $N      $nat    =>   $(abs(Emr - Enaive))")
-   @test Emr ≈ Enaive
+   print("   $N      $nat    =>   $(abs(Emr - Enaive)): ")
+   (@test Emr ≈ Enaive) |> println
 end
 
 
@@ -134,5 +134,5 @@ for N in MM
       push!(errors, vecnorm(dE - dEh, Inf))
       @printf(" %1.1e | %4.2e  \n", h, errors[end])
    end
-   @test minimum(errors) <= 1e-3 * maximum(errors)
+   (@test minimum(errors) <= 1e-3 * maximum(errors)) |> println
 end
