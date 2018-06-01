@@ -37,6 +37,14 @@ rr = linspace(r0, r0+1, 10)
 tdh = (D.transform.(rr + 1e-5) - D.transform.(rr - 1e-5)) / (2e-5)
 (@test norm(tdh - D.transform_d.(rr), Inf) < 1e-8) |> println
 
+println("testing the cutoff")
+println("------------------")
+D = D3
+rr = linspace(rcut3-0.9, rcut3+0.1, 100)
+dfh = (D.fcut.(rr + 1e-5) - D.fcut.(rr - 1e-5)) / (2e-5)
+(@test norm(dfh - D.fcut_d.(rr), Inf) < 1e-8) |> println
+
+
 println("testing a transformed invariant")
 println("-------------------------------")
 r = SVector( (r0 + rand(3))... )
@@ -59,23 +67,17 @@ end
 (@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
 
 
-
-r = SVector( (r0 + rand(3))... )
-NBodyIPs.Polys.invariants(D3, r)[1][2]
-NBodyIPs.Polys.invariants_d(D3, r)[1][2]
-
 println("`NBody` gradient-test on simplices")
 println("----------------------------------")
-for N in 2:4, ntup = [1,3]
-   println("----------------------------------")
+for N in 2:5, ntup = [1,3]
    VN = random_nbody(N, ntup)
-   @show VN.t[1]
+   println("[$N-body, ntup=$ntup, t[1] = $(VN.t[1])]")
    r = SVector( (r0 + rand((N*(N-1))÷2))... )
    dvN = @D VN(r)
    vN = VN(r)
    rv = Vector(r)
    errs = []
-   println("      h   |    err   [N=$N, ntup=$ntup]")
+   println("      h   |    err")
    for p = 2:10
       h = 0.1^p
       dvh = zeros(length(dvN))
@@ -90,23 +92,19 @@ for N in 2:4, ntup = [1,3]
    (@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
 end
 
-# TODO: add N = 5 test again!!!!
 
-
-# println("`NBody` finite-difference test on configurations")
-# println("------------------------------------------------")
-# nb = 3
-# at1 = rattle!(bulk(:Cu, cubic=true) * (1,2,2), 0.02)
-# at2 = bulk(:Cu, cubic=true) * (1,1,2)
-# set_constraint!(at2, VariableCell(at2, free = []))
-# for at in [at1, at2]
-#    for N = 2:5 #nbas = [1,3]
-#       println("  $N-body")
-#       VN = random_nbody(N, 1)
-#       # @test
-#       JuLIP.Testing.fdtest(VN, at)
-#    end
-# end
+println("`NBody` finite-difference test on configurations")
+println("------------------------------------------------")
+at1 = rattle!(bulk(:Cu, cubic=true) * (1,2,2), 0.02)
+at2 = bulk(:Cu)
+set_constraint!(at2, VariableCell(at2, free = []))
+for at in [at1, at2]
+   for N = 3:4, nbas = [1,3]
+      println("[$N-body, nbasis = $nbas]")
+      VN = random_nbody(N, 1)
+      (@test JuLIP.Testing.fdtest(VN, at)) |> println
+   end
+end
 
 
 println("Testing Collective Assembly across a Basis Set")
