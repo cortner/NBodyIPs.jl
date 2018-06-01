@@ -1,33 +1,105 @@
 using Combinatorics, StaticArrays, NBodyIPs
-include("misc.jl")
+include("../../src/misc.jl")
 include("invariants_generator.jl")
 include("../../src/polynomials.jl")
 
+import Base: length, +, *
 
-# struct Poly_mon{T}
-#    mon::  #monomials
-#    coef:: #coefficients
-#    compact::Bool  # compact form or not
+# Tuple : like SVector, but not a vector i.e. cant +, *, etc
+# know length, immutable : SVector
+# know length, mutable : MVector
+# don't know length : Vector
+
+abstract type AbstractMonomial{M} end
+# abstract type CompactMonomial{M} <: AbstractMonomial{M} end
+abstract type PolyMonomial{M} end
+
+# struct Monomial{M} <: CompactMonomial{M}
+#     a::SVector{M, Int}
 # end
 
+# struct CMonomial{M} <: CompactMonomial{M}
+#     a::SVector{M, Int}
+# end
+
+struct Monlist{M} <: AbstractMonomial{M}
+    A::Vector{SVector{M, Int}}
+end
+
+struct CMonlist{M} <: AbstractMonomial{M}
+    A::Vector{SVector{M, Int}}
+end
+Mon(m::AbstractMonomial{M}) where {M} = m.A
+
+struct PolyMon{M} <: PolyMonomial{M}
+   mon::Monlist{M} #monomials
+   coef::Vector{Int} #coefficients
+end
+
+Mon(m::PolyMon{M}) where {M} = (m.mon).A
+Coef(m::PolyMon{M}) where {M} = m.coef
+
+struct CPolyMon{M} <: PolyMonomial{M}
+   mon::CMonlist{M} #monomials
+   coef::Vector{Int} #coefficients
+end
+Mon(m::CPolyMon{M}) where {M} = (m.mon).A
+Coef(m::CPolyMon{M}) where {M} = m.coef
+
+
+dim(m::AbstractMonomial{M}) where {M} = M
+
+
+# lengths redifinitions
+length(m::Monlist) = length(m.A)
+length(m::CMonlist) = length(m.A)
+
+length(m::PolyMon) = length(m.coef)
+length(m::CPolyMon) = length(m.coef)
+
+
+edges2bo(M::Integer) = (M <= 0) ? 1 : round(Int, 0.5 + sqrt(0.25 + 2 * M))
+
+# simplex_permutations(x::Monomial{M}) =
+#    simplex_permutations(Val(edges2bo(M)), x.a)
 
 
 # Determine the representant of a monomial
-function monomial_repr(monomial)
-    perms_unique = unique(simplex_permutations(SVector(monomial...)))
+function mon_repr(monomial::SVector{M, Int}) where {M}
+    perms_unique = unique(simplex_permutations(monomial))
     perms_unique_sort = sort(perms_unique, lt=lexless, rev=true)
-    return perms_unique_sort[1]
+    return SVector(perms_unique_sort[1]...)
 end
 
 
+# Check duplicates in a list of monomials
+function check_dupl(monomiallist::AbstractMonomial)
+    mon_list = Mon(monomiallist)
+    @show mon_list
+    mon_list_out = Monlist([])
+
+    for i=1:length(mon_list)
+        if !(mon_list[i] in mon_list_out)
+            @show mon_list[i]
+            push!(mon_list_out,mon_list[i])
+        end
+    end
+    @show mon_list_out
+    return Monlist(mon_list_out)
+end
+
 # Check duplicates in a list of monomials and adds the coefficients when duplicates
-function check_dupl_add(mon_list,coef_list)
+function check_dupl_add(monomiallist::PolyMonomial)
+    mon_list = Mon(monomiallist)
+    coef_list = Coef(monomiallist)
     @assert length(mon_list) == length(coef_list)
     mon_list_out = []
     mon_coef_out = []
 
     for i=1:length(mon_list)
+        @show mon_list
         if !(mon_list[i] in mon_list_out)
+            @show mon_list[i]
             push!(mon_list_out,mon_list[i])
             push!(mon_coef_out,coef_list[i])
         else
@@ -35,42 +107,63 @@ function check_dupl_add(mon_list,coef_list)
             mon_coef_out[ind[1]] += coef_list[i]
         end
     end
-    return mon_list_out,mon_coef_out
+    return PolyMon(Monlist(mon_list_out),mon_coef_out)
 end
 
-# Check duplicates in a list of monomials
-function check_dupl(mon_list)
-    mon_list_out = []
 
-    for i=1:length(mon_list)
-        if !(mon_list[i] in mon_list_out)
-            push!(mon_list_out,mon_list[i])
-        end
-    end
-    return mon_list_out
-end
+
 
 
 # Compute the compact form of a list of monomials
-function compact_form_mon(mon_list,coef_list)
-    @assert length(mon_list) == length(coef_list)
+function compact(monomiallist::PolyMonomial)
     # first simplification - remove duplicate monomials
-    mon_list_in, coef_list_in = check_dupl_add(mon_list,coef_list)
+    monomiallist_in = check_dupl_add(monomiallist)
+    mon_list = Mon(monomiallist_in)
+    coef_list = Coef(monomiallist_in)
+    @assert length(mon_list) == length(coef_list)
 
     mon_list_out = []
     coef_list_out = []
 
-    for i=1:length(mon_list_in)
-        if !(monomial_repr(mon_list_in[i]) in mon_list_out)
-            push!(mon_list_out,monomial_repr(mon_list_in[i]))
+    for i=1:length(mon_list)
+        if !(monomial_repr(mon_list[i]) in mon_list_out)
+            push!(mon_list_out,mon_repr(mon_list[i]))
             push!(coef_list_out,coef_list_in[i])
         else
-            ind = find([monomial_repr(mon_list[i]) == monomial_repr(mon_list_out[j]) for j=1:length(mon_list_out)])
+            ind = find([mon_repr(mon_list[i]) == mon_repr(mon_list_out[j]) for j=1:length(mon_list_out)])
             @assert coef_list_in[i] == coef_list_out[ind[1]]
         end
     end
-    return mon_list_out,coef_list_out
+    return PolyMonomial(mon_list_out,coef_list_out)
 end
+
+Monlist([])
+
+M = 6
+mon = SVector(1,2,0,0,0,0)
+
+length(mon)
+
+length(Monlist([mon, mon]))
+
+mon2 = Monlist([mon, mon])
+
+length(mon2.A)
+
+mon_repr(mon)
+
+Mono = PolyMon(Monlist([mon, mon]),Vector([1, 2]))
+length(Mono)
+
+mon_repr(mon)
+
+check_dupl_add(Mono::PolyMonomial)
+check_dupl(Monlist([mon, mon]))
+
+compact(Mono)
+
+
+
 
 # Compute the compact form of a list of monomials
 function compact_form_mon(mon_list)
