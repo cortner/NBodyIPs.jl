@@ -35,10 +35,10 @@ function site_energies(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    Es = zeros(T, length(at))
    for (i, j, r, R) in sites(at, cutoff(V))
       Es[i] = eval_site_nbody!(Val(N), R, cutoff(V),
-                               ((out, s, S, _1, _2) -> (out += evaluate(V, s)/N)),
+                               ((out, s, _,_1,_2) -> out + evaluate(V, s)),
                                zero(T), nothing)
    end
-   return Es
+   return Es/N
 end
 
 
@@ -46,7 +46,6 @@ end
 # this is probably already in JuLIP??? if not, it should be moved to JuLIP??
 energy(V::NBodyFunction, at::Atoms) =
       sum_kbn(site_energies(V, at))
-
 
 
 # this appears to be a nice generic implementation of forces with a
@@ -182,16 +181,13 @@ function energy(B::AbstractVector{TB}, at::Atoms{T}
 end
 
 
-function _many_grad_len2pos!(dVsite, dV, J, S)
+
+function _acc_manyfrcs(B, dVsite, s, S, J, temp)
+   dV = evaluate_many_d!(temp, B, s)
    for ib = 1:length(dVsite)
       _grad_len2pos!(dVsite[ib], dV[ib], J, S)
    end
    return dVsite
-end
-
-function _acc_manyfrcs(B, dVsite, s, S, J, temp)
-   dV = evaluate_many_d!(temp, B, s)
-   _many_grad_len2pos!(dVsite, dV, J, S)
 end
 
 function forces(B::AbstractVector{TB}, at::Atoms{T}
@@ -266,7 +262,7 @@ function virial(B::AbstractVector{TB}, at::Atoms{T}
       eval_site_nbody!(Val(N), R, rcut, accum_fun, dVsite, temp)
       # update the virials
       for iB = 1:length(B)
-         S[iB] += JuLIP.Potentials.site_virial(dVsite[iB], R)
+         S[iB] += JuLIP.Potentials.site_virial(dVsite[iB], R) / 3
       end
    end
    return S

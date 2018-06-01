@@ -85,19 +85,6 @@ J : neighbour (sub-) indices
 end
 
 
-# function _grad_len2pos!(
-#          dVsite::Vector{SVector{3,T}},
-#          dV::SVector{3,T},
-#          J::SVector{2, Int},
-#          S::SVector{3,T}
-#       ) where {T}
-#    dVsite[J[1]] += dV[1] * S[1]
-#    dVsite[J[2]] += dV[2] * S[2]
-#    dVsite[J[1]] += dV[3] * S[3]
-#    dVsite[J[2]] -= dV[3] * S[3]
-# end
-
-
 
 
 @generated function eval_site_nbody!( ::Val{N},
@@ -123,7 +110,7 @@ end
    # now call `V` with the simplex-lengths and add this to the site energy
    # the normalisation is due to the fact that this term actually appears
    # in N site energies. (once for each corner of the simplex)
-   push!(code_inner, :(   accumfun(out, s, S, J, temp) ))
+   push!(code_inner, :(   out = accumfun(out, s, S, J, temp) ))
 
    # put code_inner into the loop expression
    ex_loop.args[2] = Expr(:block, code_inner...)
