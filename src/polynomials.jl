@@ -596,20 +596,20 @@ function evaluate_many_d!(temp, B::Vector{TB}, r::SVector{M, T}
       c = b.c[1]
       m, m_d = monomial_d(α, I1)
       E[ib] += c * I2[1+α[end]] * m        # just the value of the function itself
-      dM[:,ib] += (c * I2[1+α[end]]) * m_d   # the I2 * ∇m term without the chain rule
-      dE[:,ib] += (c * m) * dI2[1+α[end]]  # the ∇I2 * m term
+      dM[:,ib] .+= (c * I2[1+α[end]]) * m_d   # the I2 * ∇m term without the chain rule
+      dE[:,ib] .+= (c * m) * dI2[1+α[end]]  # the ∇I2 * m term
    end
    # chain rule
    fc, fc_d = fcut_d(D, r)
    for ib = 1:length(B)
       for i = 1:M    # dE[ib] += dI1' * dM[ib]
-         dE[:,ib] += dI1[i] * dM[i,ib]
+         @. dE[:,ib] += dI1[i] * dM[i,ib]
       end
-      dE[:,ib] = dE[:,ib] * fc + E[ib] * fc_d
+      @. dE[:,ib] = dE[:,ib] * fc + E[ib] * fc_d
    end
    # write into an output vector
    for i = 1:length(B)
-      dEfinal[i] = dE[:,i]
+      dEfinal[i] .= dE[:,i]
    end
    return dEfinal
 end

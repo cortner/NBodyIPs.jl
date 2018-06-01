@@ -179,18 +179,6 @@ evaluate(V::NBodyFunction{3}, r1::Number, r2::Number, r3::Number) =
 function evaluate_many! end
 function evaluate_many_d! end
 
-_alloc_svec(T::Type, ::Val{N}) where {N} = zero(SVector{N, T})
-_alloc_svec(T::Type, N::Integer) = _alloc_svec(T, Val(N))
-
-_alloc_smat(T::Type, ::Val{N}, ::Val{M}) where {N, M} = zero(SMatrix{N, M, T})
-_alloc_smat(T::Type, N, M) = _alloc_smat(T, Val(N), Val(M))
-
-_alloc_mvec(T::Type, ::Val{N}) where {N} = zero(MVector{N, T})
-_alloc_mvec(T::Type, N::Integer) = _alloc_mvec(T, Val(N))
-
-_alloc_mmat(T::Type, ::Val{N}, ::Val{M}) where {N, M} = zero(MMatrix{N, M, T})
-_alloc_mmat(T::Type, N, M) = _alloc_mmat(T, Val(N), Val(M))
-
 
 energy(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
    [ energy(b, at) for b in B ]
@@ -264,61 +252,40 @@ forces(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
 
 function virial(B::AbstractVector{TB}, at::Atoms{T}
               ) where {TB <: NBodyFunction{N}, T} where {N}
-   nlist = neighbourlist(at, cutoff(B[1]))
-   z2 = _alloc_svec(T, length(B))
-   temp = ( _alloc_mvec(T, length(B)),
-            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
-            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
-            _alloc_mvec(typeof(z2), (N*(N-1))÷2)
-          )
-   out = fill((@SMatrix zeros(3,3)), length(B))
-   virial!( r -> evaluate_many_d!(temp, B, r),
-            out,
-            nbodies(N, nlist) )
-   # stress = - virial(c, a) / det(defm(a))
-   # scale!(out, -1/det(defm(at)))
-   return out
+   rcut = cutoff(B[1])
+   nlist = neighbourlist(at, rcut)
+   maxneigs = max_neigs(nlist)
+   nedges = (N*(N-1))÷2
+   # virials (main output)
+   S = fill((@SMatrix zeros(3,3)), length(B))
+   # site gradient
+   dVsite = [ zeros(JVec{T}, maxneigs)   for n = 1:length(B) ]
+   # n-body gradients
+   dV =     [ zeros(T, nedges)      for n = 1:length(B) ]
+   # temporary arrays to compute the site gradients
+   temp = ( zeros(T, length(B)),
+            zeros(T, nedges, length(B)),
+            zeros(T, nedges, length(B)),
+            dV )
+   for (i, j, r, R) in sites(nlist)
+      # clear dVsite
+      for n = 1:length(dVsite)
+         dVsite[n] .*= 0.0
+      end
+      # fill dVsite
+      eval_site_nbody!(
+            Val(N), R, rcut,
+            (out, s, S, J, temp) -> _many_grad_len2pos!(out,
+                                       evaluate_many_d!(temp, B, s)/N, J, S),
+            dVsite, temp)
+      # update the virials
+      for iB = 1:length(B)
+         S[iB] += JuLIP.Potentials.site_virial(dVsite[iB], R)
+      end
+   end
+   return S
 end
+
 
 virial(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
    [ virial(b, at) for b in B ]
-
-
-#
-# teach NeighbourLists.jl how to assemble collections of forces
-#
-import NeighbourLists._m2s_mul_
-
-@generated function _m2s_mul_(X::SVector{M,T}, S::SVector{N,T}) where {M,N,T}
-   exprs = Expr[]
-   for i = 1:M
-      push_str!(exprs, "xS_$i = X[$i] * S")
-   end
-   coll = "p = @SVector ["
-   for i = 1:M
-      coll *= "xS_$i, "
-   end
-   coll *= "]"
-   push_str!(exprs, coll)
-
-   quote
-      $(Expr(:meta, :inline))
-      @inbounds $(Expr(:block, exprs...))
-      return p
-   end
-end
-
-
-#
-# teach NeighbourLists.jl how to assemble collections of stresses
-#
-import NeighbourLists._inc_stress_!
-
-function _inc_stress_!(out::Vector{T1}, s::Float64, df::SVector{N,Float64}, S::SVector{3,Float64}
-         ) where T1 <: SMatrix{3,3,Float64} where N
-   # @assert length(out) == length(df)
-   # error("stop here")
-   for n = 1:length(df)
-      out[n] -= (s*df[n]) * (S * S')
-   end
-end
