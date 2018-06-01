@@ -211,6 +211,11 @@ function _many_grad_len2pos!(dVsite, dV, J, S)
    return dVsite
 end
 
+function _acc_manyfrcs(B, dVsite, s, S, J, temp)
+   dV = evaluate_many_d!(temp, B, s)
+   _many_grad_len2pos!(dVsite, dV, J, S)
+end
+
 function forces(B::AbstractVector{TB}, at::Atoms{T}
               ) where {TB <: NBodyFunction{N}, T} where {N}
    rcut = cutoff(B[1])
@@ -229,22 +234,26 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
             zeros(T, nedges, nB),
             zeros(T, nedges, nB),
             dV )
+   accum_fun = let B=B
+      (out, s, S, J, temp) -> _acc_manyfrcs(B, out, s, S, J, temp)
+   end
+   # cnt = 0
    for (i, j, r, R) in sites(nlist)
       # clear dVsite
       for n = 1:nB
          dVsite[n] .*= 0.0
       end
       # fill dVsite
-      eval_site_nbody!(
-            Val(N), R, rcut,
-            (out, s, S, J, temp) ->  # out === dVsite
-                  _many_grad_len2pos!(out, evaluate_many_d!(temp, B, s), J, S),
-            dVsite, temp)
+      eval_site_nbody!(Val(N), R, rcut, accum_fun, dVsite, temp)
       # write it into the force vectors
       for ib = 1:nB, n = 1:length(j)
          F[ib][j[n]] -= dVsite[ib][n]/N
          F[ib][i] += dVsite[ib][n]/N
       end
+      # cnt += 1
+      # if cnt == 10
+      #    break
+      # end
    end
    return F
 end

@@ -583,17 +583,18 @@ end
 function evaluate_many_d!(temp, B::Vector{TB}, r::SVector{M, T}
                ) where {TB <: NBody{N}} where {N, M, T}
    E, dM, dE, dEfinal = temp
-   fill!(E, 0.0)
-   fill!(dE, 0.0)
-   fill!(dM, 0.0)
+   fill!(E, 0.0)     # size (nB,)
+   fill!(dE, 0.0)    # size (M, nB)
+   fill!(dM, 0.0)    # size (M, nB)
+   nB = length(B)
 
    D = B[1].D
    # it is assumed implicitly that all basis functions use the same dictionary!
    # and that each basis function NBody contains just a single c and a single t
    I1, I2, dI1, dI2 = invariants_ed(D, r)
-   for (ib, b) in enumerate(B)
-      α = b.t[1]
-      c = b.c[1]
+   for ib = 1:nB    # (ib, b) in enumerate(B)
+      α = B[ib].t[1]
+      c = B[ib].c[1]
       m, m_d = monomial_d(α, I1)
       E[ib] += c * I2[1+α[end]] * m        # just the value of the function itself
       @. dM[:,ib] += (c * I2[1+α[end]]) * m_d   # the I2 * ∇m term without the chain rule
@@ -601,14 +602,14 @@ function evaluate_many_d!(temp, B::Vector{TB}, r::SVector{M, T}
    end
    # chain rule
    fc, fc_d = fcut_d(D, r)
-   for ib = 1:length(B)
+   for ib = 1:nB
       for i = 1:M    # dE[ib] += dI1' * dM[ib]
          @. dE[:,ib] += dI1[i] * dM[i,ib]
       end
       @. dE[:,ib] = dE[:,ib] * fc + E[ib] * fc_d
    end
    # write into an output vector
-   for i = 1:length(B)
+   for i = 1:nB
       @. dEfinal[i] = dE[:,i]
    end
    return dEfinal
