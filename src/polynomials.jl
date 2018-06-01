@@ -353,7 +353,6 @@ function evaluate_d(V::NBody, r::SVector{M, T}) where {M, T}
    for i = 1:length(dI1)   # dI1' * dM
       dE += dM[i] * dI1[i]
    end
-
    fc, fc_d = fcut_d(D, r)
    return dE * fc + E * fc_d
 end
