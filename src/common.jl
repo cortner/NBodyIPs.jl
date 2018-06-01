@@ -262,7 +262,7 @@ function virial(B::AbstractVector{TB}, at::Atoms{T}
       eval_site_nbody!(Val(N), R, rcut, accum_fun, dVsite, temp)
       # update the virials
       for iB = 1:length(B)
-         S[iB] += JuLIP.Potentials.site_virial(dVsite[iB], R) / 3
+         S[iB] += JuLIP.Potentials.site_virial(dVsite[iB], R) / N
       end
    end
    return S

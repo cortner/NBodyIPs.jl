@@ -605,20 +605,16 @@ function evaluate_many_d!(temp, B::Vector{TB}, r::SVector{M, T}
    # chain rule
    fc, fc_d = fcut_d(D, r)
    for ib = 1:nB
-      for i = 1:M    # dE[ib] += dI1' * dM[ib]
-         for t = 1:M
-            dE[t,ib] += dI1[i][t] * dM[i,ib]
-         end
+      for i = 1:M, t = 1:M  # dE[ib] += dI1' * dM[ib]
+         dE[t,ib] += dI1[i][t] * dM[i,ib]
       end
       for t = 1:M
          dE[t,ib] = dE[t,ib] * fc + E[ib] * fc_d[t]
       end
    end
    # write into an output vector
-   for i = 1:nB
-      for t = 1:M
-         dEfinal[i][t] = dE[t,i]
-      end
+   for i = 1:nB, t = 1:M
+      dEfinal[i][t] = dE[t, i]
    end
    return dEfinal
 end
