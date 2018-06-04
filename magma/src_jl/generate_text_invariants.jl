@@ -301,15 +301,31 @@ open(file, "w") do f
 # Generate monomials with weights: for primaries, irreducible secondaries, and secondaries
 # for irreducible secondaries
 Mon_irrsec, coef_list_irrsec = generate_inv_mon(filenameirrsecdata,NBlengths,Deg)
+
+# generate list of PolyMon for irreducible secondaries
+IrrSecMonPol = CPolyMon{NBlengths}[]
+for i=1:length(Mon_irrsec)
+    push!(IrrSecMonPol,CPolyMon(CMonList([SVector(Mon_irrsec[i]...)]),[coef_list_irrsec[i]]))
+end
+IrrSecMonPol
+
 # for primaries
 Mon_prim, coef_list_prim = generate_inv_mon(filenameprimdata,NBlengths,Deg)
 
-Mon_sec = []
-coef_sec = []
+# generate list of PolyMon for primaries
+PrimMonPol = CPolyMon{NBlengths}[]
+for i=1:length(Mon_prim)
+    push!(PrimMonPol,CPolyMon(CMonList([SVector(Mon_prim[i]...)]),[coef_list_prim[i]]))
+end
+PrimMonPol
+
+# All secondary invariants
+SecMonPol = CPolyMon{NBlengths}[]
 
 fileI = open(filenamesec)
 line = readlines(fileI)
 # first line contains sec invariant =1, we remove it
+push!(SecMonPol,constpoly(NBlengths))
 for i=2:length(line)
     part1,part2 = split(line[i], "=")
     Part1 = replace(part1, prefsec, "")
@@ -320,23 +336,36 @@ for i=2:length(line)
         Part2_2 = replace(part2_2, prefirrsec, "")
         int1 = parse(Int64,Part2_1)
         int2 = parse(Int64,Part2_2)
-        Mon_irrsec1 = [Mon_irrsec[int1]]
-        coef_list_irrsec1 = [coef_list_irrsec[int1]]
-        Mon_irrsec2 = [Mon_irrsec[int2]]
-        coef_list_irrsec2 = [coef_list_irrsec[int2]]
-        mon_list_out,coef_list_out = prod_mon_comp(Mon_irrsec1,coef_list_irrsec1,Mon_irrsec2,coef_list_irrsec2)
-        push!(Mon_sec,mon_list_out)
-        push!(coef_sec,coef_list_out)
+
+        IrrSec1 = IrrSecMonPol[int1]
+        IrrSec2 = IrrSecMonPol[int2]
+        push!(SecMonPol,IrrSec1*IrrSec2)
     else
         Part2 = replace(part2, prefirrsec, "")
         int = parse(Int64,Part2)
-        push!(Mon_sec,[(Mon_irrsec[int])])
-        push!(coef_sec,[(coef_list_irrsec[int])])
+        push!(SecMonPol,IrrSecMonPol[int])
     end
 end
-Mon_sec[1]
-coef_sec
+SecMonPol
 
+
+
+M = Int(NBody*(NBody-1)/2)
+InvTup = NBodyIPs.gen_tuples(NBody,Deg)
+InvMonPoly = CPolyMon{M}[]
+for i=1:length(InvTup)
+    # initialization
+    PMonTup = SecMonPol[InvTup[i][end]+1]
+    for j=1:M
+        if InvTup[i][j] > 0
+            PMonTup = PMonTup*power(PrimMonPol[j],InvTup[i][j])
+        end
+    end
+    push!(InvMonPoly,PMonTup)
+    print(".")
+end
+InvMonPoly
+PrimMonPol[1]
 
 invariant_tuples = NBodyIPs.gen_tuples(NBody,Deg)
 basis_fcts_mon = generate_rep_mon(NBlengths,Deg)

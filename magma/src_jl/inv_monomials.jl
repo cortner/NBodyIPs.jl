@@ -3,7 +3,7 @@ include("../../src/misc.jl")
 include("invariants_generator.jl")
 include("../../src/polynomials.jl")
 
-import Base: length, +, *
+import Base: length, *
 
 # Tuple : like SVector, but not a vector i.e. cant +, *, etc
 # know length, immutable : SVector
@@ -86,7 +86,7 @@ end
 
 
 # Remove duplicates in a list of monomials and adds the coefficients when duplicates
-function remove_dupl(monomiallist::PolyMon)
+function remove_dupl(monomiallist::PolyMon{M}) where {M}
     mon_list = Mon(monomiallist)
     coef_list = Coef(monomiallist)
     @assert length(mon_list) == length(coef_list)
@@ -228,58 +228,52 @@ power(Mon::PolyMon{M},n::Int) where {M} = power(compact(Mon),n)
 
 
 
-# Small tests
-M = 6
-mon = SVector(1,2,0,0,0,0)
-length(mon)
-mon_repr(mon)
-
-listmon = MonList([mon, mon])
-length(listmon)
-remove_dupl(listmon)
-clistmon = compact(listmon)
-expand_mon(clistmon)
-
-Monopoly = PolyMon(MonList([mon, mon]),Vector([1, 2]))
-length(Monopoly)
-remove_dupl(Monopoly)
-cMonopoly = compact(Monopoly)
-expand_mon(cMonopoly)
-cMonopoly*cMonopoly
-cMonopoly*Monopoly
-Monopoly*cMonopoly
-Monopoly*Monopoly
-
-monzero = SVector(0,0,0,0,0,0)
-mon_repr(monzero)
-M0P = CPolyMon(CMonList([monzero, monzero]),Vector([1, 2]))
-M0P*M0P
-
-power(cMonopoly,3)
-
-
-multisets(k, n) = map(A -> [sum(A .== i) for i in 1:n],
-                      with_replacement_combinations(1:n, k))
-
-# generate all monomial representants up to degree d
-function generate_rep_mon(NBlengths,d)
-    mon_list_out = []
-    for deg = 1:d
-        mon_list_out_deg = []
-        Decomp_deg = multisets(deg,NBlengths)
-        mon_list_in_deg = compact_form_mon(Decomp_deg)
-        for i=1:length(mon_list_in_deg)
-            if !(mon_repr(mon_list_in_deg[i]) in mon_list_out_deg)
-                push!(mon_list_out_deg,mon_repr(mon_list_in_deg[i]))
-            end
-        end
-        append!(mon_list_out,mon_list_out_deg)
-    end
-    return mon_list_out
-end
-
-
-# function invariant_2_monomials(inv_tuple,Invariants)
+# multisets(k, n) = map(A -> [sum(A .== i) for i in 1:n],
+#                       with_replacement_combinations(1:n, k))
 #
-#
+# # generate all monomial representants up to degree d
+# function generate_rep_mon(NBlengths,d)
+#     mon_list_out = []
+#     for deg = 1:d
+#         mon_list_out_deg = []
+#         Decomp_deg = multisets(deg,NBlengths)
+#         mon_list_in_deg = compact_form_mon(Decomp_deg)
+#         for i=1:length(mon_list_in_deg)
+#             if !(mon_repr(mon_list_in_deg[i]) in mon_list_out_deg)
+#                 push!(mon_list_out_deg,mon_repr(mon_list_in_deg[i]))
+#             end
+#         end
+#         append!(mon_list_out,mon_list_out_deg)
+#     end
+#     return mon_list_out
 # end
+
+
+# # Small tests
+# M = 6
+# mon = SVector(1,2,0,0,0,0)
+# length(mon)
+# mon_repr(mon)
+#
+# listmon = MonList([mon, mon])
+# length(listmon)
+# remove_dupl(listmon)
+# clistmon = compact(listmon)
+# expand_mon(clistmon)
+#
+# Monopoly = PolyMon(MonList([mon, mon]),Vector([1, 2]))
+# length(Monopoly)
+# remove_dupl(Monopoly)
+# cMonopoly = compact(Monopoly)
+# expand_mon(cMonopoly)
+# cMonopoly*cMonopoly
+# cMonopoly*Monopoly
+# Monopoly*cMonopoly
+# Monopoly*Monopoly
+#
+# monzero = SVector(0,0,0,0,0,0)
+# mon_repr(monzero)
+# M0P = CPolyMon(CMonList([monzero, monzero]),Vector([1, 2]))
+# M0P*M0P
+#
+# power(cMonopoly,3)
