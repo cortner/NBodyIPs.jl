@@ -367,64 +367,27 @@ end
 InvMonPoly
 PrimMonPol[1]
 
-invariant_tuples = NBodyIPs.gen_tuples(NBody,Deg)
-basis_fcts_mon = generate_rep_mon(NBlengths,Deg)
-@assert length(inv_tuples) == length(basis_fcts_mon)
+MonBasis = Mon(generate_rep_mon(NBlengths,Deg))
+@assert length(InvTup) == length(MonBasis)
 
-M_basis_change = zeros(Int64,length(inv_tuples),length(inv_tuples))
+M_basis_change = zeros(Float64,length(MonBasis),length(MonBasis))
 # express all inv_tuples in terms of monomials
 
-Mon_basis_fcts = []
-coef_basis_fcts = []
-
-for i=1:length(inv_tuples)
-    tup = invariant_tuples[i]
-    ind_tup_non_zero = find(tup)
-    mon_tup = []
-    coef_tup = []
-    for k=1:(NBlengths-1)
-        if tup[k] != 0
-            if mon_tup != []
-                @show mon_tup
-                @show coef_tup
-                @show length([Mon_prim[k]])
-                @show length(coef_list_prim[k])
-                mon_tup = prod_mon_comp(mon_tup,coef_tup,[Mon_prim[k]],[coef_list_prim[k]])
-            else
-                mon_tup = [Mon_prim[k]]
-                coef_tup = [coef_list_prim[k]]
-            end
+for i=1:length(InvTup)
+    InviMon = Mon(InvMonPoly[i])
+    InviCoef = Coef(InvMonPoly[i])
+    for j=1:length(MonBasis)
+        if (MonBasis[j] in InviMon)
+            indj = find([MonBasis[j] == InviMon[k] for k=1:length(InviMon)])
+            @assert length(indj) == 1
+            M_basis_change[i,j] = InviCoef[indj[1]]
         end
     end
-    if tup[NBlengths] != 0
-        if mon_tup != []
-            mon_tup = prod_mon_comp(mon_tup,coef_tup,Mon_sec[tup[NBlengths]],coef_list_sec[tup[NBlengths]])
-        else
-            mon_tup = Mon_sec[tup[NBlengths]]
-            coef_tup = coef_list_sec[tup[NBlengths]]
-        end
-    end
-    push!(Mon_basis_fcts,mon_tup)
-    push!(coef_basis_fcts,coef_tup)
 end
-
-mon_list,coef_list = power(USP,[1,1,1,1,1,1],3)
-
-compact_form_mon(mon_list,coef_list)
+M_basis_change
 
 
-USP = unique(simplex_permutations(SVector(Mon...)))
 
-check_dupl_add([USP; USP],[1,2,3,4,5,6,1,2,3,4,5,6])
-
-compact_form_mon(USP)
-
-prod_mon(USP,[1,1,1,1,1,1], USP,[1,1,1,1,1,1])
-
-
-compact_form_mon([USP; USP],[1,1,1,1,1,1,2,2,2,2,2,2])
-
-expanded_form_mon([Mon],[1])
 
 
 #Remove the temporary files

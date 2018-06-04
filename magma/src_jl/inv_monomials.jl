@@ -228,25 +228,25 @@ power(Mon::PolyMon{M},n::Int) where {M} = power(compact(Mon),n)
 
 
 
-# multisets(k, n) = map(A -> [sum(A .== i) for i in 1:n],
-#                       with_replacement_combinations(1:n, k))
-#
-# # generate all monomial representants up to degree d
-# function generate_rep_mon(NBlengths,d)
-#     mon_list_out = []
-#     for deg = 1:d
-#         mon_list_out_deg = []
-#         Decomp_deg = multisets(deg,NBlengths)
-#         mon_list_in_deg = compact_form_mon(Decomp_deg)
-#         for i=1:length(mon_list_in_deg)
-#             if !(mon_repr(mon_list_in_deg[i]) in mon_list_out_deg)
-#                 push!(mon_list_out_deg,mon_repr(mon_list_in_deg[i]))
-#             end
-#         end
-#         append!(mon_list_out,mon_list_out_deg)
-#     end
-#     return mon_list_out
-# end
+multisets(k, n) = map(A -> [sum(A .== i) for i in 1:n],
+                      with_replacement_combinations(1:n, k))
+
+# generate all monomial representants up to degree d
+function generate_rep_mon(M,d)
+    mon_list_out = SVector{M, Int}[]
+    for deg = 1:d
+        mon_list_out_deg = SVector{M, Int}[]
+        Decomp_deg = multisets(deg,M)
+        for i=1:length(Decomp_deg)
+            monrep = mon_repr(SVector(Decomp_deg[i]...))
+            if !(monrep in mon_list_out_deg)
+                push!(mon_list_out_deg,monrep)
+            end
+        end
+        append!(mon_list_out,mon_list_out_deg)
+    end
+    return MonList(mon_list_out)
+end
 
 
 # # Small tests
