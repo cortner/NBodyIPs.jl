@@ -305,7 +305,7 @@ Mon_irrsec, coef_list_irrsec = generate_inv_mon(filenameirrsecdata,NBlengths,Deg
 # generate list of PolyMon for irreducible secondaries
 IrrSecMonPol = CPolyMon{NBlengths}[]
 for i=1:length(Mon_irrsec)
-    push!(IrrSecMonPol,CPolyMon(CMonList([SVector(Mon_irrsec[i]...)]),[coef_list_irrsec[i]]))
+    push!(IrrSecMonPol,CPolyMon(CMonList([mon_repr(SVector(Mon_irrsec[i]...))]),[coef_list_irrsec[i]]))
 end
 IrrSecMonPol
 
@@ -315,7 +315,7 @@ Mon_prim, coef_list_prim = generate_inv_mon(filenameprimdata,NBlengths,Deg)
 # generate list of PolyMon for primaries
 PrimMonPol = CPolyMon{NBlengths}[]
 for i=1:length(Mon_prim)
-    push!(PrimMonPol,CPolyMon(CMonList([SVector(Mon_prim[i]...)]),[coef_list_prim[i]]))
+    push!(PrimMonPol,CPolyMon(CMonList([mon_repr(SVector(Mon_prim[i]...))]),[coef_list_prim[i]]))
 end
 PrimMonPol
 
@@ -362,10 +362,9 @@ for i=1:length(InvTup)
         end
     end
     push!(InvMonPoly,PMonTup)
-    print(".")
+    print("$i ")
 end
 InvMonPoly
-PrimMonPol[1]
 
 MonBasis = Mon(generate_rep_mon(NBlengths,Deg))
 @assert length(InvTup) == length(MonBasis)
@@ -386,7 +385,7 @@ for i=1:length(InvTup)
 end
 M_basis_change
 
-
+cond(M_basis_change)
 
 
 
