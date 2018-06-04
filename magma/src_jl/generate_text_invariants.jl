@@ -387,6 +387,7 @@ M_basis_change
 
 cond(M_basis_change)
 
+M_basis_change^(-1)
 
 
 #Remove the temporary files
