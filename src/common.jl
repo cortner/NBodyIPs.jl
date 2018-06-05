@@ -271,3 +271,25 @@ end
 
 virial(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
    [ virial(b, at) for b in B ]
+
+
+
+# =============== Experimental:
+#   evaluate NBodyIP
+
+(V::NBodyIP)(args...) = evaluate(V, args...)
+
+evaluate(V::NBodyIP, r::Number) = evaluate(V::NBodyIP, SVector(r))
+
+evaluate(V::NBodyIP, r1::T, r2::T, r3::T) where {T <: Number} =
+      evaluate(V::NBodyIP, SVector(r1, r2, r3))
+
+function evaluate(V::NBodyIP, r::SVector{N, T}) where {N, T}
+   v = zero(T)
+   for Vn in V.orders
+      if bo2edges(bodyorder(Vn)) == N
+         v += Vn(r)
+      end
+   end
+   return v
+end
