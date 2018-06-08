@@ -1,16 +1,14 @@
-using JuLIP, ProgressMeter
+using JuLIP, ProgressMeter, PmapProgressMeter
 
 using Base.Threads
 
-export get_basis, regression, naive_sparsify,
+export get_basis, regression,
        normalize_basis!, fiterrors, scatter_data
 
 Base.norm(F::JVecsF) = norm(norm.(F))
 
 # components of the stress (up to symmetry)
 const _IS = SVector(1,2,3,5,6,9)
-
-
 
 
 function assemble_lsq_block(d, Bord, Iord, nforces,
@@ -96,26 +94,23 @@ end
 # TODO: parallelise!
 function assemble_lsq(basis, data; verbose=true, nforces=Inf,
                       dt = verbose ? 0.5 : Inf,
-                      w_E = 200.0, w_F = 1.0, w_S = 0.3 )
+                      w_E = 200.0, w_F = 1.0, w_S = 0.3,
+                      parallel = true )
    # sort basis set into body-orders, and possibly different
    # types within the same body-order (e.g. for matching!)
    Bord, Iord = split_basis(basis)
 
    # generate many matrix blocks, one for each piece of data
    #  ==> this should be switched to pmap, or @parallel
-   if nthreads() == 1
+   if !parallel
       LSQ = @showprogress(dt, "assemble LSQ",
                   [assemble_lsq_block(d, Bord, Iord, nforces, w_E, w_F, w_S)
                    for d in data])
    else
-      # error("parallel LSQ assembly not implemented")
-      println("Assemble LSQ with $(nthreads()) threads")
-      tic()
-      LSQ = Vector{Any}(length(data))
-      @threads for n = 1:length(data)
-         LSQ[n] = assemble_lsq_block(data[n], Bord, Iord, nforces, w_E, w_F, w_S)
-      end
-      toc()
+      println("Assemble LSQ with $(nprocs()) Workers")
+      LSQ = pmap( n -> assemble_lsq_block(data[n], Bord, Iord, nforces, w_E, w_F, w_S),
+                  Progress(length(data)),
+                  1:length(data) )
    end
    # combine the local matrices into a big global matrix
    nY = sum(length(block[2]) for block in LSQ)
