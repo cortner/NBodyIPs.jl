@@ -1,6 +1,7 @@
-using JuLIP, ProgressMeter, PmapProgressMeter
 
-using Base.Threads
+using JuLIP, ProgressMeter, PmapProgressMeter, StaticArrays
+
+# using Base.Threads
 
 export get_basis, regression, naive_sparsify,
        normalize_basis!, fiterrors, scatter_data,
@@ -8,14 +9,13 @@ export get_basis, regression, naive_sparsify,
 
 Base.norm(F::JVecsF) = norm(norm.(F))
 
-# components of the stress (up to symmetry)
-const _IS = SVector(1,2,3,5,6,9)
 
-
-function assemble_lsq_block(d, Bord, Iord, nforces,
+@everywhere function assemble_lsq_block(d, Bord, Iord, nforces,
                             w_E, w_F, w_S)
    len = length(d)
    nforces = Int(min(nforces, len))
+   # components of the stress (up to symmetry)
+   _IS = [1,2,3,5,6,9]
    # ------- fill the data/observations vector -------------------
    Y = Float64[]
    # energy
@@ -109,9 +109,9 @@ function assemble_lsq(basis, data; verbose=true, nforces=Inf,
                    for d in data])
    else
       println("Assemble LSQ with $(nprocs()) Workers")
-      LSQ = pmap( n -> assemble_lsq_block(data[n], Bord, Iord, nforces, w_E, w_F, w_S),
+      LSQ = pmap( n -> Main.assemble_lsq_block(data[n], Bord, Iord, nforces, w_E, w_F, w_S),
                   Progress(length(data)),
-                  1:length(data) )
+                  1:length(data); distributed=false )
    end
    # combine the local matrices into a big global matrix
    nY = sum(length(block[2]) for block in LSQ)
