@@ -2,8 +2,9 @@ using JuLIP, ProgressMeter, PmapProgressMeter
 
 using Base.Threads
 
-export get_basis, regression,
-       normalize_basis!, fiterrors, scatter_data
+export get_basis, regression, naive_sparsify,
+       normalize_basis!, fiterrors, scatter_data,
+       print_fiterrors
 
 Base.norm(F::JVecsF) = norm(norm.(F))
 
@@ -210,7 +211,11 @@ function fiterrors(V, data; verbose=true,
 end
 
 
-
+function print_fiterrors(errs::Tuple)
+   @printf("             RMSE           ||             MAE   \n")
+   @printf("      E      |       F      ||      E      |     F  \n")
+   @printf(" %1.5f[eV] | %2.4f[eV/A] || %1.5f[eV] | %2.4f[eV/A] \n", errs...)
+end
 
 
 """
