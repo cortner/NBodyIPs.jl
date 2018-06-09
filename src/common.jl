@@ -10,7 +10,9 @@ import JuLIP: cutoff, energy, forces, site_energies, virial, stress
 
 export NBodyIP,
        bodyorder,
-       fast
+       fast,
+       dictionary,
+       match_dictionary
 
 
 """
@@ -25,6 +27,20 @@ abstract type NBodyFunction{N} <: AbstractCalculator end
 
 # prototypes of function defined on `NBodyFunction`
 function bodyorder end
+
+"""
+return the object attached to an NBodyFunction that describes
+the underlying basis set
+"""
+function dictionary end
+
+"""
+this is to allow fix of a technical issue: it can be necessary to
+replace a dictionary in an NBodyFunction with another dictionary that
+is effectively the same but technically a different Julia type.
+This occurs e.g. when loading basis sets from a file.
+"""
+function match_dictionary end
 
 
 include("eval_nbody.jl")

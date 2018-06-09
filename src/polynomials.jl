@@ -28,7 +28,8 @@ using NBodyIPs.FastPolys: fpoly, fpoly_d
 import Base: length
 import JuLIP: cutoff, energy, forces
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
-import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!
+import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!,
+                 dictionary, match_dictionary
 
 const cutsp = JuLIP.Potentials.fcut
 const cutsp_d = JuLIP.Potentials.fcut_d
@@ -213,12 +214,19 @@ function fcut_analyse(args::Tuple)
       rcut = args[1]
       return let rcut=rcut; (@analytic r -> (r - rcut)^2); end, rcut
 
-   elseif Symbol(sym) == :twosided
+   elseif Symbol(sym) == :s2rat
       return let rnn=args[1], rin = args[2], rcut = args[3], p = args[4]
          f = @analytic r -> ( ((rnn/r)^p - (rnn/rcut)^p)^2 * ((rnn/r)^p - (rnn/rin)^p)^2 )
-         AnalyticFunction(r -> f.f(r) * (0.8*rnn < r < rcut),
-                          r -> f.f_d(r) * (0.8*rnn < r < rcut),
+         AnalyticFunction(r -> f.f(r) * (rin < r < rcut),
+                          r -> f.f_d(r) * (rin < r < rcut),
                           nothing) end, args[2]
+
+   # elseif Symbol(sym) == :s2cos
+   #    return let icut1 = args[1], icut2 = args[2], ocut1 = args[3], ocut2 = args[4]
+   #       f = @analytic r -> ( ((rnn/r)^p - (rnn/rcut)^p)^2 * ((rnn/r)^p - (rnn/rin)^p)^2 )
+   #       AnalyticFunction(r -> f.f(r) * (0.8*rnn < r < rcut),
+   #                        r -> f.f_d(r) * (0.8*rnn < r < rcut),
+   #                        nothing) end, args[2]
 
    else
       error("Dictionary: unknown symbol $(sym) for fcut.")
@@ -265,7 +273,6 @@ e.g., if M = 3, α = t[1] is a 3-vector then this corresponds to the basis funct
 """
 NBody
 
-
 # standad constructor (N can be inferred)
 NBody(t::VecTup{K}, c, D) where {K} =
       NBody(t, c, D, Val(edges2bo(K-1)))
@@ -292,13 +299,23 @@ length(V::NBody) = length(V.t)
 
 cutoff(V::NBody) = cutoff(V.D)
 
+dictionary(V::NBody) = V.D
+
+function match_dictionary(V::NBody, V1::NBody)
+   if V.D != V1.D
+      if V.D.s != V1.D.s
+         warn("matching two non-matching dictionaries!")
+      end
+   end
+   return NBody(V.t, V.c, V1.D, V.valN)
+end
+
 # This cannot be quite correct as I am implementing it here; it is probably
 #      correct only for the basic invariants that generate the rest
 # degree(V::NBody) = length(V) == 1 ? degree(V.valN, V.t[1])) :
 #        error("`degree` is only defined for `NBody` basis functions, length == 1")
-
-ispure(V::NBody) = (length(V) == 1) ? ispure(V.valN, V.t[1]) :
-       error("`ispure` is only defined for `NBody` basis functions, length == 1")
+# ispure(V::NBody) = (length(V) == 1) ? ispure(V.valN, V.t[1]) :
+#        error("`ispure` is only defined for `NBody` basis functions, length == 1")
 
 Base.serialize(V::NBody) = (bodyorder(V), V.t, V.c, serialize(V.D))
 
@@ -308,6 +325,16 @@ Base.deserialize(::Type{NBody}, s) =
    s[1] == 1 ? NBody(sum(s[3])) :
    NBody(s[2], s[3], deserialize(Dictionary, s[4]), Val(s[1]))
 
+
+function Base.info(B::Vector{T}; indent = 2) where T <: NBody
+   ind = repeat(" ", indent)
+   println(ind * "body-order = $(bodyorder(B[1]))")
+   println(ind * "    length = $(length(B))")
+   if bodyorder(B[1]) > 1
+      println(ind * " transform = $(B[1].D.s[1])")
+      println(ind * "    cutoff = $(B[1].D.s[2])")
+   end 
+end
 
 # -------------- Infrastructure to read/write NBody using JLD --------
 # TODO: write tests
