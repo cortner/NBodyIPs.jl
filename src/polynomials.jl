@@ -18,24 +18,20 @@ The exported symbols are
 module Polys
 
 using Reexport
+import StaticPolynomials, JLD
 
 using JuLIP, NeighbourLists, StaticArrays, ForwardDiff
 using JuLIP.Potentials: cutsw, cutsw_d, coscut, coscut_d
 using NBodyIPs: NBodyFunction
 using NBodyIPs.FastPolys: fpoly, fpoly_d
 
-import StaticPolynomials
-
-const cutsp = JuLIP.Potentials.fcut
-const cutsp_d = JuLIP.Potentials.fcut_d
-
 import Base: length
 import JuLIP: cutoff, energy, forces
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
 import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!
 
-
-
+const cutsp = JuLIP.Potentials.fcut
+const cutsp_d = JuLIP.Potentials.fcut_d
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
@@ -311,6 +307,30 @@ Base.serialize(V::NBody{1}) = (1, V.t, V.c, nothing)
 Base.deserialize(::Type{NBody}, s) =
    s[1] == 1 ? NBody(sum(s[3])) :
    NBody(s[2], s[3], deserialize(Dictionary, s[4]), Val(s[1]))
+
+
+# -------------- Infrastructure to read/write NBody using JLD --------
+# TODO: write tests
+
+struct NBodySerializer{N}
+   t               # tuples M = #edges + 1
+   c               # coefficients
+   D       # Dictionary (or nothing)
+   valN::Val{N}               # encodes that this is an N-body term
+end
+
+JLD.writeas(V::NBody) =
+   NBodySerializer(V.t, V.c, serialize(V.D), V.valN)
+
+JLD.readas(VS::NBodySerializer) =
+   NBody(VS.t, VS.c, deserialize(Dictionary, VS.D), VS.valN)
+
+JLD.writeas(V::NBody{1}) =
+   NBodySerializer(V.t, V.c, nothing, V.valN)
+
+JLD.readas(VS::NBodySerializer{1}) =
+   NBody(VS.t, VS.c, nothing, VS.valN)
+
 
 # ---------------  evaluate the n-body terms ------------------
 
