@@ -148,7 +148,8 @@ Dictionary(D::Dictionary, s::Tuple) =
       Dictionary(D.transform, D.transform_d, D.fcut, D.fcut_d, D.rcut, s)
 
 function Dictionary(strans::String, scut::String)
-   D = Dictionary(eval(parse(strans)), eval(parse(scut)))
+   D = Dictionary(eval(parse(ftrans_analyse(strans))),
+                  eval(parse(scut)))
    return Dictionary(D, (strans, scut))
 end
 
@@ -160,29 +161,24 @@ Dictionary(ftrans::Any, fcut::Any) =
 
 ftrans_analyse(x::AnalyticFunction) = x
 
-function ftrans_analyse(args)
-   if args isa Symbol || length(args) == 1
-      sym = args
-      p = nothing
-   elseif length(args) == 2
-      sym, p = args
-   else
-      sym, p = args[1], args[2:end]
+function ftrans_analyse(strans::String)
+   # if @analytic is a substring then we don't do anything
+   if !ismatch(r"@analytic", strans)
+      # but if not, then we next look for ->
+      if !ismatch(r"->", strans)
+         # if -> is not a substring then we assume that strans is of the form
+         # "(r0/r)^4" or similar i.e. explicitly uses r as the variable.
+         strans = "@analytic r -> " * strans
+      else
+         # @analytic is not a substring but -> is a substring. e.g.
+         # r -> (r0/r)^3 or s -> (r0/s)^3. we add @analytic to compile it
+         strans = "@analytic " * strans
+      end
    end
-   if Symbol(sym) == :inv
-      return @analytic r -> 1/r
-   elseif Symbol(sym) == :invsqrt
-      return @analytic r -> 1/sqrt(r)
-   elseif Symbol(sym) == :invsquare
-      return @analytic r -> (1/r)^2
-   elseif Symbol(sym) == :poly
-      return let p=p; @analytic r -> r^p; end
-   elseif Symbol(sym) == :exp
-      return let p=p; @analytic r -> exp(-p * r); end
-   else
-      error("Dictionary: unknown symbol $(sym) for transformation.")
-   end
+   return strans
 end
+
+
 
 fcut_analyse(x::AnalyticFunction) = x
 
@@ -333,7 +329,7 @@ function Base.info(B::Vector{T}; indent = 2) where T <: NBody
    if bodyorder(B[1]) > 1
       println(ind * " transform = $(B[1].D.s[1])")
       println(ind * "    cutoff = $(B[1].D.s[2])")
-   end 
+   end
 end
 
 # -------------- Infrastructure to read/write NBody using JLD --------
@@ -562,13 +558,21 @@ end
 
 
 """
-`poly_basis(N, D, deg; tuplebound = ...)` : generates a basis set of
+* `poly_basis(N, D, deg; tuplebound = ...)`
+* `poly_basis(N, strans, scut, deg; tuplebound = ...)`
+
+generates a basis set of
 `N`-body functions, with dictionary `D`, maximal degree `deg`; the precise
 set of basis functions constructed depends on `tuplebound` (see `?gen_tuples`)
 """
-poly_basis(N::Integer, D, deg; kwargs...) = poly_basis(gen_tuples(N, deg; kwargs...), D)
+poly_basis(N::Integer, D::Dictionary, deg; kwargs...) =
+   poly_basis(gen_tuples(N, deg; kwargs...), D)
 
 poly_basis(ts::VecTup, D::Dictionary) = [NBody(t, 1.0, D) for t in ts]
+
+poly_basis(N::Integer, strans::String, scut::String, deg; kwargs...) =
+   poly_basis(N, Dictionary(strans, scut), deg; kwargs...)
+
 
 # deprecate this
 gen_basis = poly_basis
