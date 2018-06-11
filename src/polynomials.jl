@@ -217,12 +217,13 @@ function fcut_analyse(args::Tuple)
                           r -> f.f_d(r) * (rin < r < rcut),
                           nothing) end, args[2]
 
-   # elseif Symbol(sym) == :s2cos
-   #    return let icut1 = args[1], icut2 = args[2], ocut1 = args[3], ocut2 = args[4]
-   #       f = @analytic r -> ( ((rnn/r)^p - (rnn/rcut)^p)^2 * ((rnn/r)^p - (rnn/rin)^p)^2 )
-   #       AnalyticFunction(r -> f.f(r) * (0.8*rnn < r < rcut),
-   #                        r -> f.f_d(r) * (0.8*rnn < r < rcut),
-   #                        nothing) end, args[2]
+   elseif Symbol(sym) == :cos2s
+      ri1 = args[1]; ri2 = args[2]; ro1 = args[3]; ro2 = args[4]
+      return AnalyticFunction(
+                  r -> (1-coscut(r, ri1, ri2)) * coscut(r, ro1, ro2),
+                  r -> (- coscut_d(r, ri1, ri2) * coscut(r, ro1, ro2)
+                        + (1-coscut(r, ri1, ri2)) * coscut_d(r, ro1, ro2)),
+                  nothing), ro2
 
    else
       error("Dictionary: unknown symbol $(sym) for fcut.")
@@ -477,7 +478,7 @@ function NBodyIP(basis, coeffs)
       # construct a new basis function by combining all of them in one
       # (this assumes that we have NBody types)
       D = basis[Itp[1]].D
-      V_N = NBody(basis[Itp], coeffs[Itp], D)
+      V_N = NBody([b for b in basis[Itp]], coeffs[Itp], D)
       push!(components, V_N)
    end
    return NBodyIP(components)
