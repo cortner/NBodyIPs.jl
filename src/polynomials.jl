@@ -600,16 +600,13 @@ terms.
 """
 function regularise_2b(B::Vector, r0, r1; creg = 1e-2, Nquad = 20)
    I2 = find(bodyorder.(B) .== 2)
-   B2 = B[I2]
    rr = linspace(r0, r1, Nquad)
-   Φ = zeros(Nquad, length(B2))
-   for (ib, b) in enumerate(B2), (iq, r) in enumerate(rr)
-      Φ[iq, ib] = evaluate_dd(b, r)
-   end
+   Φ = zeros(Nquad, length(B))
    h = (r1 - r0) / (Nquad-1)
-   M = zeros(length(B), length(B))
-   M[I2, I2] = (creg * h) * (Φ' * Φ)
-   return M
+   for (ib, b) in zip(I2, B[I2]), (iq, r) in enumerate(rr)
+      Φ[iq, ib] = evaluate_dd(b, r) * sqrt(creg * h)
+   end
+   return Φ
 end
 
 # ---------------------- auxiliary type to
