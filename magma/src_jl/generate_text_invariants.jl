@@ -6,8 +6,8 @@ include("inv_monomials.jl")
 
 # Parameters
 #TODO: check that prefix are the same as the ones in generate_invariants.sh
-NBody = 5;
-Deg = 6;
+NBody = 4;
+Deg = 10;
 prefsec = "SEC" #prefix for the secondaries
 prefirrsec = "IS" #prefix for the irreducible secondaries
 prefprim = "P" #prefix for the primaries
@@ -101,8 +101,8 @@ file = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_invariants.
 open(file, "w") do f
     write(f, "using StaticArrays \n")
     write(f, "using BenchmarkTools: @btime \n\n")
-    # write(f, "include(\"fastpolys.jl\") \n")
-    # write(f, "using FastPolys \n\n\n\n")
+    write(f, "include(\"fastpolys.jl\") \n")
+    write(f, "using FastPolys \n\n\n\n")
 
     # write the definition of the constant vectors
     prim1 = read(filenameprim1)
@@ -296,7 +296,7 @@ open(file, "w") do f
         write(f, "d", prefsec, "$i,")
     end
     write(f, "])\n end")
-
+end
 
 # Generate monomials with weights: for primaries, irreducible secondaries, and secondaries
 # for irreducible secondaries
@@ -382,12 +382,12 @@ for i=1:length(InvTup)
             M_basis_change[i,j] = InviCoef[indj[1]]
         end
     end
-end
-M_basis_change
-
-cond(M_basis_change)
-
-M_basis_change^(-1)
+# end
+# M_basis_change
+#
+# cond(M_basis_change)
+#
+# M_basis_change^(-1)
 
 
 #Remove the temporary files
