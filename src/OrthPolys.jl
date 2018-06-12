@@ -1,6 +1,8 @@
 
 module OrthPolys
 
+# TODO: Clenshaw Algorithm 
+
 function nonorth!(p::AbstractVector{T}, x::T)
    p[1] = one(T)
    for n = 2:length(p)
