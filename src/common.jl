@@ -13,7 +13,8 @@ export NBodyIP,
        fast,
        dictionary,
        match_dictionary,
-       rdf, idf
+       rdf, idf,
+       recover_basis
 
 
 """
@@ -43,6 +44,13 @@ This occurs e.g. when loading basis sets from a file.
 """
 function match_dictionary end
 
+"""
+recover a basis from an NBodyFunction
+"""
+function recover_basis end
+
+function saveas end
+function loadas end
 
 include("eval_nbody.jl")
 
