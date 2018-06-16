@@ -47,11 +47,6 @@ function match_dictionary end
 
 include("eval_nbody.jl")
 
-energy(V::NBodyIP, at::ASEAtoms) = energy(V, Atoms(at))
-forces(V::NBodyIP, at::ASEAtoms) = forces(V, Atoms(at))
-virial(V::NBodyIP, at::ASEAtoms) = virial(V, Atoms(at))
-stress(V::NBodyIP, at::ASEAtoms) = stress(V, Atoms(at))
-
 
 function site_energies(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    Es = zeros(T, length(at))
@@ -360,3 +355,8 @@ function evaluate(V::NBodyIP, r::SVector{N, T}) where {N, T}
    end
    return v
 end
+
+energy(V::NBodyIP, at::ASEAtoms) = energy(V, Atoms(at))
+forces(V::NBodyIP, at::ASEAtoms) = forces(V, Atoms(at))
+virial(V::NBodyIP, at::ASEAtoms) = virial(V, Atoms(at))
+stress(V::NBodyIP, at::ASEAtoms) = stress(V, Atoms(at))
