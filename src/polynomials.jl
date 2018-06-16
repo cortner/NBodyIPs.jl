@@ -220,13 +220,12 @@ function fcut_analyse(args::Tuple)
                           nothing) end, args[2]
 
    elseif Symbol(sym) == :cos2s
-      ri1 = args[1]; ri2 = args[2]; ro1 = args[3]; ro2 = args[4]
-      return AnalyticFunction(
+      return let ri1 = args[1], ri2 = args[2], ro1 = args[3], ro2 = args[4]
+            AnalyticFunction(
                   r -> (1-coscut(r, ri1, ri2)) * coscut(r, ro1, ro2),
                   r -> (- coscut_d(r, ri1, ri2) * coscut(r, ro1, ro2)
                         + (1-coscut(r, ri1, ri2)) * coscut_d(r, ro1, ro2)),
-                  nothing), ro2
-
+                  nothing) end, args[4]
    else
       error("Dictionary: unknown symbol $(sym) for fcut.")
    end

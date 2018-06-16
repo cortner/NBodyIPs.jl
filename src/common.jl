@@ -2,6 +2,7 @@
 using StaticArrays, ForwardDiff
 
 using JuLIP: AbstractCalculator, Atoms, neighbourlist, @D, JVec
+using ASE: ASEAtoms
 using NeighbourLists: nbodies, maptosites!, maptosites_d!, virial!, max_neigs
 
 
@@ -55,7 +56,6 @@ function loadas end
 include("eval_nbody.jl")
 
 
-
 function site_energies(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    Es = zeros(T, length(at))
    for (i, j, r, R) in sites(at, cutoff(V))
@@ -71,7 +71,6 @@ end
 # this is probably already in JuLIP??? if not, it should be moved to JuLIP??
 energy(V::NBodyFunction, at::Atoms) =
       sum_kbn(site_energies(V, at))
-
 
 # this appears to be a nice generic implementation of forces with a
 # temporary array => move this to JuLIP!
@@ -364,3 +363,8 @@ function evaluate(V::NBodyIP, r::SVector{N, T}) where {N, T}
    end
    return v
 end
+
+energy(V::NBodyIP, at::ASEAtoms) = energy(V, Atoms(at))
+forces(V::NBodyIP, at::ASEAtoms) = forces(V, Atoms(at))
+virial(V::NBodyIP, at::ASEAtoms) = virial(V, Atoms(at))
+stress(V::NBodyIP, at::ASEAtoms) = stress(V, Atoms(at))
