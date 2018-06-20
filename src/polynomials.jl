@@ -18,9 +18,9 @@ The exported symbols are
 module Polys
 
 using Reexport
-import StaticPolynomials, JLD
+import StaticPolynomials
 
-using JuLIP, NeighbourLists, StaticArrays, ForwardDiff
+using JuLIP, NeighbourLists, StaticArrays
 using JuLIP.Potentials: cutsw, cutsw_d, coscut, coscut_d
 using NBodyIPs: NBodyFunction
 using NBodyIPs.FastPolys: fpoly, fpoly_d
@@ -37,8 +37,9 @@ const cutsp_d = JuLIP.Potentials.fcut_d
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
-export NBody, Dictionary,
-       gen_basis, poly_basis,
+export NBody,
+       Dictionary,
+       poly_basis,
        @analytic
 
 
@@ -231,15 +232,6 @@ function fcut_analyse(args::Tuple)
    end
 end
 
-function Base.serialize(D::Dictionary)
-   if D.s[1] != "" && D.s[2] != ""
-      return D.s
-   end
-   error("This dictionary cannot be serialized")
-end
-
-Base.deserialize(::Type{Dictionary}, s::Tuple{String, String}) = Dictionary(s...)
-
 struct DictionarySerializer
    s::Tuple{String, String}
 end
@@ -335,14 +327,6 @@ end
 # ispure(V::NBody) = (length(V) == 1) ? ispure(V.valN, V.t[1]) :
 #        error("`ispure` is only defined for `NBody` basis functions, length == 1")
 
-Base.serialize(V::NBody) = (bodyorder(V), V.t, V.c, serialize(V.D))
-
-Base.serialize(V::NBody{1}) = (1, V.t, V.c, nothing)
-
-Base.deserialize(::Type{NBody}, s) =
-   s[1] == 1 ? NBody(sum(s[3])) :
-   NBody(s[2], s[3], deserialize(Dictionary, s[4]), Val(s[1]))
-
 
 function Base.info(B::Vector{T}; indent = 2) where T <: NBody
    ind = repeat(" ", indent)
@@ -354,7 +338,7 @@ function Base.info(B::Vector{T}; indent = 2) where T <: NBody
    end
 end
 
-# -------------- Infrastructure to read/write NBody using JLD --------
+# -------------- Infrastructure to read/write NBody using JLD2 --------
 # TODO: write tests
 
 struct NBodySerializer{N}
@@ -363,19 +347,6 @@ struct NBodySerializer{N}
    D       # Dictionary (or nothing)
    valN::Val{N}               # encodes that this is an N-body term
 end
-
-JLD.writeas(V::NBody) =
-   NBodySerializer(V.t, V.c, serialize(V.D), V.valN)
-
-JLD.readas(VS::NBodySerializer) =
-   NBody(VS.t, VS.c, deserialize(Dictionary, VS.D), VS.valN)
-
-JLD.writeas(V::NBody{1}) =
-   NBodySerializer(V.t, V.c, nothing, V.valN)
-
-JLD.readas(VS::NBodySerializer{1}) =
-   NBody(VS.t, VS.c, nothing, VS.valN)
-
 
 saveas(V::NBody) =
    NBodySerializer(V.t, V.c, saveas(V.D), V.valN)
@@ -607,10 +578,6 @@ poly_basis(ts::VecTup, D::Dictionary) = [NBody(t, 1.0, D) for t in ts]
 
 poly_basis(N::Integer, strans::String, scut::String, deg; kwargs...) =
    poly_basis(N, Dictionary(strans, scut), deg; kwargs...)
-
-
-# deprecate this
-gen_basis = poly_basis
 
 
 """
