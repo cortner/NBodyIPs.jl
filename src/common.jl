@@ -16,7 +16,8 @@ export NBodyIP,
        match_dictionary,
        rdf, idf,
        recover_basis,
-       degree 
+       degree,
+       saveas, loadas
 
 
 """
@@ -147,6 +148,13 @@ energy(V::NBodyIP, at::Atoms) = sum( energy(Vn, at)  for Vn in V.orders )
 forces(V::NBodyIP, at::Atoms) = sum( forces(Vn, at)  for Vn in V.orders )
 virial(V::NBodyIP, at::Atoms) = sum( virial(Vn, at)  for Vn in V.orders )
 
+
+struct NBodyIPSerializer
+   orders
+end
+saveas(IP::NBodyIP) = NBodyIPSerializer(saveas.(IP.orders))
+loadas(::Type{NBodyIP}, IP::NBodyIPSerializer) = loadas(IP)
+loadas(IPs::NBodyIPSerializer) = NBodyIP(loadas.(IPs.orders))
 
 
 """
