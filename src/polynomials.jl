@@ -30,7 +30,7 @@ import JuLIP: cutoff, energy, forces
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
 import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!,
                  dictionary, match_dictionary, saveas, loadas,
-                 recover_basis
+                 recover_basis, degree
 
 const cutsp = JuLIP.Potentials.fcut
 const cutsp_d = JuLIP.Potentials.fcut_d
@@ -320,10 +320,15 @@ function recover_basis(V::VT) where {VT <: NBody}
 end
 
 
+function degree(V::NBody)
+   if length(V) == 1
+      return tdegree(V.t[1])
+   end
+   error("`degree` is only defined for `NBody` basis functions, length == 1")
+end
+
 # This cannot be quite correct as I am implementing it here; it is probably
 #      correct only for the basic invariants that generate the rest
-# degree(V::NBody) = length(V) == 1 ? degree(V.valN, V.t[1])) :
-#        error("`degree` is only defined for `NBody` basis functions, length == 1")
 # ispure(V::NBody) = (length(V) == 1) ? ispure(V.valN, V.t[1]) :
 #        error("`ispure` is only defined for `NBody` basis functions, length == 1")
 

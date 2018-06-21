@@ -15,7 +15,8 @@ export NBodyIP,
        dictionary,
        match_dictionary,
        rdf, idf,
-       recover_basis
+       recover_basis,
+       degree 
 
 
 """
@@ -30,6 +31,12 @@ abstract type NBodyFunction{N} <: AbstractCalculator end
 
 # prototypes of function defined on `NBodyFunction`
 function bodyorder end
+
+"""
+some measure of degree - need not be polymomial degree?
+TODO: figure out exactly how to use this
+"""
+degree(::NBodyFunction) = 0
 
 """
 return the object attached to an NBodyFunction that describes
