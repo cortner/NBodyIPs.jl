@@ -27,6 +27,7 @@ for dim in [3, 6, 10]
    dI = [hcat(dI1...)'; hcat(dI2...)']
    dIh = zeros(size(dI))
    r0 = Vector(r)
+   errs = []
    for p = 2:9
       h = .1^p
       dIh = zeros(size(dI))
@@ -36,9 +37,11 @@ for dim in [3, 6, 10]
          dIh[:, j] = (Ih - I) / h
          r0[j] -= h
       end
-      @printf(" %d | %.2e \n", p, vecnorm(dIh - dI, Inf))
+      push!(errs, vecnorm(dIh - dI, Inf))
+      @printf(" %d | %.2e \n", p, errs[end])
    end
    println("---------------")
+   @test minimum(errs) <= 1e-3 * maximum(errs) 
 end
 println()
 

@@ -1,8 +1,9 @@
 
 using StaticArrays, ForwardDiff
 
-using JuLIP: AbstractCalculator, Atoms, neighbourlist, @D
-using NeighbourLists: nbodies, maptosites!, maptosites_d!, virial!
+using JuLIP: AbstractCalculator, Atoms, neighbourlist, @D, JVec
+using ASE: ASEAtoms
+using NeighbourLists: nbodies, maptosites!, maptosites_d!, virial!, max_neigs
 
 
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd
@@ -10,7 +11,10 @@ import JuLIP: cutoff, energy, forces, site_energies, virial, stress
 
 export NBodyIP,
        bodyorder,
-       fast
+       fast,
+       dictionary,
+       match_dictionary,
+       rdf, idf
 
 
 """
@@ -26,29 +30,81 @@ abstract type NBodyFunction{N} <: AbstractCalculator end
 # prototypes of function defined on `NBodyFunction`
 function bodyorder end
 
-function site_energies(V::NBodyFunction, at::Atoms{T}) where {T}
-   nlist = neighbourlist(at, cutoff(V))
-   return maptosites!(r -> evaluate(V, r),
-                      zeros(T, length(at)),
-                      nbodies(bodyorder(V), nlist))
+"""
+return the object attached to an NBodyFunction that describes
+the underlying basis set
+"""
+function dictionary end
+
+"""
+this is to allow fix of a technical issue: it can be necessary to
+replace a dictionary in an NBodyFunction with another dictionary that
+is effectively the same but technically a different Julia type.
+This occurs e.g. when loading basis sets from a file.
+"""
+function match_dictionary end
+
+
+include("eval_nbody.jl")
+
+
+function site_energies(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
+   Es = zeros(T, length(at))
+   for (i, j, r, R) in sites(at, cutoff(V))
+      Es[i] = eval_site_nbody!(Val(N), R, cutoff(V),
+                               ((out, s, _,_1,_2) -> out + evaluate(V, s)),
+                               zero(T), nothing)
+   end
+   return Es/N
 end
 
+
+
+# this is probably already in JuLIP??? if not, it should be moved to JuLIP??
 energy(V::NBodyFunction, at::Atoms) =
       sum_kbn(site_energies(V, at))
 
-function forces(V::NBodyFunction, at::Atoms{T}) where {T}
+# this appears to be a nice generic implementation of forces with a
+# temporary array => move this to JuLIP!
+function forces(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    nlist = neighbourlist(at, cutoff(V))
-   return scale!(maptosites_d!(r -> evaluate_d(V, r),
-                 zeros(SVector{3, T}, length(at)),
-                 nbodies(bodyorder(V), nlist)), -1)
+   maxneigs = max_neigs(nlist)
+   F = zeros(JVec{T}, length(at))
+   dVsite = zeros(JVec{T}, maxneigs)
+   for (i, j, r, R) in sites(nlist)
+      dVsite .*= 0.0
+      eval_site_nbody!(
+            Val(N), R, cutoff(V),
+            (out, s, S, J, _) -> _grad_len2pos!(out, evaluate_d(V, s)/N, J, S),
+            dVsite, nothing )
+      # write site energy gradient into forces
+      for n = 1:length(j)
+         F[j[n]] -= dVsite[n]
+         F[i] += dVsite[n]
+      end
+   end
+   return F
 end
 
-function virial(V::NBodyFunction, at::Atoms{T}) where {T}
+
+
+function virial(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    nlist = neighbourlist(at, cutoff(V))
-   temp = @MMatrix zeros(3,3)
-   virial!(r -> evaluate_d(V, r), temp, nbodies(bodyorder(V), nlist))
-   return SMatrix(temp)
+   maxneigs = max_neigs(nlist)
+   S = @SMatrix zeros(3,3)
+   dVsite = zeros(JVec{T}, maxneigs)
+   for (i, j, r, R) in sites(nlist)
+      dVsite .*= 0.0
+      # eval_site_d!(dVsite, V, R)
+      eval_site_nbody!(
+            Val(N), R, cutoff(V),
+            (out, s, S, J, _) -> _grad_len2pos!(out, evaluate_d(V, s)/N, J, S),
+            dVsite, nothing )
+      S += JuLIP.Potentials.site_virial(dVsite, R)
+   end
+   return S
 end
+
 
 # ------ special treatment of 1-body functions
 
@@ -63,9 +119,9 @@ virial(V::NBodyFunction{1}, at::Atoms{T}) where {T} =
 
 """
 `NBodyIP` : wraps `NBodyFunction`s into a JuLIP calculator, defining
-`energy`, `forces` and `cutoff`.
+`energy`, `forces`, `virial` and `cutoff`.
 
-TODO: `stress`, `site_energies`, etc.
+TODO: `site_energies`, etc.
 """
 struct NBodyIP <: AbstractCalculator
    orders::Vector{NBodyFunction}
@@ -85,7 +141,7 @@ by switching to a different representation.
 fast(IP::NBodyIP) = NBodyIP( fast.(IP.orders) )
 
 
-# generics
+# some simplified access functions
 
 evaluate(V::NBodyFunction{2}, r::Number) = evaluate(V, SVector(r))
 
@@ -97,6 +153,11 @@ evaluate_dd(V::NBodyFunction{2}, r::Number) =
 evaluate(V::NBodyFunction{3}, r1::Number, r2::Number, r3::Number) =
       evaluate(V, SVector(r1, r2, r3))
 
+
+# TODO: implement direct n-body access for NBodyIP
+
+
+# ========================= assembly support for LSQ system ====================
 
 # For assembling the LSQ system efficiently we need a way to evaluate all basis
 # functions of the same body-order at the same time. Otherwise we would be
@@ -111,48 +172,75 @@ evaluate(V::NBodyFunction{3}, r1::Number, r2::Number, r3::Number) =
 function evaluate_many! end
 function evaluate_many_d! end
 
-_alloc_svec(T::Type, ::Val{N}) where {N} = zero(SVector{N, T})
-_alloc_svec(T::Type, N::Integer) = _alloc_svec(T, Val(N))
-
-_alloc_smat(T::Type, ::Val{N}, ::Val{M}) where {N, M} = zero(SMatrix{N, M, T})
-_alloc_smat(T::Type, N, M) = _alloc_smat(T, Val(N), Val(M))
-
-_alloc_mvec(T::Type, ::Val{N}) where {N} = zero(MVector{N, T})
-_alloc_mvec(T::Type, N::Integer) = _alloc_mvec(T, Val(N))
-
-_alloc_mmat(T::Type, ::Val{N}, ::Val{M}) where {N, M} = zero(MMatrix{N, M, T})
-_alloc_mmat(T::Type, N, M) = _alloc_mmat(T, Val(N), Val(M))
-
-function energy(B::AbstractVector{TB}, at::Atoms{T}
-              ) where {TB <: NBodyFunction{N}, T} where {N}
-   # @assert isleaftype{TB}
-   nlist = neighbourlist(at, cutoff(B[1]))
-   z = _alloc_svec(T, length(B))
-   temp = _alloc_mvec(T, length(B))
-   return maptosites!(r -> evaluate_many!(temp, B, r),
-                      [ copy(z) for _ = 1:length(at) ],
-                      nbodies(N, nlist)) |> sum
-end
 
 energy(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
    [ energy(b, at) for b in B ]
 
+function energy(B::AbstractVector{TB}, at::Atoms{T}
+                ) where {TB <: NBodyFunction{N}, T} where {N}
+   rcut = cutoff(B[1])
+   nlist = neighbourlist(at, rcut)
+   temp = zeros(T, length(B))
+   E = zeros(T, length(B))
+   for (i, j, r, R) in sites(nlist)
+      # evaluate all the site energies at the same time
+      # for each simples, write the nB energies into temp
+      # then add them to E, which is just passed through all the
+      # various loops, so no need to update it here again
+      eval_site_nbody!(Val(N), R, rcut,
+                       (out, s, S, _1, temp) -> (out .+= evaluate_many!(temp, B, s)),
+                       E, temp)
+   end
+   # rescale to account for permutations
+   E ./= N
+   return E
+end
+
+
+
+function _acc_manyfrcs(B, dVsite, s, S, J, temp)
+   dV = evaluate_many_d!(temp, B, s)
+   for ib = 1:length(dVsite)
+      _grad_len2pos!(dVsite[ib], dV[ib], J, S)
+   end
+   return dVsite
+end
 
 function forces(B::AbstractVector{TB}, at::Atoms{T}
               ) where {TB <: NBodyFunction{N}, T} where {N}
-   # @assert isleaftype{TB}
-   nlist = neighbourlist(at, cutoff(B[1]))
-   z = _alloc_svec(JVec{T}, length(B))
-   z2 = _alloc_svec(T, length(B))
-   temp = ( _alloc_mvec(T, length(B)),
-            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
-            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
-            _alloc_mvec(typeof(z2), (N*(N-1))÷2)
-          )
-   Fpre = maptosites_d!(r -> evaluate_many_d!(temp, B, r),
-                      [ copy(z) for _ = 1:length(at) ],
-                      nbodies(N, nlist))
-   F = [ [ -Fpre[i][j] for i = 1:length(Fpre) ]  for j = 1:length(B) ]
+   rcut = cutoff(B[1])
+   nlist = neighbourlist(at, rcut)
+   maxneigs = max_neigs(nlist)
+   nedges = (N*(N-1))÷2
+   nB = length(B)
+   # forces
+   F =      [ zeros(JVec{T}, length(at)) for n = 1:nB ]
+   # site gradient
+   dVsite = [ zeros(JVec{T}, maxneigs)   for n = 1:nB ]
+   # n-body gradients
+   dV =     [ zeros(T, nedges)      for n = 1:nB ]
+   # temporary arrays to compute the site gradients
+   temp = ( zeros(T, nB),
+            zeros(T, nedges, nB),
+            zeros(T, nedges, nB),
+            dV )
+   accum_fun = let B=B
+      (out, s, S, J, temp) -> _acc_manyfrcs(B, out, s, S, J, temp)
+   end
+
+   for (i, j, r, R) in sites(nlist)
+      # clear dVsite
+      for n = 1:nB
+         dVsite[n] .*= 0.0
+      end
+      # fill dVsite
+      eval_site_nbody!(Val(N), R, rcut, accum_fun, dVsite, temp)
+      # write it into the force vectors
+      for ib = 1:nB, n = 1:length(j)
+         F[ib][j[n]] -= dVsite[ib][n]/N
+         F[ib][i] += dVsite[ib][n]/N
+      end
+   end
    return F
 end
 
@@ -162,61 +250,113 @@ forces(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
 
 function virial(B::AbstractVector{TB}, at::Atoms{T}
               ) where {TB <: NBodyFunction{N}, T} where {N}
-   nlist = neighbourlist(at, cutoff(B[1]))
-   z2 = _alloc_svec(T, length(B))
-   temp = ( _alloc_mvec(T, length(B)),
-            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
-            _alloc_mmat(T, (N*(N-1))÷2, length(B)),
-            _alloc_mvec(typeof(z2), (N*(N-1))÷2)
-          )
-   out = fill((@SMatrix zeros(3,3)), length(B))
-   virial!( r -> evaluate_many_d!(temp, B, r),
-            out,
-            nbodies(N, nlist) )
-   # stress = - virial(c, a) / det(defm(a))
-   # scale!(out, -1/det(defm(at)))
-   return out
+   rcut = cutoff(B[1])
+   nlist = neighbourlist(at, rcut)
+   maxneigs = max_neigs(nlist)
+   nedges = (N*(N-1))÷2
+   # virials (main output)
+   S = fill((@SMatrix zeros(3,3)), length(B))
+   # site gradient
+   dVsite = [ zeros(JVec{T}, maxneigs)   for n = 1:length(B) ]
+   # n-body gradients
+   dV =     [ zeros(T, nedges)      for n = 1:length(B) ]
+   # temporary arrays to compute the site gradients
+   temp = ( zeros(T, length(B)),
+            zeros(T, nedges, length(B)),
+            zeros(T, nedges, length(B)),
+            dV )
+   accum_fun = let B=B
+      (out, s, S, J, temp) -> _acc_manyfrcs(B, out, s, S, J, temp)
+   end
+
+   for (i, j, r, R) in sites(nlist)
+      # clear dVsite
+      for n = 1:length(dVsite)
+         dVsite[n] .*= 0.0
+      end
+      # fill dVsite
+      eval_site_nbody!(Val(N), R, rcut, accum_fun, dVsite, temp)
+      # update the virials
+      for iB = 1:length(B)
+         S[iB] += JuLIP.Potentials.site_virial(dVsite[iB], R) / N
+      end
+   end
+   return S
 end
+
 
 virial(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
    [ virial(b, at) for b in B ]
 
 
-#
-# teach NeighbourLists.jl how to assemble collections of forces
-#
-import NeighbourLists._m2s_mul_
 
-@generated function _m2s_mul_(X::SVector{M,T}, S::SVector{N,T}) where {M,N,T}
-   exprs = Expr[]
-   for i = 1:M
-      push_str!(exprs, "xS_$i = X[$i] * S")
-   end
-   coll = "p = @SVector ["
-   for i = 1:M
-      coll *= "xS_$i, "
-   end
-   coll *= "]"
-   push_str!(exprs, coll)
+# ------- distribution functions on the invariants --------------
 
-   quote
-      $(Expr(:meta, :inline))
-      @inbounds $(Expr(:block, exprs...))
-      return p
+rdf(at, rcut, transform=identity) = idf(2, at, rcut, transform)[1][1]
+
+"""
+`idf(N::Integer, at, rcut, transform)`
+
+invariants distribution function => accumulates all the invariants values
+arising during an N-body assembly over at.
+"""
+idf(N::Integer, at, rcut, transform) =
+      _idf(Val(N), Val(bo2edges(N)), at, rcut, transform)
+
+function _idf(valN::Val{N}, valM::Val{M}, at::Atoms{T}, rcut::T,
+              transform) where {N, M, T}
+   # compute invariants vectors to learn how many there are
+   x = rand(SVector{M,T})
+   I1, I2 = invariants(x)
+
+   I1acc = [ T[] for n = 1:length(I1) ]
+   I2acc = [ T[] for n = 1:length(I2) ]
+   Iacc = (I1acc, I2acc)
+
+   for (i, j, r, R) in sites(at, rcut)
+      eval_site_nbody!(valN, R, rcut,
+                  (Iacc, s, _1, _2, _3) -> idf_accumulator(Iacc, transform.(s)),
+                  Iacc, nothing)
    end
+
+   return I1acc, I2acc
+end
+
+function idf_accumulator(Iacc, x)
+   I1, I2 = invariants(x)
+   for n = 1:length(I1)
+      push!(Iacc[1][n], I1[n])
+   end
+   for n = 1:length(I2)
+      push!(Iacc[2][n], I2[n])
+   end
+   return Iacc
 end
 
 
-#
-# teach NeighbourLists.jl how to assemble collections of stresses
-#
-import NeighbourLists._inc_stress_!
 
-function _inc_stress_!(out::Vector{T1}, s::Float64, df::SVector{N,Float64}, S::SVector{3,Float64}
-         ) where T1 <: SMatrix{3,3,Float64} where N
-   # @assert length(out) == length(df)
-   # error("stop here")
-   for n = 1:length(df)
-      out[n] -= (s*df[n]) * (S * S')
+
+# =============== Experimental:
+#   evaluate NBodyIP
+
+(V::NBodyIP)(args...) = evaluate(V, args...)
+
+evaluate(V::NBodyIP, r::Number) = evaluate(V::NBodyIP, SVector(r))
+
+evaluate(V::NBodyIP, r1::T, r2::T, r3::T) where {T <: Number} =
+      evaluate(V::NBodyIP, SVector(r1, r2, r3))
+
+function evaluate(V::NBodyIP, r::SVector{N, T}) where {N, T}
+   v = zero(T)
+   for Vn in V.orders
+      if bo2edges(bodyorder(Vn)) == N
+         v += Vn(r)
+      end
    end
+   return v
 end
+
+energy(V::NBodyIP, at::ASEAtoms) = energy(V, Atoms(at))
+forces(V::NBodyIP, at::ASEAtoms) = forces(V, Atoms(at))
+virial(V::NBodyIP, at::ASEAtoms) = virial(V, Atoms(at))
+stress(V::NBodyIP, at::ASEAtoms) = stress(V, Atoms(at))

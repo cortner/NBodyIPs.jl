@@ -18,24 +18,21 @@ The exported symbols are
 module Polys
 
 using Reexport
+import StaticPolynomials, JLD
 
 using JuLIP, NeighbourLists, StaticArrays, ForwardDiff
 using JuLIP.Potentials: cutsw, cutsw_d, coscut, coscut_d
 using NBodyIPs: NBodyFunction
 using NBodyIPs.FastPolys: fpoly, fpoly_d
 
-import StaticPolynomials
-
-const cutsp = JuLIP.Potentials.fcut
-const cutsp_d = JuLIP.Potentials.fcut_d
-
 import Base: length
 import JuLIP: cutoff, energy, forces
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
-import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!
+import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!,
+                 dictionary, match_dictionary
 
-
-
+const cutsp = JuLIP.Potentials.fcut
+const cutsp_d = JuLIP.Potentials.fcut_d
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
@@ -152,7 +149,8 @@ Dictionary(D::Dictionary, s::Tuple) =
       Dictionary(D.transform, D.transform_d, D.fcut, D.fcut_d, D.rcut, s)
 
 function Dictionary(strans::String, scut::String)
-   D = Dictionary(eval(parse(strans)), eval(parse(scut)))
+   D = Dictionary(eval(parse(ftrans_analyse(strans))),
+                  eval(parse(scut)))
    return Dictionary(D, (strans, scut))
 end
 
@@ -164,29 +162,24 @@ Dictionary(ftrans::Any, fcut::Any) =
 
 ftrans_analyse(x::AnalyticFunction) = x
 
-function ftrans_analyse(args)
-   if args isa Symbol || length(args) == 1
-      sym = args
-      p = nothing
-   elseif length(args) == 2
-      sym, p = args
-   else
-      sym, p = args[1], args[2:end]
+function ftrans_analyse(strans::String)
+   # if @analytic is a substring then we don't do anything
+   if !ismatch(r"@analytic", strans)
+      # but if not, then we next look for ->
+      if !ismatch(r"->", strans)
+         # if -> is not a substring then we assume that strans is of the form
+         # "(r0/r)^4" or similar i.e. explicitly uses r as the variable.
+         strans = "@analytic r -> " * strans
+      else
+         # @analytic is not a substring but -> is a substring. e.g.
+         # r -> (r0/r)^3 or s -> (r0/s)^3. we add @analytic to compile it
+         strans = "@analytic " * strans
+      end
    end
-   if Symbol(sym) == :inv
-      return @analytic r -> 1/r
-   elseif Symbol(sym) == :invsqrt
-      return @analytic r -> 1/sqrt(r)
-   elseif Symbol(sym) == :invsquare
-      return @analytic r -> (1/r)^2
-   elseif Symbol(sym) == :poly
-      return let p=p; @analytic r -> r^p; end
-   elseif Symbol(sym) == :exp
-      return let p=p; @analytic r -> exp(-p * r); end
-   else
-      error("Dictionary: unknown symbol $(sym) for transformation.")
-   end
+   return strans
 end
+
+
 
 fcut_analyse(x::AnalyticFunction) = x
 
@@ -218,13 +211,20 @@ function fcut_analyse(args::Tuple)
       rcut = args[1]
       return let rcut=rcut; (@analytic r -> (r - rcut)^2); end, rcut
 
-   elseif Symbol(sym) == :twosided
+   elseif Symbol(sym) == :s2rat
       return let rnn=args[1], rin = args[2], rcut = args[3], p = args[4]
          f = @analytic r -> ( ((rnn/r)^p - (rnn/rcut)^p)^2 * ((rnn/r)^p - (rnn/rin)^p)^2 )
-         AnalyticFunction(r -> f.f(r) * (0.8*rnn < r < rcut),
-                          r -> f.f_d(r) * (0.8*rnn < r < rcut),
+         AnalyticFunction(r -> f.f(r) * (rin < r < rcut),
+                          r -> f.f_d(r) * (rin < r < rcut),
                           nothing) end, args[2]
 
+   elseif Symbol(sym) == :cos2s
+      return let ri1 = args[1], ri2 = args[2], ro1 = args[3], ro2 = args[4]
+            AnalyticFunction(
+                  r -> (1-coscut(r, ri1, ri2)) * coscut(r, ro1, ro2),
+                  r -> (- coscut_d(r, ri1, ri2) * coscut(r, ro1, ro2)
+                        + (1-coscut(r, ri1, ri2)) * coscut_d(r, ro1, ro2)),
+                  nothing) end, args[4]
    else
       error("Dictionary: unknown symbol $(sym) for fcut.")
    end
@@ -270,7 +270,6 @@ e.g., if M = 3, α = t[1] is a 3-vector then this corresponds to the basis funct
 """
 NBody
 
-
 # standad constructor (N can be inferred)
 NBody(t::VecTup{K}, c, D) where {K} =
       NBody(t, c, D, Val(edges2bo(K-1)))
@@ -297,13 +296,23 @@ length(V::NBody) = length(V.t)
 
 cutoff(V::NBody) = cutoff(V.D)
 
+dictionary(V::NBody) = V.D
+
+function match_dictionary(V::NBody, V1::NBody)
+   if V.D != V1.D
+      if V.D.s != V1.D.s
+         warn("matching two non-matching dictionaries!")
+      end
+   end
+   return NBody(V.t, V.c, V1.D, V.valN)
+end
+
 # This cannot be quite correct as I am implementing it here; it is probably
 #      correct only for the basic invariants that generate the rest
 # degree(V::NBody) = length(V) == 1 ? degree(V.valN, V.t[1])) :
 #        error("`degree` is only defined for `NBody` basis functions, length == 1")
-
-ispure(V::NBody) = (length(V) == 1) ? ispure(V.valN, V.t[1]) :
-       error("`ispure` is only defined for `NBody` basis functions, length == 1")
+# ispure(V::NBody) = (length(V) == 1) ? ispure(V.valN, V.t[1]) :
+#        error("`ispure` is only defined for `NBody` basis functions, length == 1")
 
 Base.serialize(V::NBody) = (bodyorder(V), V.t, V.c, serialize(V.D))
 
@@ -312,6 +321,40 @@ Base.serialize(V::NBody{1}) = (1, V.t, V.c, nothing)
 Base.deserialize(::Type{NBody}, s) =
    s[1] == 1 ? NBody(sum(s[3])) :
    NBody(s[2], s[3], deserialize(Dictionary, s[4]), Val(s[1]))
+
+
+function Base.info(B::Vector{T}; indent = 2) where T <: NBody
+   ind = repeat(" ", indent)
+   println(ind * "body-order = $(bodyorder(B[1]))")
+   println(ind * "    length = $(length(B))")
+   if bodyorder(B[1]) > 1
+      println(ind * " transform = $(B[1].D.s[1])")
+      println(ind * "    cutoff = $(B[1].D.s[2])")
+   end
+end
+
+# -------------- Infrastructure to read/write NBody using JLD --------
+# TODO: write tests
+
+struct NBodySerializer{N}
+   t               # tuples M = #edges + 1
+   c               # coefficients
+   D       # Dictionary (or nothing)
+   valN::Val{N}               # encodes that this is an N-body term
+end
+
+JLD.writeas(V::NBody) =
+   NBodySerializer(V.t, V.c, serialize(V.D), V.valN)
+
+JLD.readas(VS::NBodySerializer) =
+   NBody(VS.t, VS.c, deserialize(Dictionary, VS.D), VS.valN)
+
+JLD.writeas(V::NBody{1}) =
+   NBodySerializer(V.t, V.c, nothing, V.valN)
+
+JLD.readas(VS::NBodySerializer{1}) =
+   NBody(VS.t, VS.c, nothing, VS.valN)
+
 
 # ---------------  evaluate the n-body terms ------------------
 
@@ -354,7 +397,6 @@ function evaluate_d(V::NBody, r::SVector{M, T}) where {M, T}
    for i = 1:length(dI1)   # dI1' * dM
       dE += dM[i] * dI1[i]
    end
-
    fc, fc_d = fcut_d(D, r)
    return dE * fc + E * fc_d
 end
@@ -436,7 +478,7 @@ function NBodyIP(basis, coeffs)
       # construct a new basis function by combining all of them in one
       # (this assumes that we have NBody types)
       D = basis[Itp[1]].D
-      V_N = NBody(basis[Itp], coeffs[Itp], D)
+      V_N = NBody([b for b in basis[Itp]], coeffs[Itp], D)
       push!(components, V_N)
    end
    return NBodyIP(components)
@@ -517,13 +559,21 @@ end
 
 
 """
-`poly_basis(N, D, deg; tuplebound = ...)` : generates a basis set of
+* `poly_basis(N, D, deg; tuplebound = ...)`
+* `poly_basis(N, strans, scut, deg; tuplebound = ...)`
+
+generates a basis set of
 `N`-body functions, with dictionary `D`, maximal degree `deg`; the precise
 set of basis functions constructed depends on `tuplebound` (see `?gen_tuples`)
 """
-poly_basis(N::Integer, D, deg; kwargs...) = poly_basis(gen_tuples(N, deg; kwargs...), D)
+poly_basis(N::Integer, D::Dictionary, deg; kwargs...) =
+   poly_basis(gen_tuples(N, deg; kwargs...), D)
 
 poly_basis(ts::VecTup, D::Dictionary) = [NBody(t, 1.0, D) for t in ts]
+
+poly_basis(N::Integer, strans::String, scut::String, deg; kwargs...) =
+   poly_basis(N, Dictionary(strans, scut), deg; kwargs...)
+
 
 # deprecate this
 gen_basis = poly_basis
@@ -550,67 +600,69 @@ terms.
 """
 function regularise_2b(B::Vector, r0, r1; creg = 1e-2, Nquad = 20)
    I2 = find(bodyorder.(B) .== 2)
-   B2 = B[I2]
    rr = linspace(r0, r1, Nquad)
-   Φ = zeros(Nquad, length(B2))
-   for (ib, b) in enumerate(B2), (iq, r) in enumerate(rr)
-      Φ[iq, ib] = evaluate_dd(b, r)
-   end
+   Φ = zeros(Nquad, length(B))
    h = (r1 - r0) / (Nquad-1)
-   M = zeros(length(B), length(B))
-   M[I2, I2] = (creg * h) * (Φ' * Φ)
-   return M
+   for (ib, b) in zip(I2, B[I2]), (iq, r) in enumerate(rr)
+      Φ[iq, ib] = evaluate_dd(b, r) * sqrt(creg * h)
+   end
+   return Φ
 end
 
 # ---------------------- auxiliary type to
 
 
-function evaluate_many!(temp::MVector, B::Vector{TB}, r::SVector{M, T}
+function evaluate_many!(temp, B::Vector{TB}, r::SVector{M, T}
                ) where {TB <: NBody{N}} where {N, M, T}
    E = temp # zeros(T, length(B))
    D = B[1].D
    # it is assumed implicitly that all basis functions use the same dictionary!
    # and that each basis function NBody contains just a single c and a single t
    I1, I2 = invariants(D, r)
-   for (ib, b) in enumerate(B)
-      E[ib] = b.c[1] * I2[1+b.t[1][end]] * monomial(b.t[1], I1)
+   for ib = 1:length(B)
+      E[ib] = B[ib].c[1] * I2[1+B[ib].t[1][end]] * monomial(B[ib].t[1], I1)
    end
    fc = fcut(D, r)
    scale!(E, fc)
-   return SVector(E)
+   return E
 end
 
 
 function evaluate_many_d!(temp, B::Vector{TB}, r::SVector{M, T}
                ) where {TB <: NBody{N}} where {N, M, T}
    E, dM, dE, dEfinal = temp
-   fill!(E, 0.0)
-   fill!(dE, 0.0)
-   fill!(dM, 0.0)
+   fill!(E, 0.0)     # size (nB,)
+   fill!(dE, 0.0)    # size (M, nB)
+   fill!(dM, 0.0)    # size (M, nB)
+   nB = length(B)
 
    D = B[1].D
    # it is assumed implicitly that all basis functions use the same dictionary!
    # and that each basis function NBody contains just a single c and a single t
    I1, I2, dI1, dI2 = invariants_ed(D, r)
-   for (ib, b) in enumerate(B)
-      α = b.t[1]
-      c = b.c[1]
+   for ib = 1:nB    # (ib, b) in enumerate(B)
+      α = B[ib].t[1]
+      c = B[ib].c[1]
       m, m_d = monomial_d(α, I1)
       E[ib] += c * I2[1+α[end]] * m        # just the value of the function itself
-      dM[:,ib] += (c * I2[1+α[end]]) * m_d   # the I2 * ∇m term without the chain rule
-      dE[:,ib] += (c * m) * dI2[1+α[end]]  # the ∇I2 * m term
+      for t = 1:M
+         dM[t,ib] += (c * I2[1+α[end]]) * m_d[t]   # the I2 * ∇m term without the chain rule
+         dE[t,ib] += (c * m) * dI2[1+α[end]][t]  # the ∇I2 * m term
+      end
    end
    # chain rule
    fc, fc_d = fcut_d(D, r)
-   for ib = 1:length(B)
-      for i = 1:M    # dE[ib] += dI1' * dM[ib]
-         dE[:,ib] += dI1[i] * dM[i,ib]
+   for ib = 1:nB
+      for i = 1:M, t = 1:M  # dE[ib] += dI1' * dM[ib]
+         dE[t,ib] += dI1[i][t] * dM[i,ib]
       end
-      dE[:,ib] = dE[:,ib] * fc + E[ib] * fc_d
+      for t = 1:M
+         dE[t,ib] = dE[t,ib] * fc + E[ib] * fc_d[t]
+      end
    end
    # write into an output vector
-   for i = 1:M
-      dEfinal[i] = dE[i,:]
+   for i = 1:nB, t = 1:M
+      dEfinal[i][t] = dE[t, i]
    end
    return dEfinal
 end
