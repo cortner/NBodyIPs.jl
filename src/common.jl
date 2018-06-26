@@ -14,7 +14,10 @@ export NBodyIP,
        fast,
        dictionary,
        match_dictionary,
-       rdf, idf
+       rdf, idf,
+       recover_basis,
+       degree,
+       saveas, loadas
 
 
 """
@@ -31,6 +34,12 @@ abstract type NBodyFunction{N} <: AbstractCalculator end
 function bodyorder end
 
 """
+some measure of degree - need not be polymomial degree?
+TODO: figure out exactly how to use this
+"""
+degree(::NBodyFunction) = 0
+
+"""
 return the object attached to an NBodyFunction that describes
 the underlying basis set
 """
@@ -44,6 +53,13 @@ This occurs e.g. when loading basis sets from a file.
 """
 function match_dictionary end
 
+"""
+recover a basis from an NBodyFunction
+"""
+function recover_basis end
+
+function saveas end
+function loadas end
 
 include("eval_nbody.jl")
 
@@ -132,6 +148,13 @@ energy(V::NBodyIP, at::Atoms) = sum( energy(Vn, at)  for Vn in V.orders )
 forces(V::NBodyIP, at::Atoms) = sum( forces(Vn, at)  for Vn in V.orders )
 virial(V::NBodyIP, at::Atoms) = sum( virial(Vn, at)  for Vn in V.orders )
 
+
+struct NBodyIPSerializer
+   orders
+end
+saveas(IP::NBodyIP) = NBodyIPSerializer(saveas.(IP.orders))
+loadas(::Type{NBodyIP}, IP::NBodyIPSerializer) = loadas(IP)
+loadas(IPs::NBodyIPSerializer) = NBodyIP(loadas.(IPs.orders))
 
 
 """
