@@ -47,6 +47,7 @@ export NBody,
 @pot struct Dictionary{TT, TDT, TC, TDC, T}
    transform::TT              # distance transform
    transform_d::TDT           # derivative of distance transform
+   # inv_transform::TIT
    fcut::TC                   # cut-off function
    fcut_d::TDC                # cut-off function derivative
    rcut::T                    # cutoff radius
