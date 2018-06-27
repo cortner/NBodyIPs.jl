@@ -47,6 +47,7 @@ export NBody,
 @pot struct Dictionary{TT, TDT, TC, TDC, T}
    transform::TT              # distance transform
    transform_d::TDT           # derivative of distance transform
+   # inv_transform::TIT
    fcut::TC                   # cut-off function
    fcut_d::TDC                # cut-off function derivative
    rcut::T                    # cutoff radius
@@ -585,36 +586,6 @@ poly_basis(N::Integer, strans::String, scut::String, deg; kwargs...) =
    poly_basis(N, Dictionary(strans, scut), deg; kwargs...)
 
 
-"""
-`regularise_2b(B, r0, r1; creg = 1e-2, Nquad = 20)`
-
-construct a regularising stabilising matrix that acts only on 2-body
-terms.
-
-* `B` : basis
-* `r0, r1` : upper and lower bound over which to integrate
-* `creg` : multiplier
-* `Nquad` : number of quadrature / sample points
-
-```
-   I = ∑_r h | ∑_j c_j ϕ_j''(r) |^2
-     = ∑_{i,j} c_i c_j  ∑_r h ϕ_i''(r) ϕ_j''(r)
-     = c' * M * c
-   M_ij = ∑_r h ϕ_i''(r) ϕ_j''(r) = h * Φ'' * Φ''
-   Φ''_ri = ϕ_i''(r)
-```
-"""
-function regularise_2b(B::Vector, r0, r1; creg = 1e-2, Nquad = 20)
-   I2 = find(bodyorder.(B) .== 2)
-   rr = linspace(r0, r1, Nquad)
-   Φ = zeros(Nquad, length(B))
-   h = (r1 - r0) / (Nquad-1)
-   for (ib, b) in zip(I2, B[I2]), (iq, r) in enumerate(rr)
-      Φ[iq, ib] = evaluate_dd(b, r) * sqrt(creg * h)
-   end
-   return Φ
-end
-
 # ---------------------- auxiliary type to
 
 
@@ -674,6 +645,7 @@ function evaluate_many_d!(temp, B::Vector{TB}, r::SVector{M, T}
 end
 
 
+include("poly_regularise.jl")
 
 
 end # module

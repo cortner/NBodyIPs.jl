@@ -315,7 +315,13 @@ virial(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
 
 # ------- distribution functions on the invariants --------------
 
-rdf(at, rcut, transform=identity) = idf(2, at, rcut, transform)[1][1]
+function rdf(at::Atoms, rcut, transform=identity)
+   if transform != identity
+      return idf(2, at, rcut, transform)[1][1]
+   end
+   nlist = neighbourlist(at, rcut)
+   return nlist.r
+end
 
 """
 `idf(N::Integer, at, rcut, transform)`
