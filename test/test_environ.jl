@@ -30,3 +30,18 @@ set_constraint!(at, VariableCell(at))
 for Venv in [V3env_0, V3env_1, V3env_2]
    (@test JuLIP.Testing.fdtest(Venv, at)) |> println
 end
+
+
+B = Env.envbl_basis(3, D3, 5, Vn, 2)
+
+E1 = energy(B, at)
+E2 = [ energy(b, at) for b in B ]
+@test E1 ≈ E2
+
+F1 = forces(B, at)
+F2 = [ forces(b, at) for b in B ]
+@test F1 ≈ F2
+
+V1 = virial(B, at)
+V2 = [ virial(b, at) for b in B ]
+@test V1 ≈ V2
