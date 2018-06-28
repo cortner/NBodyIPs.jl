@@ -240,7 +240,7 @@ end
 
 saveas(D::Dictionary) = ((D.s[1] != "" && D.s[2] != "")
          ? DictionarySerializer(D.s)
-         : error("cannot save this dictionary: s = $s"))
+         : error("cannot save this dictionary: s = $D.s"))
 
 loadas(D::DictionarySerializer) = Dictionary(D.s...)
 

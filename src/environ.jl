@@ -2,7 +2,7 @@
 module EnvBLs
 
 using JuLIP, StaticArrays
-using JuLIP.Potentials: evaluate, evaluate_d
+using JuLIP.Potentials: evaluate, evaluate_d, C1Shift, Shift, @analytic
 
 using NBodyIPs: max_neigs, eval_site_nbody!, _grad_len2pos!, _acc_manyfrcs
 using NBodyIPs.Polys: Dictionary, NBody, poly_basis
@@ -16,31 +16,40 @@ import NBodyIPs: NBodyIP, bodyorder, fast,
                  saveas, loadas,
                  saveas_json, loadas_json
 
+export envbl_basis
 
-@pot struct EnvBL{N, T, TVR, TVN} <: EnvBLFunction{N}
-   t::Vector{Int}
-   c::Vector{T}
+
+@pot struct EnvBL{N, TVR, TVN} <: EnvBLFunction{N}
+   t::Int
    Vr::TVR
    Vn::TVN
+   str_Vn::String
    valN::Val{N}
-   #
-   # function EnvBL(t, c::Vector{T}, Vr::TVR, Vn::TVN, valN::Val{N}
-   #               ) where {N, T, TVR, TVN}
-   #    if N != bodyorder(Vn)
-   #       error("EnvBL : body-orders must match")
-   #    end
-   #    return new(t, c, Vr, Vn, valN)
-   # end
 end
 
-"""
-An EnvBL is a product of a polynomial in `n` and an
-`NBody`
-"""
-EnvBL
+# """
+# An EnvBL is a product of a polynomial in `n` and an
+# `NBody`
+# """
+# EnvBL
+
+EnvBL(t::Int, Vr, Vn, str_Vn::String) =
+      EnvBL(t, Vr, Vn, str_Vn, Val(bodyorder(Vr)))
+
+function analyse_Vn(str_Vn, cutoff_Vn)
+   Vn1 = eval(parse("@analytic r -> " * str_Vn))
+   Vn = Shift(Val(1), Vn1, cutoff_Vn,
+              Base.invokelatest(Vn1.f,   cutoff_Vn),
+              Base.invokelatest(Vn1.f_d, cutoff_Vn),
+              0.0)
+   return Vn
+end
 
 
-EnvBL(t, c, Vr, Vn) = EnvBL(t, c, Vr, Vn, Val(bodyorder(Vr)))
+function EnvBL(t, Vr, str_Vn::String, cutoff_Vn::AbstractFloat)
+   Vn = analyse_Vn(str_Vn, cutoff_Vn)
+   return EnvBL(t, Vr, Vn, str_Vn)
+end
 
 Vn(V::EnvBL) = V.Vn
 Vr(V::EnvBL) = V.Vr
@@ -52,9 +61,9 @@ function cutoff(V::EnvBLFunction)
    return cutoff(Vr(V::EnvBL))
 end
 
-n_fun(V::EnvBL, n) = sum( c * n^t  for (c,t) in zip(V.c, V.t) )
+n_fun(V::EnvBL, n) = n^V.t
 
-n_fun_d(V::EnvBL, n) = sum( t * c * n^(t-1)  for (c,t) in zip(V.c, V.t) )
+n_fun_d(V::EnvBL, n) = V.t * n^(V.t-1)
 
 site_ns(V::EnvBL, at) = n_fun.(V, site_energies(Vn(V), at))
 
@@ -153,7 +162,7 @@ end
 
 
 function energy(B::Vector{TB}, at::Atoms{T}
-                ) where {TB <: EnvBL{N, T}} where {N, T}
+                ) where {TB <: EnvBL{N}, T} where {N}
    !isleaftype(TB) && warn("TB is not a leaf type")
 
    Br = [Vr(b) for b in B]
@@ -188,7 +197,7 @@ end
 
 
 function forces(B::AbstractVector{TB}, at::Atoms{T}
-              )where {TB <: EnvBL{N, T}} where {N, T}
+              )where {TB <: EnvBL{N}, T} where {N}
    !isleaftype(TB) && warn("TB is not a leaf type")
 
    Br = [Vr(b) for b in B]
@@ -249,7 +258,7 @@ end
 
 
 function virial(B::AbstractVector{TB}, at::Atoms{T}
-              )where {TB <: EnvBL{N, T}} where {N, T}
+              )where {TB <: EnvBL{N}, T} where {N}
    !isleaftype(TB) && warn("TB is not a leaf type")
 
    Br = [Vr(b) for b in B]
@@ -317,19 +326,31 @@ end
 
 
 function envbl_basis(N::Integer, D::Dictionary, deg_poly::Integer,
-                     Vn, deg_n::Integer; kwargs...)
+                     Vn_descr, deg_n::Integer; kwargs...)
    B_poly = poly_basis(N, D, deg_poly; kwargs...)
    B = EnvBL[]
+   str_Vn = Vn_descr[1]
+   Vn = analyse_Vn(Vn_descr...)
    for deg = 0:deg_n
-      t = [deg]
-      c = [1.0]
-      for Vr in B_poly
-         push!(B, EnvBL(t, c, Vr, Vn))
-      end
+      append!(B, [EnvBL(deg, Vr, Vn, str_Vn, Val(N)) for Vr in B_poly])
    end
    return [b for b in B]
 end
 
+# ----------------------- JLD2 functionality ------------
+
+struct EnvBLSerialiser
+   t
+   Vr
+   str_Vn
+   cutoff_Vn
+end
+
+saveas(V::EnvBL) =
+   EnvBLSerialiser(V.t, saveas(V.Vr), V.str_Vn, cutoff(V.Vn))
+
+loadas(Vs::EnvBLSerialiser) =
+   EnvBL(Vs.t, loadas(Vs.Vr), Vs.str_Vn, Vs.cutoff_Vn)
 
 
 end
