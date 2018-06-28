@@ -60,6 +60,8 @@ function recover_basis end
 
 function saveas end
 function loadas end
+function saveas_json end
+function loadas_json end
 
 include("eval_nbody.jl")
 
@@ -155,6 +157,19 @@ end
 saveas(IP::NBodyIP) = NBodyIPSerializer(saveas.(IP.orders))
 loadas(::Type{NBodyIP}, IP::NBodyIPSerializer) = loadas(IP)
 loadas(IPs::NBodyIPSerializer) = NBodyIP(loadas.(IPs.orders))
+
+saveas_json(IP::NBodyIP) = saveas_json.(IP.orders)
+
+function loadas_json(::Type{NBodyIP}, IPj::AbstractVector)
+   orders = NBodyFunction[]
+   for Vj in IPj
+      id = Vj["id"]
+      V = loadas_json(Val(Symbol(id)), Vj)
+      push!(orders, V)
+   end
+   return NBodyIP(orders)
+end
+
 
 
 """

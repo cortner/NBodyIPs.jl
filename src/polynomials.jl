@@ -30,7 +30,8 @@ import JuLIP: cutoff, energy, forces
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
 import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!,
                  dictionary, match_dictionary, saveas, loadas,
-                 recover_basis, degree
+                 recover_basis, degree,
+                 saveas_json, loadas_json
 
 const cutsp = JuLIP.Potentials.fcut
 const cutsp_d = JuLIP.Potentials.fcut_d
@@ -365,6 +366,35 @@ saveas(V::NBody{1}) =
 
 loadas(VS::NBodySerializer{1}) =
    NBody(VS.t, VS.c, nothing, VS.valN)
+
+
+# --------
+
+struct NBodyJson
+   id
+   t               # tuples M = #edges + 1
+   c               # coefficients
+   D               # Dictionary (or nothing)
+   N               # encodes that this is an N-body term
+end
+
+saveas_json(V::NBody{N}) where {N} =
+   NBodyJson("NBody", V.t, V.c, saveas(V.D), N)
+
+saveas_json(V::NBody{1}) =
+   NBodyJson("NBody", V.t, V.c, nothing, 1)
+
+function loadas_json(::Val{:NBody}, VS)
+   t = [ tuple(ti...) for ti in VS["t"] ]
+   c = Vector{Float64}(VS["c"])
+   N = VS["N"]
+   if N == 1
+      return NBody(t, c, nothing,Val(1))
+   end
+   D = loadas(DictionarySerializer(tuple(VS["D"]["s"]...)))
+   return NBody(t, c, D, Val(N))
+end
+
 
 
 # ---------------  evaluate the n-body terms ------------------
