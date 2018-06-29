@@ -31,7 +31,8 @@ import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
 import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!,
                  dictionary, match_dictionary, saveas, loadas,
                  recover_basis, degree,
-                 saveas_json, loadas_json
+                 saveas_json, loadas_json,
+                 combine_basis
 
 const cutsp = JuLIP.Potentials.fcut
 const cutsp_d = JuLIP.Potentials.fcut_d
@@ -321,6 +322,9 @@ function recover_basis(V::VT) where {VT <: NBody}
    return B
 end
 
+combine_basis(basis::AbstractVector{TV}, coeffs) where {TV <: NBody} =
+      NBody(basis, coeffs, basis[1].D)
+
 
 function degree(V::NBody)
    if length(V) == 1
@@ -503,27 +507,6 @@ cutoff(V::SPolyNBody) = cutoff(V.D)
 fast(Vn::SPolyNBody)  = Vn
 fast(Vn::NBody) =  SPolyNBody(Vn)
 fast(Vn::NBody{1}) = Vn
-
-# ==================================================================
-#    construct an NBodyIP from a basis
-# ==================================================================
-
-
-function NBodyIP(basis, coeffs)
-   components = NBody[]
-   tps = typeof.(basis)
-   for tp in unique(tps)
-      # find all basis functions that have the same type, which in particular
-      # incorporated the body-order
-      Itp = find(tps .== tp)
-      # construct a new basis function by combining all of them in one
-      # (this assumes that we have NBody types)
-      D = basis[Itp[1]].D
-      V_N = NBody([b for b in basis[Itp]], coeffs[Itp], D)
-      push!(components, V_N)
-   end
-   return NBodyIP(components)
-end
 
 
 

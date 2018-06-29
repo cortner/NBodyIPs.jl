@@ -14,17 +14,19 @@ import JuLIP: cutoff, energy, forces, virial
 import NBodyIPs: NBodyIP, bodyorder, fast,
                  evaluate_many!, evaluate_many_d!,
                  saveas, loadas,
-                 saveas_json, loadas_json
+                 saveas_json, loadas_json,
+                 combine_basis, recover_basis
 
 export envbl_basis
 
 
-@pot struct EnvBL{N, TVR, TVN} <: EnvBLFunction{N}
+@pot struct EnvBL{N, P, TVR, TVN} <: EnvBLFunction{N}
    t::Int
    Vr::TVR
    Vn::TVN
    str_Vn::String
    valN::Val{N}
+   valP::Val{P}
 end
 
 # """
@@ -34,7 +36,7 @@ end
 # EnvBL
 
 EnvBL(t::Int, Vr, Vn, str_Vn::String) =
-      EnvBL(t, Vr, Vn, str_Vn, Val(bodyorder(Vr)))
+      EnvBL(t, Vr, Vn, str_Vn, Val(bodyorder(Vr)), Val(t))
 
 function analyse_Vn(str_Vn, cutoff_Vn)
    Vn1 = eval(parse("@analytic r -> " * str_Vn))
@@ -55,6 +57,70 @@ Vn(V::EnvBL) = V.Vn
 Vr(V::EnvBL) = V.Vr
 
 bodyorder(V::EnvBLFunction) = bodyorder(Vr(V))
+
+
+
+# ----------------- generate basis / IP / convert ----------------
+
+function envbl_basis(N::Integer, D::Dictionary, deg_poly::Integer,
+                     Vn_descr, deg_n::Integer; kwargs...)
+   B_poly = poly_basis(N, D, deg_poly; kwargs...)
+   B = EnvBL[]
+   str_Vn = Vn_descr[1]
+   Vn = analyse_Vn(Vn_descr...)
+   for deg = 0:deg_n
+      append!(B, [EnvBL(deg, Vr, Vn, str_Vn) for Vr in B_poly])
+   end
+   return [b for b in B]
+end
+
+
+function combine_basis(basis::AbstractVector{TV}, coeffs) where {TV <: EnvBL}
+   @assert isleaftype(TV)
+   @assert all( b.t == basis[1].t for b in basis )
+   # combine the Vr components of the basis functions
+   # (we get to do this because all t (=P) are the same
+   Vr = combine_basis( [b.Vr for b in basis], coeffs )
+   return EnvBL(basis[1].t, Vr, basis[1].Vn, basis[1].str_Vn)
+end
+
+
+function recover_basis(V::VT) where {VT <: EnvBL}
+   # first recover the basis of N-body functions
+   Vrs = recover_basis(V.Vr)
+   return [ EnvBL(V.t, Vr, V.Vn, V.str_Vn) for Vr in Vrs ]
+end
+
+
+function Base.info(B::Vector{T}; indent = 2) where T <: EnvBL
+   ind = repeat(" ", indent)
+   println(ind * "EnvBL with P = $(B[1].t)")
+   println(ind * "           Vn : $(B[1].str_Vn)")
+   println(ind * "           Vr : see below...")
+
+   info([ b.Vr for b in B ], indent = indent+2)
+end
+
+# ----------------------- JLD2 functionality ------------
+
+struct EnvBLSerialiser
+   t
+   Vr
+   str_Vn
+   cutoff_Vn
+end
+
+saveas(V::EnvBL) =
+   EnvBLSerialiser(V.t, saveas(V.Vr), V.str_Vn, cutoff(V.Vn))
+
+loadas(Vs::EnvBLSerialiser) =
+   EnvBL(Vs.t, loadas(Vs.Vr), Vs.str_Vn, Vs.cutoff_Vn)
+
+
+
+
+# =============== Assembly =================
+
 
 function cutoff(V::EnvBLFunction)
    @assert cutoff(Vn(V)) <= cutoff(Vr(V))
@@ -323,34 +389,6 @@ function virial(B::AbstractVector{TB}, at::Atoms{T}
    return S
 end
 
-
-
-function envbl_basis(N::Integer, D::Dictionary, deg_poly::Integer,
-                     Vn_descr, deg_n::Integer; kwargs...)
-   B_poly = poly_basis(N, D, deg_poly; kwargs...)
-   B = EnvBL[]
-   str_Vn = Vn_descr[1]
-   Vn = analyse_Vn(Vn_descr...)
-   for deg = 0:deg_n
-      append!(B, [EnvBL(deg, Vr, Vn, str_Vn, Val(N)) for Vr in B_poly])
-   end
-   return [b for b in B]
-end
-
-# ----------------------- JLD2 functionality ------------
-
-struct EnvBLSerialiser
-   t
-   Vr
-   str_Vn
-   cutoff_Vn
-end
-
-saveas(V::EnvBL) =
-   EnvBLSerialiser(V.t, saveas(V.Vr), V.str_Vn, cutoff(V.Vn))
-
-loadas(Vs::EnvBLSerialiser) =
-   EnvBL(Vs.t, loadas(Vs.Vr), Vs.str_Vn, Vs.cutoff_Vn)
 
 
 end
