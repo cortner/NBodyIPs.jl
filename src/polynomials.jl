@@ -30,7 +30,8 @@ import JuLIP: cutoff, energy, forces
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
 import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!,
                  dictionary, match_dictionary, saveas, loadas,
-                 recover_basis, degree
+                 recover_basis, degree,
+                 saveas_json, loadas_json
 
 const cutsp = JuLIP.Potentials.fcut
 const cutsp_d = JuLIP.Potentials.fcut_d
@@ -47,6 +48,7 @@ export NBody, Dictionary,
 @pot struct Dictionary{TT, TDT, TC, TDC, T}
    transform::TT              # distance transform
    transform_d::TDT           # derivative of distance transform
+   # inv_transform::TIT
    fcut::TC                   # cut-off function
    fcut_d::TDC                # cut-off function derivative
    rcut::T                    # cutoff radius
@@ -366,6 +368,35 @@ loadas(VS::NBodySerializer{1}) =
    NBody(VS.t, VS.c, nothing, VS.valN)
 
 
+# --------
+
+struct NBodyJson
+   id
+   t               # tuples M = #edges + 1
+   c               # coefficients
+   D               # Dictionary (or nothing)
+   N               # encodes that this is an N-body term
+end
+
+saveas_json(V::NBody{N}) where {N} =
+   NBodyJson("NBody", V.t, V.c, saveas(V.D), N)
+
+saveas_json(V::NBody{1}) =
+   NBodyJson("NBody", V.t, V.c, nothing, 1)
+
+function loadas_json(::Val{:NBody}, VS)
+   t = [ tuple(ti...) for ti in VS["t"] ]
+   c = Vector{Float64}(VS["c"])
+   N = VS["N"]
+   if N == 1
+      return NBody(t, c, nothing,Val(1))
+   end
+   D = loadas(DictionarySerializer(tuple(VS["D"]["s"]...)))
+   return NBody(t, c, D, Val(N))
+end
+
+
+
 # ---------------  evaluate the n-body terms ------------------
 
 # a tuple α = (α1, …, α6, α7) means the following:
@@ -585,36 +616,6 @@ poly_basis(N::Integer, strans::String, scut::String, deg; kwargs...) =
    poly_basis(N, Dictionary(strans, scut), deg; kwargs...)
 
 
-"""
-`regularise_2b(B, r0, r1; creg = 1e-2, Nquad = 20)`
-
-construct a regularising stabilising matrix that acts only on 2-body
-terms.
-
-* `B` : basis
-* `r0, r1` : upper and lower bound over which to integrate
-* `creg` : multiplier
-* `Nquad` : number of quadrature / sample points
-
-```
-   I = ∑_r h | ∑_j c_j ϕ_j''(r) |^2
-     = ∑_{i,j} c_i c_j  ∑_r h ϕ_i''(r) ϕ_j''(r)
-     = c' * M * c
-   M_ij = ∑_r h ϕ_i''(r) ϕ_j''(r) = h * Φ'' * Φ''
-   Φ''_ri = ϕ_i''(r)
-```
-"""
-function regularise_2b(B::Vector, r0, r1; creg = 1e-2, Nquad = 20)
-   I2 = find(bodyorder.(B) .== 2)
-   rr = linspace(r0, r1, Nquad)
-   Φ = zeros(Nquad, length(B))
-   h = (r1 - r0) / (Nquad-1)
-   for (ib, b) in zip(I2, B[I2]), (iq, r) in enumerate(rr)
-      Φ[iq, ib] = evaluate_dd(b, r) * sqrt(creg * h)
-   end
-   return Φ
-end
-
 # ---------------------- auxiliary type to
 
 
@@ -674,6 +675,7 @@ function evaluate_many_d!(temp, B::Vector{TB}, r::SVector{M, T}
 end
 
 
+include("poly_regularise.jl")
 
 
 end # module
