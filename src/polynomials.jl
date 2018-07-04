@@ -333,6 +333,8 @@ function degree(V::NBody)
    error("`degree` is only defined for `NBody` basis functions, length == 1")
 end
 
+degree(V::NBody{1}) = 0
+
 # This cannot be quite correct as I am implementing it here; it is probably
 #      correct only for the basic invariants that generate the rest
 # ispure(V::NBody) = (length(V) == 1) ? ispure(V.valN, V.t[1]) :
