@@ -75,13 +75,30 @@ SecMonPol
 
 M = Int(NBody*(NBody-1)/2)
 InvTup = NBodyIPs.gen_tuples(NBody,Deg)
+
+maxpower = zeros(Int,M,1)
+powersPrimInv = []
+for i=1:2
+    maxpower[i] = maximum(InvTup[j][i] for j=1:length(InvTup))
+    powersi = []
+    push!(powersi,PrimMonPol[i])
+    for j=1:maxpower[i]
+        @show j
+        # push!(powersi,power(PrimMonPol[i],j))
+        push!(powersi,PrimMonPol[i]*powersi[j])
+    end
+    push!(powersPrimInv,powersi)
+end
+maxpower
+
 InvMonPoly = CPolyMon{M}[]
 for i=1:length(InvTup)
     # initialization
     PMonTup = SecMonPol[InvTup[i][end]+1]
     for j=1:M
         if InvTup[i][j] > 0
-            PMonTup = PMonTup*power(PrimMonPol[j],InvTup[i][j])
+            PMonTup = PMonTup*powersPrimInv[j][InvTup[i][j]]
+            # power(PrimMonPol[j],InvTup[i][j])
         end
     end
     push!(InvMonPoly,PMonTup)
