@@ -6,8 +6,8 @@ include("inv_monomials.jl")
 
 # Parameters
 #TODO: check that prefix are the same as the ones in generate_invariants.sh
-NBody = 4;
-Deg = 4;
+NBody = 5;
+Deg = 10;
 prefsec = "SEC" #prefix for the secondaries
 prefirrsec = "IS" #prefix for the irreducible secondaries
 prefprim = "P" #prefix for the primaries
