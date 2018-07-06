@@ -78,7 +78,7 @@ InvTup = NBodyIPs.gen_tuples(NBody,Deg)
 
 maxpower = zeros(Int,M,1)
 powersPrimInv = []
-for i=1:2
+for i=1:M
     maxpower[i] = maximum(InvTup[j][i] for j=1:length(InvTup))
     powersi = []
     push!(powersi,PrimMonPol[i])
@@ -90,6 +90,7 @@ for i=1:2
     push!(powersPrimInv,powersi)
 end
 maxpower
+powersPrimInv
 
 InvMonPoly = CPolyMon{M}[]
 for i=1:length(InvTup)
