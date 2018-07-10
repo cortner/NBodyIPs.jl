@@ -476,11 +476,14 @@ end
 
 function evaluate_d(V::SPolyNBody, r::SVector{M, T}) where {M, T}
    D = V.D
-   I = vcat(invariants(D, r)...)   # TODO: combine into a single evaluation
-   dI = vcat(invariants_d(D, r)...)
+   # I = vcat(invariants(D, r)...)   # TODO: combine into a single evaluation
+   # dI = vcat(invariants_d(D, r)...)
+   I1, I2, dI1, dI2 = invariants_ed(D, r)
+   I = vcat(I1, I2)
+   dI = vcat(dI1, dI2)
    V, dV_dI = StaticPolynomials.evaluate_and_gradient(V.P, I)
    fc, fc_d = fcut_d(D, r)
-   return V * fc_d + fc * (dI' * dV_dI)
+   return V * fc_d + fc * dot(dI, dV_dI)  # (dI' * dV_dI)
 end
 
 
