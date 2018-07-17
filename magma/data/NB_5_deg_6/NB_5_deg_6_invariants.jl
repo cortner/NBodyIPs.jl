@@ -1,6 +1,11 @@
 using StaticArrays 
 using BenchmarkTools: @btime 
 
+include("fastpolys.jl") 
+using FastPolys 
+
+
+
 # Primary invariants for NBody=5and deg=6 
  # : definitions at the beginning of the file 
 const P1_1 = (1,2,3,4,5,6,7,8,9,10,) 

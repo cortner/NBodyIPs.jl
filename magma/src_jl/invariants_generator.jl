@@ -37,6 +37,17 @@ function generate_monomials(filename,NBlengths,Deg=10)
     return NB_inv,Monomials,Monomials_simple
 end
 
+
+function generate_inv_mon(filename,NBlengths,Deg=10)
+    NB_inv,Monomials,Monomials_simple = generate_monomials(filename,NBlengths,Deg)
+
+    coef_list = []
+    for j=1:NB_inv
+        push!(coef_list,1)
+    end
+    return Monomials, coef_list
+end
+
 function perm_2_indice(Perms)
    # convert a list of tuples into an array of indices with non-zero entries in reverse order. All the tuples should have the same number of nonzero entries.
    L = length(Perms);
@@ -60,6 +71,7 @@ function monomial_2_vec_exp(monomial)
     exponent = sort(monomial,rev=true)[1:perm_deg]
     return exponent, Vec_ind
 end
+
 
 
 function vec_exp_2_file(filename1,filename2,filename3,filename4,filename5,exponent,Vec_ind,prefix,number)

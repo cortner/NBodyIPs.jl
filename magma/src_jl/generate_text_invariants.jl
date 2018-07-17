@@ -2,11 +2,12 @@ using Combinatorics, StaticArrays
 
 include("invariants_generator.jl")
 include("misc.jl")
+include("inv_monomials.jl")
 
 # Parameters
 #TODO: check that prefix are the same as the ones in generate_invariants.sh
 NBody = 5;
-Deg = 8;
+Deg = 10;
 prefsec = "SEC" #prefix for the secondaries
 prefirrsec = "IS" #prefix for the irreducible secondaries
 prefprim = "P" #prefix for the primaries
@@ -18,12 +19,12 @@ NBlengths = Int(NBody*(NBody-1)/2);
 # Generate irreducible secondaries
 #
 # -------------------------------------------
-filenameirrsec1 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text1.jl";
-filenameirrsec2 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text2.jl";
-filenameirrsec3 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text3.jl";
-filenameirrsec4 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text4.jl";
-filenameirrsec5 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text5.jl";
-filenameirrsecdata = "magma/data/NB_$NBody""_deg_$Deg""/NB_$NBody"*"_deg_$Deg"*"_irr_invariants.jl";
+filenameirrsec1 = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text1.jl";
+filenameirrsec2 = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text2.jl";
+filenameirrsec3 = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text3.jl";
+filenameirrsec4 = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text4.jl";
+filenameirrsec5 = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text5.jl";
+filenameirrsecdata = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody""_deg_$Deg""/NB_$NBody"*"_deg_$Deg"*"_irr_invariants.jl";
 preword = "# Irreducible secondaries for NBody=$NBody"*"and deg=$Deg \n"
 
 NB_irrsec = countlines(filenameirrsecdata)
@@ -36,12 +37,12 @@ max_exp_irrsec = generate_invariants(filenameirrsecdata,filenameirrsec1,filename
 # Generate primary invariants
 #
 # -------------------------------------------
-filenameprim1 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text1.jl";
-filenameprim2 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text2.jl";
-filenameprim3 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text3.jl";
-filenameprim4 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text4.jl";
-filenameprim5 = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text5.jl";
-filenameprimdata = "magma/data/NB_$NBody""_deg_$Deg""/NB_$NBody"*"_deg_$Deg"*"_prim_invariants.jl";
+filenameprim1 = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text1.jl";
+filenameprim2 = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text2.jl";
+filenameprim3 = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text3.jl";
+filenameprim4 = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text4.jl";
+filenameprim5 = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text5.jl";
+filenameprimdata = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody""_deg_$Deg""/NB_$NBody"*"_deg_$Deg"*"_prim_invariants.jl";
 preword = "# Primary invariants for NBody=$NBody"*"and deg=$Deg \n"
 NB_prim = countlines(filenameprimdata)
 
@@ -51,14 +52,14 @@ max_exp_prim = generate_invariants(filenameprimdata,filenameprim1,filenameprim2,
 # Secondary invariants (relations with irreducible secondaries)
 #
 # -------------------------------------------
-filenamesec = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_relations_invariants.jl";
+filenamesec = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_relations_invariants.jl";
 NB_secondary = countlines(filenamesec);
 # -------------------------------------------
 #
 # Derivatives of secondary invariants (relations with irreducible secondaries)
 #
 # -------------------------------------------
-filenamesec_d = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_relations_invariants_derivatives.jl";
+filenamesec_d = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_relations_invariants_derivatives.jl";
 
 open(filenamesec_d, "w") do f
 end
@@ -95,13 +96,13 @@ end
 # Generate function with all invariants
 #
 # -------------------------------------------
-file = "magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_invariants.jl";
+file = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_invariants.jl";
 
 open(file, "w") do f
     write(f, "using StaticArrays \n")
     write(f, "using BenchmarkTools: @btime \n\n")
-    # write(f, "include(\"fastpolys.jl\") \n")
-    # write(f, "using FastPolys \n\n\n\n")
+    write(f, "include(\"fastpolys.jl\") \n")
+    write(f, "using FastPolys \n\n\n\n")
 
     # write the definition of the constant vectors
     prim1 = read(filenameprim1)
@@ -295,20 +296,17 @@ open(file, "w") do f
         write(f, "d", prefsec, "$i,")
     end
     write(f, "])\n end")
-
-
+end
 
 
 
 #Remove the temporary files
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text1.jl");
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text2.jl");
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text3.jl");
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text4.jl");
+rm(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text1.jl");
+rm(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text2.jl");
+rm(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text3.jl");
+rm(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_irr_sec_text4.jl");
 
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text1.jl");
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text2.jl");
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text3.jl");
-rm("magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text4.jl");
-
-end
+rm(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text1.jl");
+rm(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text2.jl");
+rm(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text3.jl");
+rm(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text4.jl");

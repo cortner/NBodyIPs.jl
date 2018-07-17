@@ -39,9 +39,9 @@ const cutsp_d = JuLIP.Potentials.fcut_d
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
-export NBody,
-       Dictionary,
-       poly_basis,
+export NBody, Dictionary,
+       gen_basis, poly_basis,
+       gen_tuples,
        @analytic
 
 
