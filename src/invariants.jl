@@ -276,16 +276,19 @@ end
 # in total 133 secondary of degree less than 9. That’s quite a lot. Some of
 # them have very long expressions.
 
-tdegrees(::Val{5}) =
-      (@SVector [ 1, 2, 2, 3, 3, 4, 4, 5, 5, 6 ]),
-      (@SVector [ 0,
-                  3, 3,
-                  4, 4, 4, 4, 4,
-                  5, 5, 5, 5, 5, 5, 5, 5,
-                  6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-                  7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7 ])
+# the tdegrees are now directly in the invariant file
+# tdegrees(::Val{5}) =
+#       (@SVector [ 1, 2, 2, 3, 3, 4, 4, 5, 5, 6 ]),
+#       (@SVector [ 0,
+#                   3, 3,
+#                   4, 4, 4, 4, 4,
+#                   5, 5, 5, 5, 5, 5, 5, 5,
+#                   6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+#                   7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7 ])
 
-include("../magma/data/NB_5_deg_7/NB_5_deg_7_invariants.jl")
+include("../magma/data/NB_5_deg_8/NB_5_deg_8_invariants.jl")
+
+
 @inline invariants(x::SVector{10}) = NB5I.invariants_gen(x)
 @inline invariants_d(x::SVector{10}) = NB5I.invariants_d_gen(x)
 @inline invariants_ed(x::SVector{10}) = NB5I.invariants_ed_gen(x)
