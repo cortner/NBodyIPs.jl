@@ -31,7 +31,7 @@ NB_irrsec = countlines(filenameirrsecdata)
 
 max_exp_irrsec = generate_invariants(filenameirrsecdata,filenameirrsec1,filenameirrsec2,filenameirrsec3,filenameirrsec4,filenameirrsec5,NBlengths,Deg,preword,prefirrsec)
 
-
+filename_deg = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_text_deg.jl";
 # -------------------------------------------
 #
 # Generate primary invariants
@@ -89,7 +89,83 @@ for i=2:length(line)
         end
     end
 end
+# -------------------------------------------
+#
+# Generate function with degrees of primary invariants and secondary
+#
+# -------------------------------------------
+Mon_prim, coef_list_prim, deg_prim = generate_inv_mon(filenameprimdata,NBlengths,Deg)
 
+Mon_irrsec, coef_list_irrsec = generate_inv_mon(filenameirrsecdata,NBlengths,Deg)
+
+# generate list of PolyMon for irreducible secondaries
+IrrSecMonPol = CPolyMon{NBlengths}[]
+for i=1:length(Mon_irrsec)
+    push!(IrrSecMonPol,CPolyMon(CMonList([mon_repr(SVector(Mon_irrsec[i]...))]),[coef_list_irrsec[i]]))
+end
+IrrSecMonPol
+
+
+SecMonPol = CPolyMon{NBlengths}[]
+
+fileI = open(filenamesec)
+line = readlines(fileI)
+# first line contains sec invariant =1, we remove it
+push!(SecMonPol,constpoly(NBlengths))
+for i=2:length(line)
+    part1,part2 = split(line[i], "=")
+    Part1 = replace(part1, prefsec, "")
+    @assert parse(Int64,Part1) == i
+    if contains(line[i], "*")
+        part2_1,part2_2 = split(part2, "*")
+        Part2_1 = replace(part2_1, prefirrsec, "")
+        Part2_2 = replace(part2_2, prefirrsec, "")
+        int1 = parse(Int64,Part2_1)
+        int2 = parse(Int64,Part2_2)
+
+        IrrSec1 = IrrSecMonPol[int1]
+        IrrSec2 = IrrSecMonPol[int2]
+        push!(SecMonPol,IrrSec1*IrrSec2)
+    else
+        Part2 = replace(part2, prefirrsec, "")
+        int = parse(Int64,Part2)
+        push!(SecMonPol,IrrSecMonPol[int])
+    end
+end
+Deg_sec = [];
+for i=1:length(SecMonPol)
+    push!(Deg_sec,deg_monlist(SecMonPol[i]))
+end
+Deg_sec
+
+
+PrimMonPol = CPolyMon{NBlengths}[]
+for i=1:length(Mon_prim)
+    push!(PrimMonPol,CPolyMon(CMonList([mon_repr(SVector(Mon_prim[i]...))]),[coef_list_prim[i]]))
+end
+PrimMonPol
+
+Deg_prim = [];
+for i=1:NB_prim
+    push!(Deg_prim,deg_monlist(PrimMonPol[i]))
+end
+Deg_prim
+
+open(filename_deg, "a") do f
+    write(f, "tdegrees(::Val{5}) =
+          (@SVector [");
+    for i=1:NB_prim
+        deg = Deg_prim[i]
+        write(f, "$deg, ")
+    end
+    write(f, "]),
+    (@SVector [");
+    for i=1:NB_secondary
+        deg = Deg_sec[i]
+        write(f, "$deg, ")
+    end
+    write(f, "])");
+end
 
 # -------------------------------------------
 #
@@ -104,17 +180,26 @@ open(file, "w") do f
     write(f, "include(\"fastpolys.jl\") \n")
     write(f, "using FastPolys \n\n\n\n")
 
+    #write the definition of the degrees of the invariants
+    degree_inv = open(io->read(io), filename_deg)
+    write(f, degree_inv)
+    write(f, "\n\n")
+
     # write the definition of the constant vectors
-    prim1 = read(filenameprim1)
+    prim1 = open(io->read(io), filenameprim1)
+    # read(filenameprim1)
     write(f, prim1)
-    irrsec1 = read(filenameirrsec1)
+    irrsec1 = open(io->read(io), filenameirrsec1)
+    # read(filenameirrsec1)
     write(f, irrsec1)
 
     # write the definitions of the types
     write(f, "\n")
-    prim2 = read(filenameprim2)
+    prim2 = open(io->read(io), filenameprim2)
+    # read(filenameprim2)
     write(f, prim2)
-    irrsec2 = read(filenameirrsec2)
+    irrsec2 = open(io->read(io), filenameirrsec2)
+    # read(filenameirrsec2)
     write(f, irrsec2)
 
     write(f, "\n\n")
@@ -134,7 +219,8 @@ open(file, "w") do f
     write(f, "   #------------------------------------------------\n")
 
     write(f, "\n")
-    prim3 = read(filenameprim3)
+    prim3 = open(io->read(io), filenameprim3)
+    # read(filenameprim3)
     write(f, prim3)
 
     # write the irreducible secondary invariants
@@ -143,7 +229,8 @@ open(file, "w") do f
     write(f, "   #------------------------------------------------\n")
 
     write(f, "\n\n")
-    irrsec3 = read(filenameirrsec3)
+    irrsec3 = open(io->read(io), filenameirrsec3)
+    # read(filenameirrsec3)
     write(f, irrsec3)
 
     # write all the secondary invariants
@@ -152,7 +239,8 @@ open(file, "w") do f
     write(f, "   #------------------------------------------------\n")
 
     write(f, "\n\n")
-    sec = read(filenamesec)
+    sec = open(io->read(io), filenamesec)
+    # read(filenamesec)
     write(f, sec)
 
     #write the return part
@@ -192,7 +280,8 @@ open(file, "w") do f
     write(f, "   #------------------------------------------------\n")
 
     write(f, "\n")
-    prim4 = read(filenameprim4)
+    prim4 = open(io->read(io), filenameprim4)
+    # read(filenameprim4)
     write(f, prim4)
 
     # write the irreducible secondary invariants
@@ -201,11 +290,13 @@ open(file, "w") do f
     write(f, "   #------------------------------------------------\n")
 
     write(f, "\n\n")
-    irrsec3 = read(filenameirrsec3)
+    irrsec3 = open(io->read(io), filenameirrsec3)
+    # read(filenameirrsec3)
     write(f, irrsec3)
 
     write(f, "\n\n")
-    irrsec4 = read(filenameirrsec4)
+    irrsec4 = open(io->read(io), filenameirrsec4)
+    # read(filenameirrsec4)
     write(f, irrsec4)
 
     # write all the secondary invariants
@@ -214,7 +305,8 @@ open(file, "w") do f
     write(f, "   #------------------------------------------------\n")
 
     write(f, "\n\n")
-    sec = read(filenamesec_d)
+    sec = open(io->read(io), filenamesec_d)
+    # read(filenamesec_d)
     write(f, sec)
 
     #write the return part
@@ -252,7 +344,8 @@ open(file, "w") do f
     write(f, "   #------------------------------------------------\n")
 
     write(f, "\n")
-    prim5 = read(filenameprim5)
+    prim5 = open(io->read(io), filenameprim5)
+    # read(filenameprim5)
     write(f, prim5)
 
     # write the irreducible secondary invariants
@@ -261,7 +354,8 @@ open(file, "w") do f
     write(f, "   #------------------------------------------------\n")
 
     write(f, "\n\n")
-    irrsec5 = read(filenameirrsec5)
+    irrsec5 = open(io->read(io), filenameirrsec5)
+    # read(filenameirrsec5)
     write(f, irrsec5)
 
     # write all the secondary invariants
@@ -270,11 +364,13 @@ open(file, "w") do f
     write(f, "   #------------------------------------------------\n")
 
     write(f, "\n\n")
-    sec = read(filenamesec)
+    sec = open(io->read(io), filenamesec)
+    # read(filenamesec)
     write(f, sec)
 
     write(f, "\n\n")
-    sec = read(filenamesec_d)
+    sec = open(io->read(io), filenamesec_d)
+    # read(filenamesec_d)
     write(f, sec)
 
     #write the return part
@@ -310,3 +406,4 @@ rm(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NB
 rm(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text2.jl");
 rm(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text3.jl");
 rm(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_prim_text4.jl");
+rm(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_text_deg.jl");

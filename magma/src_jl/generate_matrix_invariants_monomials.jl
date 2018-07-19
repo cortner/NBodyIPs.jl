@@ -8,7 +8,7 @@ include(homedir() * "/.julia/v0.6/NBodyIPs/magma/src_jl/inv_monomials.jl")
 
 # Generate monomials with weights: for primaries, irreducible secondaries, and secondaries
 NBody = 5;
-Deg = 10;
+Deg = 8;
 NBlengths = Int(NBody*(NBody-1)/2)
 
 filenameirrsecdata = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody""_deg_$Deg""/NB_$NBody"*"_deg_$Deg"*"_irr_invariants.jl";
@@ -33,7 +33,7 @@ end
 IrrSecMonPol
 
 # for primaries
-Mon_prim, coef_list_prim = generate_inv_mon(filenameprimdata,NBlengths,Deg)
+Mon_prim, coef_list_prim,deg_prim = generate_inv_mon(filenameprimdata,NBlengths,Deg)
 
 # generate list of PolyMon for primaries
 PrimMonPol = CPolyMon{NBlengths}[]
@@ -69,12 +69,17 @@ for i=2:length(line)
         push!(SecMonPol,IrrSecMonPol[int])
     end
 end
-SecMonPol
+mon_list = Mon(SecMonPol[2])[1]
+sum(mon_list)
 
+Mon(SecMonPol[4])
 
+deg_monlist(SecMonPol[4])
+sum(mon_list)
 
 M = Int(NBody*(NBody-1)/2)
 InvTup = NBodyIPs.gen_tuples(NBody,Deg)
+@show length(InvTup)
 
 maxpower = zeros(Int,M,1)
 powersPrimInv = []
@@ -83,7 +88,7 @@ for i=1:M
     powersi = []
     push!(powersi,PrimMonPol[i])
     for j=1:maxpower[i]
-        @show j
+        # @show j
         # push!(powersi,power(PrimMonPol[i],j))
         push!(powersi,PrimMonPol[i]*powersi[j])
     end
@@ -109,6 +114,7 @@ InvMonPoly
 
 MonBasis = Mon(generate_rep_mon(NBlengths,Deg))
 @assert length(InvTup) == length(MonBasis)
+
 
 M_basis_change = zeros(Float64,length(MonBasis),length(MonBasis))
 # express all inv_tuples in terms of monomials

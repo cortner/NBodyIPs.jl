@@ -1,7 +1,8 @@
-using Combinatorics, StaticArrays, NBodyIPs
+using Combinatorics, StaticArrays
+# , NBodyIPs
 include("../../src/misc.jl")
 include("invariants_generator.jl")
-include("../../src/polynomials.jl")
+# include("../../src/polynomials.jl")
 
 import Base: length, *
 
@@ -136,8 +137,8 @@ function compact(monomiallist::PolyMon{M}) where {M}
             push!(mon_list_out,mon_repr(mon_list[i]))
             push!(coef_list_out,coef_list[i])
         else
-            ind = find([mon_repr(mon_list[i]) == mon_repr(mon_list_out[j]) for j=1:length(mon_list_out)])
-            @assert coef_list[i] == coef_list_out[ind[1]]
+            # ind = find([mon_repr(mon_list[i]) == mon_repr(mon_list_out[j]) for j=1:length(mon_list_out)])
+            # @assert coef_list[i] == coef_list_out[ind[1]]
         end
     end
     return CPolyMon(CMonList(mon_list_out),coef_list_out)
@@ -159,6 +160,13 @@ function expand_mon(monomiallist::CPolyMon{M}) where {M}
         append!(coef_list_out,collect(Iterators.repeated(coef_list[i],length(USP))))
     end
     return PolyMon(MonList(mon_list_out),coef_list_out)
+end
+
+
+# Compute the expanded version of a compact list of monomials or polymon
+function deg_monlist(monomiallist::CPolyMon{M}) where {M}
+    mon = Mon(monomiallist)[1]
+    return sum(mon)
 end
 
 

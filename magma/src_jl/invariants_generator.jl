@@ -9,6 +9,7 @@ function generate_monomials(filename,NBlengths,Deg=10)
 
     Monomials = []; #indices with exponents
     Monomials_simple = []; #indices without exponents (all 1)
+    deg = [];
 
     file = open(filename)
     line = readlines(file)
@@ -31,21 +32,22 @@ function generate_monomials(filename,NBlengths,Deg=10)
                 end
             end
         end
+        push!(deg,sum(Mono_temp));
         push!(Monomials,Mono_temp);
         push!(Monomials_simple,Mono_sim_temp);
     end
-    return NB_inv,Monomials,Monomials_simple
+    return NB_inv,Monomials,Monomials_simple,deg
 end
 
 
 function generate_inv_mon(filename,NBlengths,Deg=10)
-    NB_inv,Monomials,Monomials_simple = generate_monomials(filename,NBlengths,Deg)
+    NB_inv,Monomials,Monomials_simple,deg = generate_monomials(filename,NBlengths,Deg)
 
     coef_list = []
     for j=1:NB_inv
         push!(coef_list,1)
     end
-    return Monomials, coef_list
+    return Monomials, coef_list, deg
 end
 
 function perm_2_indice(Perms)
