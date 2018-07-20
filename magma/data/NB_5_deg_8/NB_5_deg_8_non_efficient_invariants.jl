@@ -1325,5 +1325,3 @@ x[4]^3*x[10]^5 + x[7]^3*x[10]^5 + x[9]^3*x[10]^5
 return prim, v, pv
 
 end
-x = rand(10)
-display(invariants_Q10_check(x))

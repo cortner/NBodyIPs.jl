@@ -8,7 +8,7 @@ include(homedir() * "/.julia/v0.6/NBodyIPs/magma/src_jl/inv_monomials.jl")
 
 # Generate monomials with weights: for primaries, irreducible secondaries, and secondaries
 NBody = 5;
-Deg = 8;
+Deg = 10;
 NBlengths = Int(NBody*(NBody-1)/2)
 
 filenameirrsecdata = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody""_deg_$Deg""/NB_$NBody"*"_deg_$Deg"*"_irr_invariants.jl";
@@ -69,13 +69,6 @@ for i=2:length(line)
         push!(SecMonPol,IrrSecMonPol[int])
     end
 end
-mon_list = Mon(SecMonPol[2])[1]
-sum(mon_list)
-
-Mon(SecMonPol[4])
-
-deg_monlist(SecMonPol[4])
-sum(mon_list)
 
 M = Int(NBody*(NBody-1)/2)
 InvTup = NBodyIPs.gen_tuples(NBody,Deg)
