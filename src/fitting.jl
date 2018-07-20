@@ -27,9 +27,9 @@ kron(data, basis)
 LsqSys(data, basis)
 ```
 """
-mutable struct LsqSys
-   data::Vector{Dat}
-   basis::Vector{NBodyFunction}
+mutable struct LsqSys{TD, TB}
+   data::Vector{TD}
+   basis::Vector{TB}
    Iord::Vector{Vector{Int}}     # result of split_basis
    Ψ::Matrix{Float64}
 end
@@ -41,7 +41,7 @@ config_types(lsq::LsqSys) = unique(config_type.(lsq.data))
 """
 Take a basis and split it into individual body-orders.
 """
-function split_basis(basis::AbstractVector{TB}) where TB <: NBodyFunction
+function split_basis(basis::AbstractVector{TB}) where TB <: AbstractCalculator
    # get the types of the individual basis elements
    tps = typeof.(basis)
    Iord = Vector{Int}[]
@@ -109,7 +109,7 @@ end
 
 
 function kron(data::Vector{TD},  basis::Vector{TB}; verbose=true
-         ) where {TD <: Dat, TB <: NBodyFunction}
+         ) where {TD <: Dat, TB <: AbstractCalculator}
    # sort basis set into body-orders, and possibly different
    # types within the same body-order (e.g. for matching!)
    Bord, Iord = split_basis(basis)
@@ -157,6 +157,7 @@ function kron(data::Vector{TD},  basis::Vector{TB}; verbose=true
    end
 
    return LsqSys(data, basis, Iord, Ψ)
+   # return data, basis, Iord, Ψ
 end
 
 
@@ -180,7 +181,7 @@ function observations(d::Dat)
    return Y
 end
 
-function observations(data::AbstractVector{Dat})
+function observations(data::AbstractVector{TD}) where {TD <: Dat}
    Y = Float64[]
    for d in data
       append!(Y, observations(d))
@@ -331,24 +332,32 @@ end
 
 function hess_weights_hook!(w, d::Dat)
    at = Atoms(d)
-   if length(w) != 1 + 3 * length(at)
-      warn("unexpected length(w) in hess_weights_hook => ignore")
-      return w
-   end
-   # don't use this energy
-   w[1] = 0.0
+   if energy(d) == nothing || forces(d) == nothing
+      warn("""hess_weights_hook!: a training configuration does not contain
+              energy and forces => ignore""")
+     return w
+  end
    # compute R vectors
    X = positions(at)
-   h = norm(X[1])
-   if h < 1e-5 || h > 0.02
-      warn("unexpected location of X[1] in hess_weights_hook => ignore")
-      return w
-   end
-   X[1] *= 0
+   h = 0.01 # norm(X[1])
+   # if h < 1e-5 || h > 0.02
+   #    warn("unexpected location of X[1] in hess_weights_hook => ignore")
+   #    @show X[1], h
+   #    return w
+   # end
+
+   # give this energy a lot of weight to make sure we match the
+   # ground state (which we assume this is)
+   w[1] = 0.0
+
+   # now fix the scaling for the force weights
+   # X[1] *= 0
    R = [ JuLIP.project_min(at, x - X[1])  for x in X ]
    r = norm.(R)
    r3 = (ones(3) * r')[:]
-   w[2:end] .= w[2:end] .* (r3.^7) / h
+   If = 2:(1+3*length(R))
+   w[If] .= w[If] .* (r3.^7) / h
+   w[2] = 0.0
    return w
 end
 
@@ -453,7 +462,7 @@ function _get_lsq_system(lsq, weights, config_weights, include, Ibasis,
       # TODO: this should be generalised to be able to hook into
       #       other kinds of weight modifications
       idx_end = idx
-      if length(config_type(d)) >= 4 && config_type(d)[1:4] == "hess"
+      if w != 0 && length(config_type(d)) >= 4 && config_type(d)[1:4] == "hess"
          if haskey(hooks, "hess")
             w = hooks["hess"](W[idx_init:idx_end], d)
             W[idx_init:idx_end] = w
@@ -462,6 +471,10 @@ function _get_lsq_system(lsq, weights, config_weights, include, Ibasis,
    end
    # double-check we haven't made a mess :)
    @assert idx == length(W) == length(Y)
+
+   # remove NaNs
+   Irows = find( any(isnan.(lsq.Ψ[i,:])) for i = 1:size(lsq.Ψ, 1) )
+   W[Irows] .= 0.0
 
    # find the zeros and remove them => list of data points
    Idata = find(W .!= 0.0) |> sort
@@ -474,6 +487,7 @@ function _get_lsq_system(lsq, weights, config_weights, include, Ibasis,
    # now rescale Y and Ψ according to W => Y_W, Ψ_W; then the two systems
    #   \| Y_W - Ψ_W c \| -> min  and (Y - Ψ*c)^T W (Y - Ψ*x) => MIN
    # are equivalent
+
    W .= sqrt.(W)
    Y .*= W
    scale!(W, Ψ)
@@ -605,11 +619,13 @@ import FileIO: save
 
 struct XJld2 end
 struct XJson end
-
+struct XJld end
 
 function _checkextension(fname)
    if fname[end-3:end] == "jld2"
       return XJld2()
+   elseif fname[end-2:end] == "jld"
+      return XJld()
    elseif fname[end-3:end] == "json"
       return XJson()
    end
@@ -628,7 +644,17 @@ function save(fname::AbstractString, lsq::LsqSys)
    save(fname, lsqdict)
 end
 
-function load_lsq(fname)
+load_lsq(fname) = load_lsq(_checkextension(fname), fname)
+
+function load_lsq(::XJld, fname)
+   lsqdict = load(fname)
+   Ψ = lsqdict["Psi"]
+   data = lsqdict["data"]
+   basisgroups = lsqdict["basisgroups"]
+   return dict_to_lsq(Ψ, data, basisgroups)
+end
+
+function load_lsq(::XJld2, fname)
    _checkextension(fname)
    data = nothing
    basisgroups = nothing
@@ -648,9 +674,13 @@ function load_lsq(fname)
       basisgroups = f["basisgroups"]
       close(f)
    end
+   return dict_to_lsq(Ψ, data, basisgroups)
+end
+
+function dict_to_lsq(Ψ, data, basisgroups)
    # need to undo the lumping of the basis functions into a single NBody
    # and get a basis back
-   basis = NBodyFunction[]
+   basis = []
    Iord = Vector{Int}[]
    idx = 0
    for Bgrp in basisgroups

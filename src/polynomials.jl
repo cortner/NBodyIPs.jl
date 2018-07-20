@@ -31,7 +31,8 @@ import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
 import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!,
                  dictionary, match_dictionary, saveas, loadas,
                  recover_basis, degree,
-                 saveas_json, loadas_json
+                 saveas_json, loadas_json,
+                 combine_basis
 
 const cutsp = JuLIP.Potentials.fcut
 const cutsp_d = JuLIP.Potentials.fcut_d
@@ -240,7 +241,7 @@ end
 
 saveas(D::Dictionary) = ((D.s[1] != "" && D.s[2] != "")
          ? DictionarySerializer(D.s)
-         : error("cannot save this dictionary: s = $s"))
+         : error("cannot save this dictionary: s = $D.s"))
 
 loadas(D::DictionarySerializer) = Dictionary(D.s...)
 
@@ -321,6 +322,9 @@ function recover_basis(V::VT) where {VT <: NBody}
    return B
 end
 
+combine_basis(basis::AbstractVector{TV}, coeffs) where {TV <: NBody} =
+      NBody(basis, coeffs, basis[1].D)
+
 
 function degree(V::NBody)
    if length(V) == 1
@@ -329,7 +333,7 @@ function degree(V::NBody)
    error("`degree` is only defined for `NBody` basis functions, length == 1")
 end
 
-degree(V::NBody{1}) = 0 
+degree(V::NBody{1}) = 0
 
 # This cannot be quite correct as I am implementing it here; it is probably
 #      correct only for the basic invariants that generate the rest
@@ -472,11 +476,14 @@ end
 
 function evaluate_d(V::SPolyNBody, r::SVector{M, T}) where {M, T}
    D = V.D
-   I = vcat(invariants(D, r)...)   # TODO: combine into a single evaluation
-   dI = vcat(invariants_d(D, r)...)
+   # I = vcat(invariants(D, r)...)   # TODO: combine into a single evaluation
+   # dI = vcat(invariants_d(D, r)...)
+   I1, I2, dI1, dI2 = invariants_ed(D, r)
+   I = vcat(I1, I2)
+   dI = vcat(dI1, dI2)
    V, dV_dI = StaticPolynomials.evaluate_and_gradient(V.P, I)
    fc, fc_d = fcut_d(D, r)
-   return V * fc_d + fc * (dI' * dV_dI)
+   return V * fc_d + fc * dot(dI, dV_dI)  # (dI' * dV_dI)
 end
 
 
@@ -505,27 +512,6 @@ cutoff(V::SPolyNBody) = cutoff(V.D)
 fast(Vn::SPolyNBody)  = Vn
 fast(Vn::NBody) =  SPolyNBody(Vn)
 fast(Vn::NBody{1}) = Vn
-
-# ==================================================================
-#    construct an NBodyIP from a basis
-# ==================================================================
-
-
-function NBodyIP(basis, coeffs)
-   components = NBody[]
-   tps = typeof.(basis)
-   for tp in unique(tps)
-      # find all basis functions that have the same type, which in particular
-      # incorporated the body-order
-      Itp = find(tps .== tp)
-      # construct a new basis function by combining all of them in one
-      # (this assumes that we have NBody types)
-      D = basis[Itp[1]].D
-      V_N = NBody([b for b in basis[Itp]], coeffs[Itp], D)
-      push!(components, V_N)
-   end
-   return NBodyIP(components)
-end
 
 
 

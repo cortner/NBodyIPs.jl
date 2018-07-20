@@ -58,6 +58,12 @@ recover a basis from an NBodyFunction
 """
 function recover_basis end
 
+"""
+combine several basis functions into a single one
+"""
+function combine_basis end
+
+
 function saveas end
 function loadas end
 function saveas_json end
@@ -141,8 +147,8 @@ virial(V::NBodyFunction{1}, at::Atoms{T}) where {T} =
 
 TODO: `site_energies`, etc.
 """
-struct NBodyIP <: AbstractCalculator
-   orders::Vector{NBodyFunction}
+struct NBodyIP{TV} <: AbstractCalculator
+   orders::Vector{TV}
 end
 
 cutoff(V::NBodyIP) = maximum( cutoff.(V.orders) )
@@ -192,7 +198,28 @@ evaluate(V::NBodyFunction{3}, r1::Number, r2::Number, r3::Number) =
       evaluate(V, SVector(r1, r2, r3))
 
 
-# TODO: implement direct n-body access for NBodyIP
+
+
+# ==================================================================
+#    construct an NBodyIP from a basis
+# ==================================================================
+
+
+function NBodyIP(basis, coeffs)
+   components = []
+   tps = typeof.(basis)
+   for tp in unique(tps)
+      # find all basis functions that have the same type, which in particular
+      # incorporated the body-order
+      Itp = find(tps .== tp)
+      # construct a new basis function by combining all of them in one
+      # (this assumes that we have NBody types)
+      V_N = combine_basis([basis[Itp]...], coeffs[Itp])
+      push!(components, V_N)
+   end
+   return NBodyIP([components...])
+end
+
 
 
 # ========================= assembly support for LSQ system ====================
