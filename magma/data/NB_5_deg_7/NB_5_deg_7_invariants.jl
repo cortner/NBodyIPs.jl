@@ -1,14 +1,10 @@
+module NB5I
+
+using NBodyIPs.FastPolys
 using StaticArrays
 using BenchmarkTools: @btime
 
-# include("fastpolys.jl")
-# using FastPolys
-#
-#
-#
-tdegrees(::Val{5}) =
-          (@SVector [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, ]),
-    (@SVector [0, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, ])
+
 
 # Primary invariants for NBody=5and deg=7
  # : definitions at the beginning of the file
@@ -791,3 +787,5 @@ IS40, dIS40 = fpoly_ed((x4,x1,x1,x1,),(dx4,dx1,dx1,dx1,) , Main.IS40)
 
 return (@SVector [P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,]), (@SVector [SEC1,SEC2,SEC3,SEC4,SEC5,SEC6,SEC7,SEC8,SEC9,SEC10,SEC11,SEC12,SEC13,SEC14,SEC15,SEC16,SEC17,SEC18,SEC19,SEC20,SEC21,SEC22,SEC23,SEC24,SEC25,SEC26,SEC27,SEC28,SEC29,SEC30,SEC31,SEC32,SEC33,SEC34,SEC35,SEC36,SEC37,SEC38,SEC39,SEC40,SEC41,SEC42,SEC43,SEC44,SEC45,SEC46,SEC47,SEC48,SEC49,SEC50,SEC51,SEC52,SEC53,SEC54,]), (@SVector [dP1,dP2,dP3,dP4,dP5,dP6,dP7,dP8,dP9,dP10,]), (@SVector [dSEC1,dSEC2,dSEC3,dSEC4,dSEC5,dSEC6,dSEC7,dSEC8,dSEC9,dSEC10,dSEC11,dSEC12,dSEC13,dSEC14,dSEC15,dSEC16,dSEC17,dSEC18,dSEC19,dSEC20,dSEC21,dSEC22,dSEC23,dSEC24,dSEC25,dSEC26,dSEC27,dSEC28,dSEC29,dSEC30,dSEC31,dSEC32,dSEC33,dSEC34,dSEC35,dSEC36,dSEC37,dSEC38,dSEC39,dSEC40,dSEC41,dSEC42,dSEC43,dSEC44,dSEC45,dSEC46,dSEC47,dSEC48,dSEC49,dSEC50,dSEC51,dSEC52,dSEC53,dSEC54,])
  end
+
+end

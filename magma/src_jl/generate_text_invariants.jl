@@ -7,7 +7,7 @@ include("inv_monomials.jl")
 # Parameters
 #TODO: check that prefix are the same as the ones in generate_invariants.sh
 NBody = 5;
-Deg = 10;
+Deg = 7;
 prefsec = "SEC" #prefix for the secondaries
 prefirrsec = "IS" #prefix for the irreducible secondaries
 prefprim = "P" #prefix for the primaries
@@ -175,10 +175,12 @@ end
 file = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody"*"_deg_$Deg"*"/NB_$NBody"*"_deg_$Deg"*"_invariants.jl";
 
 open(file, "w") do f
+    write(f, "module NB5I \n\n")
+    write(f, "using NBodyIPs.FastPolys \n")
     write(f, "using StaticArrays \n")
     write(f, "using BenchmarkTools: @btime \n\n")
-    write(f, "include(\"fastpolys.jl\") \n")
-    write(f, "using FastPolys \n\n\n\n")
+    # write(f, "include(\"fastpolys.jl\") \n")
+    # write(f, "using FastPolys \n\n\n\n")
 
     #write the definition of the degrees of the invariants
     degree_inv = open(io->read(io), filename_deg)
@@ -391,7 +393,8 @@ open(file, "w") do f
     for i=1:NB_secondary
         write(f, "d", prefsec, "$i,")
     end
-    write(f, "])\n end")
+    write(f, "])\n end \n\n")
+    write(f, "end")
 end
 
 
