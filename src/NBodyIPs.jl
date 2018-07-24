@@ -1,28 +1,24 @@
 
+# TODO:
+#  - energy and forces for ASEAtoms ????
+
 """
 # `NBodyIPs.jl`
 
-Package for defining and fitting interatomic potentials based on the
-N-Body expansion (ANOVA, HDMR, ...). The main exported type is
-`NBodyIP` which is a `JuLIP` calculator.
+Package for specifying interatomic potentials based on the
+N-Body expansion (ANOVA, HDMR, ...).
 
-See `?...` on how to
-* `?NBodyIPs.Polys` : specify a polynomial basis set
-* `?NBodyIPs.Fitting` : fit an `NBodyIP`
-* `?NBodyIPs.Data` : load data sets
-* `?NBodyIPs.IO` : write and read an `NBodyIP`
+See `NBodyIPFitting` for the associated fitting and testing framework.
 """
 module NBodyIPs
 
 using Reexport
 
 @reexport using StaticArrays
-@reexport using FileIO
 @reexport using JuLIP
 
-
 # two auxiliary functions to make for easier assembly of the code
-# TODO: move these somewhere else
+# TODO: move these somewhere else, or better get rid of them
 push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
 append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
 
@@ -48,22 +44,5 @@ include("polynomials.jl")
 include("environ.jl")
 import NBodyIPs.EnvBLs: envbl_basis
 export envbl_basis
-
-# loading data
-include("data.jl")
-@reexport using NBodyIPs.Data
-
-# fitting from data (e.g., least squares)
-# TODO: make this a sub-module and re-export
-include("fitting.jl")
-
-include("errors.jl")
-
-# # IP i/o
-# include("io.jl")
-
-#visualisation module
-include("PIPplot.jl")
-@reexport using NBodyIPs.PIPplot
 
 end # module

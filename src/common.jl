@@ -1,8 +1,7 @@
 
-using StaticArrays, ForwardDiff
+using StaticArrays
 
 using JuLIP: AbstractCalculator, Atoms, neighbourlist, @D, JVec
-using ASE: ASEAtoms
 using NeighbourLists: nbodies, maptosites!, maptosites_d!, virial!, max_neigs
 
 
@@ -427,7 +426,7 @@ function evaluate(V::NBodyIP, r::SVector{N, T}) where {N, T}
    return v
 end
 
-energy(V::NBodyIP, at::ASEAtoms) = energy(V, Atoms(at))
-forces(V::NBodyIP, at::ASEAtoms) = forces(V, Atoms(at))
-virial(V::NBodyIP, at::ASEAtoms) = virial(V, Atoms(at))
-stress(V::NBodyIP, at::ASEAtoms) = stress(V, Atoms(at))
+# energy(V::NBodyIP, at::ASEAtoms) = energy(V, Atoms(at))
+# forces(V::NBodyIP, at::ASEAtoms) = forces(V, Atoms(at))
+# virial(V::NBodyIP, at::ASEAtoms) = virial(V, Atoms(at))
+# stress(V::NBodyIP, at::ASEAtoms) = stress(V, Atoms(at))
