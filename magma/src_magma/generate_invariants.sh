@@ -5,8 +5,8 @@
 # -------------------------------------------
 # Paramters
 # -------------------------------------------
-NBODY=5
-DEGREE=8 #maximal polynomial degree
+NBODY=3
+DEGREE=3 #maximal polynomial degree
 
 PREFSEC="SEC" #prefix for the secondary invariants
 PREFIRRSEC="IS" #prefix for the irreducible secondary invariants

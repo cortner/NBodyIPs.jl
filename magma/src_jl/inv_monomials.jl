@@ -182,32 +182,12 @@ function expand_mon(monomiallist::CMonList{M}) where {M}
 end
 
 
-# compute the product of 2 lists of monomials
-function *(PMon1::CPolyMon{M},PMon2::CPolyMon{M}) where {M}
-    # Exp_PMon1 = expand_mon(PMon1)
-    Exp_PMon2 = expand_mon(PMon2)
-    mon1_list = Mon(PMon1)
-    coef1_list = Coef(PMon1)
-    mon2_list = Mon(Exp_PMon2)
-    coef2_list = Coef(Exp_PMon2)
-
-    mon_list_out = SVector{M, Int}[]
-    coef_list_out = Int[]
-    for i=1:length(mon1_list)
-        for j=1:length(mon2_list)
-            push!(mon_list_out,mon1_list[i]+mon2_list[j])
-            push!(coef_list_out,coef1_list[i]*coef2_list[j])
-        end
-    end
-    return compact(PolyMon(MonList(mon_list_out),coef_list_out))
-end
-
 # # compute the product of 2 lists of monomials
 # function *(PMon1::CPolyMon{M},PMon2::CPolyMon{M}) where {M}
-#     Exp_PMon1 = expand_mon(PMon1)
+#     # Exp_PMon1 = expand_mon(PMon1)
 #     Exp_PMon2 = expand_mon(PMon2)
-#     mon1_list = Mon(Exp_PMon1)
-#     coef1_list = Coef(Exp_PMon1)
+#     mon1_list = Mon(PMon1)
+#     coef1_list = Coef(PMon1)
 #     mon2_list = Mon(Exp_PMon2)
 #     coef2_list = Coef(Exp_PMon2)
 #
@@ -221,6 +201,26 @@ end
 #     end
 #     return compact(PolyMon(MonList(mon_list_out),coef_list_out))
 # end
+
+# compute the product of 2 lists of monomials
+function *(PMon1::CPolyMon{M},PMon2::CPolyMon{M}) where {M}
+    Exp_PMon1 = expand_mon(PMon1)
+    Exp_PMon2 = expand_mon(PMon2)
+    mon1_list = Mon(Exp_PMon1)
+    coef1_list = Coef(Exp_PMon1)
+    mon2_list = Mon(Exp_PMon2)
+    coef2_list = Coef(Exp_PMon2)
+
+    mon_list_out = SVector{M, Int}[]
+    coef_list_out = Int[]
+    for i=1:length(mon1_list)
+        for j=1:length(mon2_list)
+            push!(mon_list_out,mon1_list[i]+mon2_list[j])
+            push!(coef_list_out,coef1_list[i]*coef2_list[j])
+        end
+    end
+    return compact(PolyMon(MonList(mon_list_out),coef_list_out))
+end
 
 function *(Mon1::PolyMon{M},PMon2::CPolyMon{M}) where {M}
     PMon1 = compact(Mon1)

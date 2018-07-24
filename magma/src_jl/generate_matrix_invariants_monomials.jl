@@ -7,8 +7,8 @@ include(homedir() * "/.julia/v0.6/NBodyIPs/magma/src_jl/misc.jl")
 include(homedir() * "/.julia/v0.6/NBodyIPs/magma/src_jl/inv_monomials.jl")
 
 # Generate monomials with weights: for primaries, irreducible secondaries, and secondaries
-NBody = 5;
-Deg = 10;
+NBody = 4;
+Deg = 12;
 NBlengths = Int(NBody*(NBody-1)/2)
 
 filenameirrsecdata = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody""_deg_$Deg""/NB_$NBody"*"_deg_$Deg"*"_irr_invariants.jl";
@@ -69,6 +69,7 @@ for i=2:length(line)
         push!(SecMonPol,IrrSecMonPol[int])
     end
 end
+SecMonPol
 
 M = Int(NBody*(NBody-1)/2)
 InvTup = NBodyIPs.gen_tuples(NBody,Deg)
@@ -80,7 +81,7 @@ for i=1:M
     maxpower[i] = maximum(InvTup[j][i] for j=1:length(InvTup))
     powersi = []
     push!(powersi,PrimMonPol[i])
-    for j=1:maxpower[i]
+    for j=1:(maxpower[i]-1)
         # @show j
         # push!(powersi,power(PrimMonPol[i],j))
         push!(powersi,PrimMonPol[i]*powersi[j])
@@ -106,6 +107,7 @@ end
 InvMonPoly
 
 MonBasis = Mon(generate_rep_mon(NBlengths,Deg))
+unique(MonBasis)
 @assert length(InvTup) == length(MonBasis)
 
 
@@ -126,8 +128,14 @@ end
 save(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody""_deg_$Deg""/NB_$NBody"*"_deg_$Deg"*"_basis_change.jld", "Mbasischange", M_basis_change, "NBody", NBody, "Deg", Deg)
 
 
-# M_basis_change
-#
-# cond(M_basis_change)
-#
-# M_basis_change^(-1)
+M_basis_change
+
+@show(cond(M_basis_change))
+
+@show(M_basis_change[end-2,:])
+
+M_basis_change^(-1)
+
+display(M_basis_change)
+
+det(M_basis_change)
