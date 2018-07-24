@@ -7,7 +7,7 @@ include("inv_monomials.jl")
 # Parameters
 #TODO: check that prefix are the same as the ones in generate_invariants.sh
 NBody = 5;
-Deg = 7;
+Deg = 8;
 prefsec = "SEC" #prefix for the secondaries
 prefirrsec = "IS" #prefix for the irreducible secondaries
 prefprim = "P" #prefix for the primaries
@@ -179,6 +179,7 @@ open(file, "w") do f
     write(f, "using NBodyIPs.FastPolys \n")
     write(f, "using StaticArrays \n")
     write(f, "using BenchmarkTools: @btime \n\n")
+    write(f, "import NBodyIPs.tdegrees \n\n")
     # write(f, "include(\"fastpolys.jl\") \n")
     # write(f, "using FastPolys \n\n\n\n")
 

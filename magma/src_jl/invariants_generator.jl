@@ -110,7 +110,7 @@ function vec_exp_2_file(filename1,filename2,filename3,filename4,filename5,expone
           expi = exponent[i];
           write(f, "x$expi,")
        end
-       write(f, ") , Main.", prefix, "$number", ") \n")
+       write(f, ") , NB5I.", prefix, "$number", ") \n")
     end
     open(filename4, "a") do f
        write(f, "d", prefix,  "$number", " = fpoly_d((")
@@ -123,7 +123,7 @@ function vec_exp_2_file(filename1,filename2,filename3,filename4,filename5,expone
           expi = exponent[i];
           write(f, "dx$expi,")
        end
-       write(f, ") , Main.", prefix, "$number", ") \n")
+       write(f, ") , NB5I.", prefix, "$number", ") \n")
     end
     open(filename5, "a") do f
       write(f, prefix,  "$number", ", d", prefix,  "$number", " = fpoly_ed((")
@@ -136,7 +136,7 @@ function vec_exp_2_file(filename1,filename2,filename3,filename4,filename5,expone
           expi = exponent[i];
           write(f, "dx$expi,")
       end
-      write(f, ") , Main.", prefix, "$number", ") \n")
+      write(f, ") , NB5I.", prefix, "$number", ") \n")
     end
 end
 
