@@ -7,8 +7,8 @@ include(homedir() * "/.julia/v0.6/NBodyIPs/magma/src_jl/misc.jl")
 include(homedir() * "/.julia/v0.6/NBodyIPs/magma/src_jl/inv_monomials.jl")
 
 # Generate monomials with weights: for primaries, irreducible secondaries, and secondaries
-NBody = 4;
-Deg = 12;
+NBody = 5;
+Deg = 8;
 NBlengths = Int(NBody*(NBody-1)/2)
 
 filenameirrsecdata = homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody""_deg_$Deg""/NB_$NBody"*"_deg_$Deg"*"_irr_invariants.jl";
@@ -128,14 +128,14 @@ end
 save(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/NB_$NBody""_deg_$Deg""/NB_$NBody"*"_deg_$Deg"*"_basis_change.jld", "Mbasischange", M_basis_change, "NBody", NBody, "Deg", Deg)
 
 
-M_basis_change
+# M_basis_change
 
 @show(cond(M_basis_change))
 
-@show(M_basis_change[end-2,:])
+# @show(M_basis_change[end-2,:])
 
-M_basis_change^(-1)
-
-display(M_basis_change)
-
-det(M_basis_change)
+# M_basis_change^(-1)
+#
+# # display(M_basis_change)
+#
+# det(M_basis_change)

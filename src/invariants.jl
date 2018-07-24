@@ -290,7 +290,7 @@ tdegrees(::Val{5}) =
           (@SVector [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, ]),
     (@SVector [0, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, ])
 
-include("../magma/data/NB_5_deg_8/NB_5_deg_8_invariants.jl")
+include("../magma/data/NB_5_deg_10/NB_5_deg_10_invariants.jl")
 
 
 @inline invariants(x::SVector{10}) = NB5I.invariants_gen(x)
