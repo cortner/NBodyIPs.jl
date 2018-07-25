@@ -2,6 +2,8 @@
 # TODO:
 #  - energy and forces for ASEAtoms ????
 
+__precompile__()
+
 """
 # `NBodyIPs.jl`
 

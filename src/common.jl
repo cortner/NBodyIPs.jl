@@ -430,3 +430,56 @@ end
 # forces(V::NBodyIP, at::ASEAtoms) = forces(V, Atoms(at))
 # virial(V::NBodyIP, at::ASEAtoms) = virial(V, Atoms(at))
 # stress(V::NBodyIP, at::ASEAtoms) = stress(V, Atoms(at))
+
+export save_ip, load_ip
+
+using FileIO: load
+import FileIO: save
+using JSON
+
+struct XJld2 end
+struct XJson end
+struct XJld end
+
+function _checkextension(fname)
+   if fname[end-3:end] == "jld2"
+      return XJld2()
+   elseif fname[end-2:end] == "jld"
+      return XJld()
+   elseif fname[end-3:end] == "json"
+      return XJson()
+   end
+   error("the filename should end in `jld2`")
+end
+
+
+save(fname::AbstractString, IP::NBodyIP) =
+   save_ip(_checkextension(fname), fname, IP)
+
+load_ip(fname::AbstractString) =
+   load_ip(_checkextension(fname), fname)
+
+save_ip(::XJld2, fname, IP) = save(fname, "IP", saveas(IP))
+
+function load_ip(::XJld2, fname)
+   IPs = nothing
+   try
+      IPs = load(fname, "IP")
+   catch
+      IPs = load(fname, "IP")
+   end
+   return loadas(IPs)
+end
+
+
+function save_ip(::XJson, fname, IP)
+   IPs = saveas_json(IP)
+   f = open(fname, "w")
+   print(f, JSON.json(IPs))
+   close(f)
+end
+
+function load_ip(::XJson, fname)
+   IPj = JSON.parsefile(fname)
+   return loadas_json(NBodyIP, IPj)
+end
