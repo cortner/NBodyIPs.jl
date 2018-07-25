@@ -4,7 +4,7 @@ using StaticArrays
 using JuLIP: AbstractCalculator, Atoms, neighbourlist, @D, JVec
 using NeighbourLists: nbodies, maptosites!, maptosites_d!, virial!, max_neigs
 
-
+import Base:Dict
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd
 import JuLIP: cutoff, energy, forces, site_energies, virial, stress
 
@@ -15,9 +15,7 @@ export NBodyIP,
        match_dictionary,
        rdf, idf,
        recover_basis,
-       degree,
-       saveas, loadas
-
+       degree
 
 """
 `NBodyFunction` : abstract supertype of all "pure" N-body functions.
@@ -61,12 +59,6 @@ function recover_basis end
 combine several basis functions into a single one
 """
 function combine_basis end
-
-
-function saveas end
-function loadas end
-function saveas_json end
-function loadas_json end
 
 include("eval_nbody.jl")
 
@@ -155,28 +147,6 @@ energy(V::NBodyIP, at::Atoms) = sum( energy(Vn, at)  for Vn in V.orders )
 forces(V::NBodyIP, at::Atoms) = sum( forces(Vn, at)  for Vn in V.orders )
 virial(V::NBodyIP, at::Atoms) = sum( virial(Vn, at)  for Vn in V.orders )
 
-
-struct NBodyIPSerializer
-   orders
-end
-saveas(IP::NBodyIP) = NBodyIPSerializer(saveas.(IP.orders))
-loadas(::Type{NBodyIP}, IP::NBodyIPSerializer) = loadas(IP)
-loadas(IPs::NBodyIPSerializer) = NBodyIP(loadas.(IPs.orders))
-
-saveas_json(IP::NBodyIP) = saveas_json.(IP.orders)
-
-function loadas_json(::Type{NBodyIP}, IPj::AbstractVector)
-   orders = NBodyFunction[]
-   for Vj in IPj
-      id = Vj["id"]
-      V = loadas_json(Val(Symbol(id)), Vj)
-      push!(orders, V)
-   end
-   return NBodyIP(orders)
-end
-
-
-
 """
 turn a potentially slow representation of an IP into a fast one,
 by switching to a different representation.
@@ -184,7 +154,7 @@ by switching to a different representation.
 fast(IP::NBodyIP) = NBodyIP( fast.(IP.orders) )
 
 
-# some simplified access functions
+# ----------------- some simplified access functions ------------------
 
 evaluate(V::NBodyFunction{2}, r::Number) = evaluate(V, SVector(r))
 
@@ -426,10 +396,10 @@ function evaluate(V::NBodyIP, r::SVector{N, T}) where {N, T}
    return v
 end
 
-# energy(V::NBodyIP, at::ASEAtoms) = energy(V, Atoms(at))
-# forces(V::NBodyIP, at::ASEAtoms) = forces(V, Atoms(at))
-# virial(V::NBodyIP, at::ASEAtoms) = virial(V, Atoms(at))
-# stress(V::NBodyIP, at::ASEAtoms) = stress(V, Atoms(at))
+
+# ------------------ IO of NBodyIPs ---------------
+# -------------- Serialising and deserialising ---------------
+# TODO: Move to IO submodule
 
 export save_ip, load_ip
 
@@ -440,6 +410,11 @@ using JSON
 struct XJld2 end
 struct XJson end
 struct XJld end
+
+Dict(IP::NBodyIP) = Dict("id" => "NBodyIPs.NBodyIP",
+                         "orders" => Dict.(IP.orders))
+
+NBodyIP(D::Dict) = NBodyIP(_decode_dict.(D["orders"]))
 
 function _checkextension(fname)
    if fname[end-3:end] == "jld2"
@@ -452,34 +427,32 @@ function _checkextension(fname)
    error("the filename should end in `jld2`")
 end
 
-
 save(fname::AbstractString, IP::NBodyIP) =
    save_ip(_checkextension(fname), fname, IP)
 
 load_ip(fname::AbstractString) =
    load_ip(_checkextension(fname), fname)
 
-save_ip(::XJld2, fname, IP) = save(fname, "IP", saveas(IP))
+save_ip(::Union{XJld2, XJld}, fname, IP) = save(fname, "IP", Dict(IP))
 
-function load_ip(::XJld2, fname)
+function load_ip(::Union{XJld2, XJld}, fname)
    IPs = nothing
    try
       IPs = load(fname, "IP")
    catch
       IPs = load(fname, "IP")
    end
-   return loadas(IPs)
+   return NBodyIP(IPs)
 end
 
-
 function save_ip(::XJson, fname, IP)
-   IPs = saveas_json(IP)
    f = open(fname, "w")
-   print(f, JSON.json(IPs))
+   print(f, JSON.json(Dict(IP)))
    close(f)
 end
 
 function load_ip(::XJson, fname)
    IPj = JSON.parsefile(fname)
-   return loadas_json(NBodyIP, IPj)
+   @assert IPj["id"] == "NBodyIPs.NBodyIP"
+   return NBodyIP(IPj)
 end

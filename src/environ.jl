@@ -13,8 +13,6 @@ import JuLIP: cutoff, energy, forces, virial
 
 import NBodyIPs: NBodyIP, bodyorder, fast,
                  evaluate_many!, evaluate_many_d!,
-                 saveas, loadas,
-                 saveas_json, loadas_json,
                  combine_basis, recover_basis
 
 export envbl_basis
@@ -101,22 +99,18 @@ function Base.info(B::Vector{T}; indent = 2) where T <: EnvBL
    info([ b.Vr for b in B ], indent = indent+2)
 end
 
-# ----------------------- JLD2 functionality ------------
-
-struct EnvBLSerialiser
-   t
-   Vr
-   str_Vn
-   cutoff_Vn
-end
-
-saveas(V::EnvBL) =
-   EnvBLSerialiser(V.t, saveas(V.Vr), V.str_Vn, cutoff(V.Vn))
-
-loadas(Vs::EnvBLSerialiser) =
-   EnvBL(Vs.t, loadas(Vs.Vr), Vs.str_Vn, Vs.cutoff_Vn)
+# ----------------------- Load / Save functionality ------------
 
 
+Base.Dict(V::EnvBL) =
+   Dict("id" => "NBodyIPs.EnvBLs.EnvBL",
+         "t" => V.t
+         "Vr" => Dict(V.Vr)
+         "str_Vn" => V.str_Vn
+         "cutoff_Vn" => cutoff(V.Vn) )
+
+EnvBL(D::Dict) =
+      EnvBL(D["t"], _decode_dict(D["Vr"]), D["str_Vn"], D["cutoff_Vn"])
 
 
 # =============== Assembly =================

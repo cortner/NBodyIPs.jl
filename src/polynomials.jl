@@ -29,9 +29,8 @@ import Base: length
 import JuLIP: cutoff, energy, forces
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
 import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!,
-                 dictionary, match_dictionary, saveas, loadas,
+                 dictionary, match_dictionary,
                  recover_basis, degree,
-                 saveas_json, loadas_json,
                  combine_basis
 
 const cutsp = JuLIP.Potentials.fcut
@@ -235,15 +234,13 @@ function fcut_analyse(args::Tuple)
    end
 end
 
-struct DictionarySerializer
-   s::Tuple{String, String}
-end
 
-saveas(D::Dictionary) = ((D.s[1] != "" && D.s[2] != "")
-         ? DictionarySerializer(D.s)
-         : error("cannot save this dictionary: s = $D.s"))
+# ------------ Saving and Load Dictionaries
 
-loadas(D::DictionarySerializer) = Dictionary(D.s...)
+Dict(D::Dictionary) =
+   Dict( "id" => "NBodyIPs.Polys.Dictionary", "s" => D.s )
+
+Dictionary(D::Dict) = Dictionary(D["s"]...)
 
 
 # ==================================================================
@@ -361,44 +358,19 @@ struct NBodySerializer{N}
    valN::Val{N}               # encodes that this is an N-body term
 end
 
-saveas(V::NBody) =
-   NBodySerializer(V.t, V.c, saveas(V.D), V.valN)
+Dict(V::NBody{N}) =
+   Dict("id" => "NBodyIPs.Polys.NBody",
+        "t" => V.t, "c" => V.c, "D" => Dict(V.D), "N" => N)
 
-loadas(VS::NBodySerializer) =
-   NBody(VS.t, VS.c, loadas(VS.D), VS.valN)
-
-saveas(V::NBody{1}) =
-   NBodySerializer(V.t, V.c, nothing, V.valN)
-
-loadas(VS::NBodySerializer{1}) =
-   NBody(VS.t, VS.c, nothing, VS.valN)
-
-
-# --------
-
-struct NBodyJson
-   id
-   t               # tuples M = #edges + 1
-   c               # coefficients
-   D               # Dictionary (or nothing)
-   N               # encodes that this is an N-body term
-end
-
-saveas_json(V::NBody{N}) where {N} =
-   NBodyJson("NBody", V.t, V.c, saveas(V.D), N)
-
-saveas_json(V::NBody{1}) =
-   NBodyJson("NBody", V.t, V.c, nothing, 1)
-
-function loadas_json(::Val{:NBody}, VS)
-   t = [ tuple(ti...) for ti in VS["t"] ]
-   c = Vector{Float64}(VS["c"])
-   N = VS["N"]
+function NBody(D::Dict)
+   N = D["N"]
+   t = [ tuple(ti...) for ti in D["t"] ]
+   c = Vector{Float64}(D["c"])
    if N == 1
-      return NBody(t, c, nothing,Val(1))
+      return NBody(D["t"], D["c"], nothing, Val(1))
+   else
+      return NBody(D["t"], D["c"], Dictionary(D["D"]), Val(N))
    end
-   D = loadas(DictionarySerializer(tuple(VS["D"]["s"]...)))
-   return NBody(t, c, D, Val(N))
 end
 
 
