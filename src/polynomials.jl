@@ -18,7 +18,7 @@ The exported symbols are
 module Polys
 
 using Reexport
-import StaticPolynomials
+import StaticPolynomials, NBodyIPs
 
 using JuLIP, NeighbourLists, StaticArrays
 using JuLIP.Potentials: cutsw, cutsw_d, coscut, coscut_d
@@ -528,7 +528,7 @@ Note that `M = K-1` where `K` is the tuple length while
 """
 function tdegree(α)
    K = length(α)
-   degs1, degs2 = tdegrees(Val(edges2bo(K-1)))
+   degs1, degs2 = NBodyIPs.tdegrees(Val(edges2bo(K-1)))
    # primary invariants
    d = sum(α[j] * degs1[j] for j = 1:K-1)
    # secondary invariants
@@ -557,7 +557,7 @@ gen_tuples(N, deg; purify = false,
 
 function gen_tuples(vN::Val{N}, vK::Val{K}, deg, purify, tuplebound) where {N, K}
    A = Tup{K}[]
-   degs1, degs2 = tdegrees(vN)
+   degs1, degs2 = NBodyIPs.tdegrees(vN)
 
    α = @MVector zeros(Int, K)
    α[1] = 1
