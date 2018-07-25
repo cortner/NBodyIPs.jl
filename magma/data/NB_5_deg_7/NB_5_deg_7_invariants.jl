@@ -4,7 +4,6 @@ module NB5I
 using NBodyIPs.FastPolys
 
 using StaticArrays
-using BenchmarkTools: @btime
 
 
 
@@ -580,7 +579,7 @@ dIS40 = fpoly_d((x4,x1,x1,x1,),(dx4,dx1,dx1,dx1,) , NB5I.IS40)
  dSEC53  = dIS39
  dSEC54  = dIS40
 
-return (@SVector [dP1,dP2,dP3,dP4,dP5,dP6,dP7,dP8,dP9,dP10,]), 
+return (@SVector [dP1,dP2,dP3,dP4,dP5,dP6,dP7,dP8,dP9,dP10,]),
        (@SVector [dSEC1,dSEC2,dSEC3,dSEC4,dSEC5,dSEC6,dSEC7,dSEC8,dSEC9,dSEC10,dSEC11,dSEC12,dSEC13,dSEC14,dSEC15,dSEC16,dSEC17,dSEC18,dSEC19,dSEC20,dSEC21,dSEC22,dSEC23,dSEC24,dSEC25,dSEC26,dSEC27,dSEC28,dSEC29,dSEC30,dSEC31,dSEC32,dSEC33,dSEC34,dSEC35,dSEC36,dSEC37,dSEC38,dSEC39,dSEC40,dSEC41,dSEC42,dSEC43,dSEC44,dSEC45,dSEC46,dSEC47,dSEC48,dSEC49,dSEC50,dSEC51,dSEC52,dSEC53,dSEC54,])
 
  end
