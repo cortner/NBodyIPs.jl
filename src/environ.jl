@@ -9,6 +9,8 @@ using NBodyIPs.Polys: Dictionary, NBody, poly_basis
 
 abstract type EnvBLFunction{N} <: AbstractCalculator end
 
+import Base: Dict
+
 import JuLIP: cutoff, energy, forces, virial
 
 import NBodyIPs: NBodyIP, bodyorder, fast,
@@ -103,15 +105,16 @@ end
 
 
 Base.Dict(V::EnvBL) =
-   Dict("id" => "NBodyIPs.EnvBLs.EnvBL",
-         "t" => V.t
-         "Vr" => Dict(V.Vr)
-         "str_Vn" => V.str_Vn
+   Dict("id" => "EnvBL",
+         "t" => V.t,
+         "Vr" => Dict(V.Vr),
+         "str_Vn" => V.str_Vn,
          "cutoff_Vn" => cutoff(V.Vn) )
 
 EnvBL(D::Dict) =
       EnvBL(D["t"], _decode_dict(D["Vr"]), D["str_Vn"], D["cutoff_Vn"])
 
+Base.convert(::Val{:EnvBL}, D::Dict) = EnvBL(D)
 
 # =============== Assembly =================
 

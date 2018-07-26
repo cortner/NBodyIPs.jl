@@ -25,7 +25,7 @@ using JuLIP.Potentials: cutsw, cutsw_d, coscut, coscut_d
 using NBodyIPs: NBodyFunction
 using NBodyIPs.FastPolys: fpoly, fpoly_d
 
-import Base: length
+import Base: length, Dict
 import JuLIP: cutoff, energy, forces
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
 import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!,
@@ -237,11 +237,10 @@ end
 
 # ------------ Saving and Load Dictionaries
 
-Dict(D::Dictionary) =
-   Dict( "id" => "NBodyIPs.Polys.Dictionary", "s" => D.s )
+Dict(D::Dictionary) = Dict( "id" => "Dictionary", "s" => D.s )
 
 Dictionary(D::Dict) = Dictionary(D["s"]...)
-
+Base.convert(::Val{:Dictionary}, D::Dict) = Dictionary(D)
 
 # ==================================================================
 #           Polynomials of Invariants
@@ -348,18 +347,11 @@ function Base.info(B::Vector{T}; indent = 2) where T <: NBody
    end
 end
 
-# -------------- Infrastructure to read/write NBody using JLD2 --------
-# TODO: write tests
+# -------------- Infrastructure to read/write NBody  --------
 
-struct NBodySerializer{N}
-   t               # tuples M = #edges + 1
-   c               # coefficients
-   D       # Dictionary (or nothing)
-   valN::Val{N}               # encodes that this is an N-body term
-end
 
-Dict(V::NBody{N}) =
-   Dict("id" => "NBodyIPs.Polys.NBody",
+Dict(V::NBody{N}) where {N} =
+   Dict("id" => "NBody",
         "t" => V.t, "c" => V.c, "D" => Dict(V.D), "N" => N)
 
 function NBody(D::Dict)
@@ -373,6 +365,7 @@ function NBody(D::Dict)
    end
 end
 
+Base.convert(::Val{:NBody}, D::Dict) = NBody(D)
 
 
 # ---------------  evaluate the n-body terms ------------------

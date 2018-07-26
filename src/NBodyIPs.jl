@@ -24,7 +24,8 @@ using Reexport
 push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
 append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
 
-_decode_dict(D::Dict) = eval(parse(D["id"]))(D)
+_decode_dict(D::Dict) = convert(Val(Symbol(D["id"])), D)
+
 
 
 include("fastpolys.jl")

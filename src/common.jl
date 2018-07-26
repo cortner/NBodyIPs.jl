@@ -411,10 +411,11 @@ struct XJld2 end
 struct XJson end
 struct XJld end
 
-Dict(IP::NBodyIP) = Dict("id" => "NBodyIPs.NBodyIP",
+Dict(IP::NBodyIP) = Dict("id" => "NBodyIP",
                          "orders" => Dict.(IP.orders))
 
 NBodyIP(D::Dict) = NBodyIP(_decode_dict.(D["orders"]))
+Base.convert(::Val{:NBodyIP}, D::Dict) = NBodyIP(D)
 
 function _checkextension(fname)
    if fname[end-3:end] == "jld2"
