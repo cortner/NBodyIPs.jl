@@ -101,6 +101,8 @@ function Base.info(B::Vector{T}; indent = 2) where T <: EnvBL
    info([ b.Vr for b in B ], indent = indent+2)
 end
 
+fast(V::EnvBL) = EnvBL(V.t, fast(V.Vr), V.Vn, V.str_Vn)
+
 # ----------------------- JLD2 functionality ------------
 
 struct EnvBLSerialiser
