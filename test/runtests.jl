@@ -1,6 +1,5 @@
 using NBodyIPs
 using JuLIP, Base.Test, StaticArrays
-using BenchmarkTools
 
 @testset "NBodyIPs" begin
    # TODO: monomials testset

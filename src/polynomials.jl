@@ -25,7 +25,7 @@ using JuLIP.Potentials: cutsw, cutsw_d, coscut, coscut_d
 using NBodyIPs: NBodyFunction
 using NBodyIPs.FastPolys: fpoly, fpoly_d
 
-import Base: length, Dict
+import Base: length, Dict, ==
 import JuLIP: cutoff, energy, forces
 import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
 import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!,
@@ -55,6 +55,12 @@ export NBody, Dictionary,
    s::Tuple{String,String}    # string to serialise it
 end
 
+function ==(D1::Dictionary, D2::Dictionary)
+   if D1.s[1] == "" || D1.s[2] == ""
+      error("Cannot compare `Dictionary`s without identifying strings")
+   end
+   return (D1.s == D2.s)
+end
 
 # generated functions for fast evaluation of monomials
 include("fast_monomials.jl")
@@ -253,6 +259,9 @@ Base.convert(::Val{:Dictionary}, D::Dict) = Dictionary(D)
    D::TD                      # Dictionary (or nothing)
    valN::Val{N}               # encodes that this is an N-body term
 end
+
+==(V1::NBody, V2::NBody) = ( (V1.t == V2.t) && (V1.c == V2.c) && (V1.D == V2.D) )
+
 
 """
 `struct NBody`  (N-Body Basis Function)
