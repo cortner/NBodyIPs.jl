@@ -146,7 +146,7 @@ Nquad(::Val{3}) = 1000
 Nquad(::Val{4}) = 10_000
 
 """
-regularise(N, B,
+`regularise(N, B, r0, r1; kwargs...)`
 
 * `N::Integer` : body order
 * `B::Vector` : basis
