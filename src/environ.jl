@@ -130,9 +130,17 @@ function cutoff(V::EnvBLFunction)
    return cutoff(Vr(V::EnvBL))
 end
 
-n_fun(V::EnvBL, n) = n^V.t
+n_fun(V::EnvBL, n) = (V.t == 0) ? 1.0 : n^V.t
 
-n_fun_d(V::EnvBL, n) = V.t * n^(V.t-1)
+function n_fun_d(V::EnvBL, n)
+   if V.t == 0
+      return 0.0
+   elseif V.t == 1
+      return 1.0
+   else
+      return V.t * n^(V.t-1)
+   end
+end
 
 site_ns(V::EnvBL, at) = n_fun.(V, site_energies(Vn(V), at))
 
