@@ -25,6 +25,7 @@ K := RationalField();
 // G := PermutationGroup<6| (2,3,1)(5,6,4)>; //4B
 GROUP_DEF;
 // G := PermutationGroup<10 | (2,3)(5,6)(10,9), (2,3,4)(5,6,7)(8,10,9), (1,3,4,2)(5,6,10,9)(7,8)>; //5B
+
 //Define the invariant ring
 R := InvariantRing(G, K);
 R;
@@ -50,6 +51,16 @@ printf "prim_inv_tot_degree_begin\n";
 [TotalDegree(R0[i]): i in [1..#R0]];
 printf "prim_inv_tot_degree_end\n";
 
+printf "prim_inv_mon_begin\n";
+for i:=1 to #R0 do
+  printf "prim[";
+  printf IntegerToString(i);
+  printf "]=";
+  LeadingMonomial(R0[i]);
+  printf "\n";
+end for;
+printf "prim_inv_mon_end\n";
+
 
 R2 := IrreducibleSecondaryInvariants(R);
 
@@ -71,6 +82,17 @@ printf "irr_sec_degrees_begin\n";
 [TotalDegree(R2[i]): i in [1..#R2]];
 printf "irr_sec_degrees_end\n";
 
+
+printf "irrsec_inv_mon_begin\n";
+for i:=1 to #R2 do
+  printf "pv[";
+  printf IntegerToString(i);
+  printf "]=";
+  LeadingMonomial(R2[i]);
+  printf "\n";
+end for;
+printf "irrsec_inv_mon_end\n";
+
 // F := FundamentalInvariants(R);
 // F;
 // [TotalDegree(F[i]): i in [1..#F]];
@@ -82,9 +104,9 @@ A, Q := Algebra(R);
 A;
 printf "inv_relations_begin\n";
 for i:=1 to #Q do
-  printf "SEC";
+  printf "v[";
   printf IntegerToString(i);
-  printf " = ";
+  printf "] = ";
   Q[i];
 end for;
 printf "inv_relations_end\n";
@@ -99,6 +121,9 @@ printf "nb_secondaries_end\n";
 printf "degrees_secondaries_begin\n";
 [TotalDegree(R1[i]): i in [1..#R1]];
 printf "degrees_secondaries_end\n";
+
+
+
 
 
 // // printf " Nbody group where N="*IntegerToString(nbody)*"\n";
