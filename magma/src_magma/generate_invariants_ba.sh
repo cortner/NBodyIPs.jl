@@ -23,10 +23,10 @@ PREFIRRSEC="IS" #prefix for the irreducible secondary invariants
 #Define the file names used later and print out their names
 filename_log="log.txt"
 # filename_log="NB_$NBODY""_deg_$DEGREE""_log.txt"
-fn_jl_check="NB_$NBODY""_deg_$DEGREE""_non_efficient_invariants.jl"
-fn_jl_irr_inv="NB_$NBODY""_deg_$DEGREE""_irr_invariants.jl"
-fn_jl_prim_inv="NB_$NBODY""_deg_$DEGREE""_prim_invariants.jl"
-fn_jl_sec_rel_inv="NB_$NBODY""_deg_$DEGREE""_relations_invariants.jl"
+fn_jl_check="$GROUP_NAME""_non_efficient_invariants.jl"
+fn_jl_irr_inv="$GROUP_NAME""_irr_invariants.jl"
+fn_jl_prim_inv="$GROUP_NAME""_prim_invariants.jl"
+fn_jl_sec_rel_inv="$GROUP_NAME""_relations_invariants.jl"
 
 ECHO Output files:
 
@@ -46,8 +46,6 @@ cp Nbody_inv_auto_generation_ba.m Nbody_run.m;
 ECHO $GROUP_DEF
 
 sed -i -e "s/GROUP_DEF/$GROUP_DEF/g" Nbody_run.m;
-# sed -i -e "s/DEGREE/$DEGREE/g" Nbody_run.m;
-# sed -i -e "s/NBODY/$NBODY/g" Nbody_run.m;
 
 # #connect to galois and copy the input files
 # # scp pack_opt_primaries.m dusson@galois.warwick.ac.uk: ;
@@ -63,19 +61,51 @@ sed -i -e "s/GROUP_DEF/$GROUP_DEF/g" Nbody_run.m;
 #
 # #copy the output on the local machine
 # scp dusson@galois.warwick.ac.uk:logNbody_output.txt .;
-
+#
 # # change the name of the output file
 # mv logNbody_output.txt $filename_log
 
 # Generate julia file with function computing primary and secondary invariants (not efficient but hopefully correct)
 # Pick lines with primaries, irreducible secondaries and secondaries
 cp $filename_log $fn_jl_check
-# remove things that are not secondaries or primaries
-sed -i '' '/v\[1\]/,$!d' $fn_jl_check
-sed -i '' '/Total/d' $fn_jl_check
+# remove things that are not secondaries or primaries or relations between secondaries and irreducible secondaries
+gsed -i '0,/^primary_invariants_begin$/d' $fn_jl_check
+gsed -i '/^primary_invariants_end$/,/^irreducible_sec_invariants_begin$/d' $fn_jl_check
+gsed -i '/^irreducible_sec_invariants_end$/,/^inv_relations_begin$/d' $fn_jl_check
+gsed -i '/^inv_relations_end$/,$d' $fn_jl_check
+
+#get number of primaries
+NBprimaries=$(gsed '0,/^nb_primary_invariants_begin/d;/^nb_primary_invariants_end/,$d' $filename_log)
+ECHO "Nb of primaries="$NBprimaries
+
+#get number of irreducible secondaries
+NBirrsec=$(gsed '0,/^nb_irr_sec_invariants_begin/d;/^nb_irr_sec_invariants_end/,$d' $filename_log)
+ECHO "Nb of irreducible secondaries="$NBirrsec
+
+#get number of secondaries
+NBsec=$(gsed '0,/^nb_secondaries_begin/d;/^nb_secondaries_end/,$d' $filename_log)
+ECHO "Nb of secondaries="$NBsec
+
+
+#get degrees of primaries
+Degprimaries=$(gsed '0,/^prim_inv_tot_degree_begin/d;/^prim_inv_tot_degree_end/,$d' $filename_log)
+ECHO "Degrees of primaries="$Degprimaries
+
+#get number of irreducible secondaries
+Degirrsec=$(gsed '0,/^irr_sec_degrees_begin/d;/^irr_sec_degrees_end/,$d' $filename_log)
+ECHO "Degrees of irreducible secondaries="$Degirrsec
+
+#get number of secondaries
+Degsec=$(gsed '0,/^degrees_secondaries_begin/d;/^degrees_secondaries_end/,$d' $filename_log)
+ECHO "Degrees of secondaries="$Degsec
+
+
+
+
+
 #
 # # remove line with number of secondaries
-# TEMPVAR=$(grep "Nb_secondary_invariants" $fn_jl_check)
+# TEMPVAR=$(grep "nb_primary_invariants_begin" $fn_jl_check)
 # NBsecondaries=${TEMPVAR#*=}
 # #print number of secondaries
 # ECHO "Nb of secondaries="$NBsecondaries

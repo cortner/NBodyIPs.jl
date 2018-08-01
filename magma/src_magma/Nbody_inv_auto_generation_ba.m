@@ -46,13 +46,10 @@ end for;
 printf "primary_invariants_end\n";
 
 printf "prim_inv_tot_degree_begin\n";
-printf "degree_prim=";
+// printf "degree_prim=";
 [TotalDegree(R0[i]): i in [1..#R0]];
 printf "prim_inv_tot_degree_end\n";
 
-// R1 := SecondaryInvariants(R);
-// R1;
-// [TotalDegree(R1[i]): i in [1..#R1]];
 
 R2 := IrreducibleSecondaryInvariants(R);
 
@@ -92,6 +89,16 @@ for i:=1 to #Q do
 end for;
 printf "inv_relations_end\n";
 
+
+R1 := SecondaryInvariants(R);
+
+printf "nb_secondaries_begin\n";
+#Q;
+printf "nb_secondaries_end\n";
+
+printf "degrees_secondaries_begin\n";
+[TotalDegree(R1[i]): i in [1..#R1]];
+printf "degrees_secondaries_end\n";
 
 
 // // printf " Nbody group where N="*IntegerToString(nbody)*"\n";
