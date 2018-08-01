@@ -11,7 +11,7 @@ GROUP_NAME="BA_5B"
 PREFSEC="SEC" #prefix for the secondary invariants
 PREFIRRSEC="IS" #prefix for the irreducible secondary invariants
 
-MAGMA_RUN=1
+MAGMA_RUN=0
 
 #------------------------------------------------------------
 #Move files in data folder and delete useless files
@@ -167,6 +167,9 @@ cp $filename_log $fn_jl_prim_inv
 
 gsed -i '0,/^prim_inv_mon_list_begin/d;/^prim_inv_mon_list_end/,$d' $fn_jl_prim_inv
 
+echo "prim = Vector{Vector{Int64}}($NBprimaries)" | cat - $fn_jl_prim_inv > temp && mv temp $fn_jl_prim_inv
+
+
 
 #------------------------------------------------------------
 #Generate a file with only monomials of irreducible secondaries
@@ -177,6 +180,9 @@ cp $filename_log $fn_jl_irr_inv
 # gsed -i '0,/^irrsec_inv_mon_begin/d;/^irrsec_inv_mon_end/,$d' $fn_jl_irr_inv
 
 gsed -i '0,/^irrsec_mon_list_begin/d;/^irrsec_mon_list_end/,$d' $fn_jl_irr_inv
+
+echo "pv = Vector{Vector{Int64}}($NBirrsec)" | cat - $fn_jl_irr_inv > temp && mv temp $fn_jl_irr_inv
+
 
 #------------------------------------------------------------
 #Generate a file with relations between irreducible and secondary invariants
