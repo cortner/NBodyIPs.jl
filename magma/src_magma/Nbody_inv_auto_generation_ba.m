@@ -72,17 +72,6 @@ printf "prim_inv_tot_degree_begin\n";
 [TotalDegree(R0[i]): i in [1..#R0]];
 printf "prim_inv_tot_degree_end\n";
 
-// printf "prim_inv_mon_begin\n";
-// for i:=1 to #R0 do
-//   printf "prim[";
-//   printf IntegerToString(i);
-//   printf "]=";
-//   LeadingMonomial(R0[i]);
-//   printf "\n";
-// end for;
-// printf "prim_inv_mon_end\n";
-
-
 // Computation of irreducible secondary invariants
 R2 := IrreducibleSecondaryInvariants(R);
 
@@ -118,16 +107,6 @@ printf "irr_sec_degrees_begin\n";
 [TotalDegree(R2[i]): i in [1..#R2]];
 printf "irr_sec_degrees_end\n";
 
-
-// printf "irrsec_inv_mon_begin\n";
-// for i:=1 to #R2 do
-//   printf "pv[";
-//   printf IntegerToString(i);
-//   printf "]=";
-//   LeadingMonomial(R2[i]);
-//   printf "\n";
-// end for;
-// printf "irrsec_inv_mon_end\n";
 
 // Compute and write relations between irreducible secondaries and all secondaries
 A, Q := Algebra(R);
