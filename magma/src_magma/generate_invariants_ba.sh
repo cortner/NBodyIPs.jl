@@ -11,7 +11,7 @@ GROUP_NAME="BA_5B"
 PREFSEC="SEC" #prefix for the secondary invariants
 PREFIRRSEC="IS" #prefix for the irreducible secondary invariants
 
-MAGMA_RUN=0
+MAGMA_RUN=1
 
 #------------------------------------------------------------
 #Move files in data folder and delete useless files
@@ -155,7 +155,18 @@ gsed -i '$!N;s/\n\s*+/ +/;P;D' $fn_jl_check
 echo "generating file with monomials of primaries"
 
 cp $filename_log $fn_jl_prim_inv
-gsed -i '0,/^prim_inv_mon_begin/d;/^prim_inv_mon_end/,$d' $fn_jl_prim_inv
+
+# gsed -i '0,/^prim_inv_mon_begin/d;/^prim_inv_mon_end/,$d' $fn_jl_prim_inv
+#
+# ECHO "replacing variables for the primaries"
+# for a in `seq $(($NBprimaries)) -1 1`; do
+# 		OLD="x$a" ;
+# 		NEW="x\[$a\]" ;
+# 		sed -i '' "s/$OLD/$NEW/g" $fn_jl_prim_inv
+# done
+
+gsed -i '0,/^prim_inv_mon_list_begin/d;/^prim_inv_mon_list_end/,$d' $fn_jl_prim_inv
+
 
 #------------------------------------------------------------
 #Generate a file with only monomials of irreducible secondaries
@@ -163,7 +174,9 @@ gsed -i '0,/^prim_inv_mon_begin/d;/^prim_inv_mon_end/,$d' $fn_jl_prim_inv
 echo "generating file with monomials of irreducible secondaries"
 
 cp $filename_log $fn_jl_irr_inv
-gsed -i '0,/^irrsec_inv_mon_begin/d;/^irrsec_inv_mon_end/,$d' $fn_jl_irr_inv
+# gsed -i '0,/^irrsec_inv_mon_begin/d;/^irrsec_inv_mon_end/,$d' $fn_jl_irr_inv
+
+gsed -i '0,/^irrsec_mon_list_begin/d;/^irrsec_mon_list_end/,$d' $fn_jl_irr_inv
 
 #------------------------------------------------------------
 #Generate a file with relations between irreducible and secondary invariants

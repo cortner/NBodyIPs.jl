@@ -61,6 +61,17 @@ for i:=1 to #R0 do
 end for;
 printf "primary_invariants_end\n";
 
+
+printf "prim_inv_mon_list_begin\n";
+for i:=1 to #R0 do
+  printf "prim[";
+  printf IntegerToString(i);
+  printf "]=";
+  Exponents(LeadingMonomial(R0[i]));
+  printf "\n";
+end for;
+printf "prim_inv_mon_list_end\n";
+
 printf "prim_inv_tot_degree_begin\n";
 // printf "degree_prim=";
 [TotalDegree(R0[i]): i in [1..#R0]];
@@ -92,6 +103,16 @@ for i:=1 to #R2 do
   printf "\n";
 end for;
 printf "irreducible_sec_invariants_end\n";
+
+printf "irrsec_mon_list_begin\n";
+for i:=1 to #R2 do
+  printf "pv[";
+  printf IntegerToString(i);
+  printf "]=";
+  Exponents(LeadingMonomial(R2[i]));
+  printf "\n";
+end for;
+printf "irrsec_mon_list_end\n";
 
 printf "irr_sec_degrees_begin\n";
 [TotalDegree(R2[i]): i in [1..#R2]];
