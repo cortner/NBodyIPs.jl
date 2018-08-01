@@ -150,7 +150,7 @@ done
 gsed -i '$!N;s/\n\s*+/ +/;P;D' $fn_jl_check
 
 #------------------------------------------------------------
-#Generate a file with only monomials of primaries
+#Generate a file with only monomials of primaries and degrees
 #------------------------------------------------------------
 echo "generating file with monomials of primaries"
 
@@ -169,10 +169,14 @@ gsed -i '0,/^prim_inv_mon_list_begin/d;/^prim_inv_mon_list_end/,$d' $fn_jl_prim_
 
 echo "prim = Vector{Vector{Int64}}($NBprimaries)" | cat - $fn_jl_prim_inv > temp && mv temp $fn_jl_prim_inv
 
+echo "prim_deg = $Degprimaries" | cat - $fn_jl_prim_inv > temp && mv temp $fn_jl_prim_inv
+
+
+
 
 
 #------------------------------------------------------------
-#Generate a file with only monomials of irreducible secondaries
+#Generate a file with only monomials of irreducible secondaries and degrees
 #------------------------------------------------------------
 echo "generating file with monomials of irreducible secondaries"
 
@@ -182,6 +186,8 @@ cp $filename_log $fn_jl_irr_inv
 gsed -i '0,/^irrsec_mon_list_begin/d;/^irrsec_mon_list_end/,$d' $fn_jl_irr_inv
 
 echo "pv = Vector{Vector{Int64}}($NBirrsec)" | cat - $fn_jl_irr_inv > temp && mv temp $fn_jl_irr_inv
+
+echo "irrsec_deg = $Degirrsec" | cat - $fn_jl_irr_inv > temp && mv temp $fn_jl_irr_inv
 
 
 #------------------------------------------------------------
