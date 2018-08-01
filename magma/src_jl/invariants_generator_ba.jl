@@ -1,5 +1,5 @@
-using Combinatorics, StaticArrays
-include("misc.jl")
+# using Combinatorics, StaticArrays
+# include("misc.jl")
 
 
 # function generate_monomials(filename,NBvar)
@@ -49,6 +49,10 @@ include("misc.jl")
 #     return Monomials, coef_list, deg
 # end
 
+function generate_filename(filename)
+   return filename*"1.jl",filename*"2.jl",filename*"3.jl",filename*"4.jl",filename*"5.jl"
+end
+
 function perm_2_indice(Perms)
    # convert a list of tuples into an array of indices with non-zero entries in reverse order. All the tuples should have the same number of nonzero entries.
    L = length(Perms);
@@ -75,7 +79,8 @@ end
 
 
 
-function vec_exp_2_file(filename1,filename2,filename3,filename4,filename5,exponent,Vec_ind,prefix,number)
+function vec_exp_2_file(filename,exponent,Vec_ind,prefix,number)
+   filename1,filename2,filename3,filename4,filename5 = generate_filename(filename)
    # generate different files with parts of the invariants in them.
    nb_vec = size(Vec_ind,2);
     # filename1: write the definition of the vectors
@@ -140,16 +145,19 @@ function vec_exp_2_file(filename1,filename2,filename3,filename4,filename5,expone
 end
 
 
-function monomial_2_file(filename1,filename2,filename3,filename4,filename5,monomial,prefix,number)
+function monomial_2_file(filename,monomial,prefix,number)
    exponent, Vec_ind = monomial_2_vec_exp(monomial)
-   vec_exp_2_file(filename1,filename2,filename3,filename4,filename5,exponent,Vec_ind,prefix,number)
+   vec_exp_2_file(filename,exponent,Vec_ind,prefix,number)
    return exponent
 end
 
 
-function generate_invariants(filenamedata,filename1,filename2,filename3,filename4,filename5,NBvar,Deg,preword,prefix)
+function generate_invariants(filenamedata,filename,preword,prefix,Monomials)
+   filename1,filename2,filename3,filename4,filename5 = generate_filename(filename)
+
+   NB_inv = length(Monomials)
     max_exp = 1;
-    (NB_inv,Monomials,Monomials_simple) = generate_monomials(filenamedata,NBvar,Deg)
+    # (NB_inv,Monomials,Monomials_simple) = generate_monomials(filenamedata,NBvar,Deg)
     open(filename1, "w") do f
       write(f, preword, " # : definitions at the beginning of the file \n")
     end
@@ -167,7 +175,7 @@ function generate_invariants(filenamedata,filename1,filename2,filename3,filename
     end
     for j=1:NB_inv
        monomial = SVector(Monomials[j]...);
-       exponent = monomial_2_file(filename1,filename2,filename3,filename4,filename5,monomial,prefix,j)
+       exponent = monomial_2_file(filename,monomial,prefix,j)
        max_exp_temp = maximum(exponent)
        if max_exp_temp > max_exp
           max_exp = max_exp_temp
