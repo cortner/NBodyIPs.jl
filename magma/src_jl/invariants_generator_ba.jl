@@ -1,60 +1,13 @@
-# using Combinatorics, StaticArrays
-# include("misc.jl")
+# Functions used to generate the function for the invariants and their derivatives
 
 
-# function generate_monomials(filename,NBvar)
-#    #generate leading monomials as a tuple from a choosen file
-#     NB_inv = countlines(filename); #nb of invariants
-#
-#     Monomials = []; #indices with exponents
-#     Monomials_simple = []; #indices without exponents (all 1)
-#     deg = [];
-#
-#     file = open(filename)
-#     line = readlines(file)
-#
-#     for i=1:length(line)
-#         Mono_temp = 0*Vector{Int64}(NBvar)
-#         Mono_sim_temp = 0*Vector{Int64}(NBvar)
-#         for j=1:NBvar
-#             if contains(line[i], "x[$j]")
-#                 if contains(line[i], "x[$j]^")
-#                         Mono_sim_temp[j] = 1
-#                         if contains(line[i], "x[$j]^$k")
-#                             Mono_temp[j] = k
-#
-#                         end
-#                     end
-#                 else
-#                     Mono_temp[j] = 1
-#                     Mono_sim_temp[j] = 1
-#                 end
-#             end
-#         end
-#         push!(deg,sum(Mono_temp));
-#         push!(Monomials,Mono_temp);
-#         push!(Monomials_simple,Mono_sim_temp);
-#     end
-#     return NB_inv,Monomials,Monomials_simple,deg
-# end
-
-
-# function generate_inv_mon(filename,NBvar,Deg=10)
-#     NB_inv,Monomials,Monomials_simple,deg = generate_monomials(filename,NBvar,Deg)
-#
-#     coef_list = []
-#     for j=1:NB_inv
-#         push!(coef_list,1)
-#     end
-#     return Monomials, coef_list, deg
-# end
 
 function generate_filename(filename)
    return filename*"1.jl",filename*"2.jl",filename*"3.jl",filename*"4.jl",filename*"5.jl"
 end
 
 function perm_2_indice(Perms)
-   # convert a list of tuples into an array of indices with non-zero entries in reverse order. All the tuples should have the same number of nonzero entries.
+   # convert a list of tuples (monomials) into an array of indices with non-zero entries in reverse order. All the tuples should have the same number of nonzero entries.
    L = length(Perms);
    deg = length(find(Perms[1]));
    M = length(Perms[1]);
@@ -146,6 +99,7 @@ end
 
 
 function monomial_2_file(filename,monomial,prefix,number)
+   # writing in the different files for one given monomial
    exponent, Vec_ind = monomial_2_vec_exp(monomial)
    vec_exp_2_file(filename,exponent,Vec_ind,prefix,number)
    return exponent
@@ -153,11 +107,12 @@ end
 
 
 function generate_invariants(filenamedata,filename,preword,prefix,Monomials)
+   # writing in the different files for a vector of monomials
    filename1,filename2,filename3,filename4,filename5 = generate_filename(filename)
 
    NB_inv = length(Monomials)
     max_exp = 1;
-    # (NB_inv,Monomials,Monomials_simple) = generate_monomials(filenamedata,NBvar,Deg)
+
     open(filename1, "w") do f
       write(f, preword, " # : definitions at the beginning of the file \n")
     end

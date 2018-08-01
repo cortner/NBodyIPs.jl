@@ -1,8 +1,6 @@
 using Combinatorics, StaticArrays, Calculus
 
 include("invariants_generator_ba.jl")
-# include("misc.jl")
-# include("inv_monomials.jl")
 
 
 # Parameters
@@ -11,6 +9,8 @@ GROUP_NAME="BA_5B"
 prefsec = "SEC" #prefix for the secondaries
 prefirrsec = "IS" #prefix for the irreducible secondaries
 prefprim = "P" #prefix for the primaries
+
+#TODO: include degrees of invariants
 # --------------
 
 include(homedir() * "/.julia/v0.6/NBodyIPs/magma/data/"*GROUP_NAME*"/"*GROUP_NAME*"_prim_invariants.jl")
@@ -33,6 +33,7 @@ preword = "# Irreducible secondaries for group "*GROUP_NAME*"\n"
 
 max_exp_irrsec = generate_invariants(filenameirrsecdata,filenameirrsec,preword,prefirrsec,pv)
 
+#Nb of irreducible secondary invariants
 NBirrsec = length(pv)
 # -------------------------------------------
 #
@@ -45,6 +46,7 @@ preword = "# Primary invariants for "*GROUP_NAME*"  \n"
 
 max_exp_prim = generate_invariants(filenameprimdata,filenameprim,preword,prefprim,prim)
 
+#Nb of primary invariants
 NBprim = length(prim)
 # -------------------------------------------
 #
@@ -180,7 +182,8 @@ end
 #     end
 #     write(f, "])");
 # end
-#
+
+
 # -------------------------------------------
 #
 # Generate function with all invariants
