@@ -1,32 +1,31 @@
 #!/bin/bash
 
-# Script generating files containing primary and secondary invariants for N-body terms up to a given degree
+# Script generating files containing primary and secondary invariants for a given group
 
 # -------------------------------------------
-# Paramters
+# Parameters
 # -------------------------------------------
-# NBODY=4
-# DEGREE=10 #maximal polynomial degree
-GROUP_DEF="G := PermutationGroup<10 | (2,3)(5,6)(10,9), (2,3,4)(5,6,7)(8,10,9), (1,3,4,2)(5,6,10,9)(7,8)>"
+GROUP_DEF="PermutationGroup<10 | (2,3)(5,6)(10,9), (2,3,4)(5,6,7)(8,10,9), (1,3,4,2)(5,6,10,9)(7,8)>"
 GROUP_NAME="BA_5B"
 
 PREFSEC="SEC" #prefix for the secondary invariants
 PREFIRRSEC="IS" #prefix for the irreducible secondary invariants
 
-# NBlengths=$((($NBODY*($NBODY-1))/2))
-#
-# # printing the parameters
-# ECHO Nbody order= $NBODY
-# ECHO Nb of lengths= $NBlengths
-# ECHO Polynomial degree= $DEGREE
+MAGMA_RUN=0
+
+#------------------------------------------------------------
+#Move files in data folder and delete useless files
+#------------------------------------------------------------
+# create directory
+mkdir -p ../data/$GROUP_NAME
 
 #Define the file names used later and print out their names
-filename_log="log.txt"
-# filename_log="NB_$NBODY""_deg_$DEGREE""_log.txt"
-fn_jl_check="$GROUP_NAME""_non_efficient_invariants.jl"
-fn_jl_irr_inv="$GROUP_NAME""_irr_invariants.jl"
-fn_jl_prim_inv="$GROUP_NAME""_prim_invariants.jl"
-fn_jl_sec_rel_inv="$GROUP_NAME""_relations_invariants.jl"
+filename_log="../data/$GROUP_NAME/log.txt"
+fn_jl_check="../data/$GROUP_NAME/$GROUP_NAME""_non_efficient_invariants.jl"
+fn_jl_irr_inv="../data/$GROUP_NAME/$GROUP_NAME""_irr_invariants.jl"
+fn_jl_prim_inv="../data/$GROUP_NAME/$GROUP_NAME""_prim_invariants.jl"
+fn_jl_sec_rel_inv="../data/$GROUP_NAME/$GROUP_NAME""_relations_invariants.jl"
+fn_jl_group_elts="../data/$GROUP_NAME/$GROUP_NAME""_group_elements.jl"
 
 ECHO Output files:
 
@@ -35,36 +34,41 @@ ECHO $fn_jl_check
 ECHO $fn_jl_irr_inv
 ECHO $fn_jl_prim_inv
 ECHO $fn_jl_sec_rel_inv
+ECHO $fn_jl_group_elts
 
+# -------------------------------------------
+# Run of the Magma computation
+# -------------------------------------------
+if [ $MAGMA_RUN -eq 1 ]
+then
+#put the paramters into the input file
+cp Nbody_inv_auto_generation_ba.m Nbody_run.m;
 
-# # -------------------------------------------
-# # Run of the Magma computation
-# # -------------------------------------------
-# #put the paramters into the input file
-# cp Nbody_inv_auto_generation_ba.m Nbody_run.m;
-#
-# ECHO $GROUP_DEF
-#
-# sed -i -e "s/GROUP_DEF/$GROUP_DEF/g" Nbody_run.m;
-#
-# #connect to galois and copy the input files
-# # scp pack_opt_primaries.m dusson@galois.warwick.ac.uk: ;
-# scp Nbody_run.m dusson@galois.warwick.ac.uk: ;
-#
-# #run the magma computation
-# ssh dusson@galois.warwick.ac.uk << EOF
-# magma Nbody_run.m
-# EOF
-#
-# #remove now useless file
-# rm Nbody_run.m;
-#
-# #copy the output on the local machine
-# scp dusson@galois.warwick.ac.uk:logNbody_output.txt .;
-#
-# # change the name of the output file
-# mv logNbody_output.txt $filename_log
+ECHO $GROUP_DEF
 
+sed -i -e "s/GROUP_DEF/$GROUP_DEF/g" Nbody_run.m;
+
+#connect to galois and copy the input files
+# scp pack_opt_primaries.m dusson@galois.warwick.ac.uk: ;
+scp Nbody_run.m dusson@galois.warwick.ac.uk: ;
+
+#run the magma computation
+ssh dusson@galois.warwick.ac.uk << EOF
+magma Nbody_run.m
+EOF
+
+#remove now useless file
+rm Nbody_run.m;
+
+#copy the output on the local machine
+scp dusson@galois.warwick.ac.uk:logNbody_output.txt .;
+
+# change the name of the output file
+mv logNbody_output.txt $filename_log
+
+#Remove useless file
+rm NBody_run.m-e
+fi
 
 
 #------------------------------------------------------------
@@ -173,17 +177,17 @@ sed -i '' "s/v\[/$PREFSEC/g" $fn_jl_sec_rel_inv
 sed -i '' "s/\]/ /g" $fn_jl_sec_rel_inv
 
 #------------------------------------------------------------
-#Move files in data folder and delete useless files
+#Generate a file with group elements
 #------------------------------------------------------------
-# create directory
-mkdir -p ../data/$GROUP_NAME
+#get number of elements in the group
+NB_elts=$(gsed '0,/^nb_group_elements_begin/d;/^nb_group_elements_end/,$d' $filename_log)
+ECHO "Number of elements="$NB_elts
 
-#move all files to the data folder
-mv $filename_log ../data/$GROUP_NAME/$filename_log
-mv $fn_jl_check ../data/$GROUP_NAME/$fn_jl_check
-mv $fn_jl_irr_inv ../data/$GROUP_NAME/$fn_jl_irr_inv
-mv $fn_jl_prim_inv ../data/$GROUP_NAME/$fn_jl_prim_inv
-mv $fn_jl_sec_rel_inv ../data/$GROUP_NAME/$fn_jl_sec_rel_inv
 
-#remove useless file
-rm NBody_run.m-e
+echo "generating file with group elements"
+
+cp $filename_log $fn_jl_group_elts
+gsed -i '0,/^group_def_begin/d;/^group_def_end/,$d' $fn_jl_group_elts
+gsed -i 's/Gr_elts/G_'$GROUP_NAME'/g' $fn_jl_group_elts
+
+echo "simplex_permutations(x::SVector{$NBprimaries}) = [x[G_$GROUP_NAME[i]] for i=1:$NB_elts]" >>  $fn_jl_group_elts

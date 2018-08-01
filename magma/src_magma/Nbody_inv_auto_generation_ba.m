@@ -23,7 +23,7 @@ SetLogFile(logfile: Overwrite := true);
 K := RationalField();
 //Define the symmetry group (line that can vary)
 // G := PermutationGroup<6| (2,3,1)(5,6,4)>; //4B
-GROUP_DEF;
+G:= GROUP_DEF;
 // G := PermutationGroup<10 | (2,3)(5,6)(10,9), (2,3,4)(5,6,7)(8,10,9), (1,3,4,2)(5,6,10,9)(7,8)>; //5B
 
 //Define the invariant ring
@@ -31,6 +31,21 @@ R := InvariantRing(G, K);
 R;
 
 R0 := PrimaryInvariants(R);
+
+printf "nb_group_elements_begin\n";
+#G;
+printf "nb_group_elements_end\n";
+
+GList := [Eltseq(g) : g in G];
+printf "group_def_begin\n";
+printf "const Gr_elts = [\n";
+for i:=1 to #G do
+  GList[i];
+  printf ",";
+end for;
+printf "] \n";
+printf "group_def_end\n";
+
 
 printf "nb_primary_invariants_begin\n";
 #R0;
