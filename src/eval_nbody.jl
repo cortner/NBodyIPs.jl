@@ -1,3 +1,16 @@
+using JuLIP: neighbourlist,
+             @D,
+             JVec
+
+import JuLIP.Potentials: evaluate,
+                         evaluate_d,
+                         evaluate_dd
+
+using NeighbourLists: nbodies,
+                      maptosites!,
+                      maptosites_d!,
+                      virial!,
+                      max_neigs
 
 
 @generated function _simplex_edges(Rs::AbstractVector, J::SVector{K, Int}) where K

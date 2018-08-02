@@ -3,7 +3,7 @@
 `module BLPolys`
 
 The exported symbols are
-* `Dictionary`: collects all the information about a basis
+* `BLDictionary`: collects all the information about a basis
 * `NBody`: an N-body function wrapped into a JuLIP calculator
 * `poly_basis` : generate a basis of N-body functions
 
@@ -20,46 +20,73 @@ module BLPolys
 import StaticPolynomials
 
 using JuLIP, NeighbourLists, StaticArrays
-using JuLIP.Potentials: cutsw, cutsw_d, coscut, coscut_d
-using NBodyIPs: NBodyFunction
-using NBodyIPs.FastPolys: fpoly, fpoly_d
 
-import Base: length, Dict, ==
-import JuLIP: cutoff, energy, forces
-import JuLIP.Potentials: evaluate, evaluate_d, evaluate_dd, @analytic
-import NBodyIPs: NBodyIP, bodyorder, fast, evaluate_many!, evaluate_many_d!,
-                 dictionary, match_dictionary,
-                 recover_basis, degree,
+using NBodyIPs: NBodyFunction
+
+using NBodyIPs.FastPolys: fpoly,
+                          fpoly_d
+
+import Base: length,
+             Dict,
+             ==
+
+import JuLIP: cutoff
+
+import JuLIP.Potentials: evaluate,
+                         evaluate_d
+
+import NBodyIPs: bodyorder,
+                 fast,
+                 evaluate_many!,
+                 evaluate_many_d!,
+                 degree,
                  combine_basis
 
-const cutsp = JuLIP.Potentials.fcut
-const cutsp_d = JuLIP.Potentials.fcut_d
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
-export NBody, Dictionary,
-       gen_basis, poly_basis,
-       gen_tuples,
-       @analytic
+export BLNBody,
+       BLDictionary,
+       bl_basis
 
 
-# TODO: rethink whether to rename this to PolyDictionary
-@pot struct Dictionary{TT, TDT, TC, TDC, T}
-   transform::TT              # distance transform
-   transform_d::TDT           # derivative of distance transform
-   # inv_transform::TIT
-   fcut::TC                   # cut-off function
-   fcut_d::TDC                # cut-off function derivative
-   rcut::T                    # cutoff radius
-   s::Tuple{String,String}    # string to serialise it
+"""
+`struct BLDictionary` : specifies all details about the basis functions
+
+## Convenience Constructor
+
+`BLDictionary(ftrans, fcut[, rcut])`, where `ftrans`, `fcut` specify in one of several
+ways how the dictionary is defined and `rcut` is the cutoff radius. If
+the radius is not provided then `BLDictionary` will try to infer it from the
+`fcut` argument. E.g.,
+```julia
+D = BLDictionary("r -> 1/r", (:cos, rcut1, rcut2))
+```
+
+Known symbols for the cutoff are
+```
+[:cos, :sw, :spline, :square, :cos2s]
+```
+
+## Developer Doc: Methods associated with a `D::BLDictionary`:
+
+* `invariants`, `invariants_d`, `invariants_ed`: compute invariants and jacobian
+   in transformed coordinates defined by `D.transform`
+* `evaluate`, `evaluate_d`: evaluate the (univariate) basis
+   function associated with this dictionary; at the moment only
+   standard polynomials are admitted
+* `fcut, fcut_d`: evulate the cut-off function and its derivative / gradient
+   when interpreted as a product of cut-off functions
+"""
+struct BLDictionary{TT, TC}
+   transform::TT
+   cutoff::TC
 end
 
-function ==(D1::Dictionary, D2::Dictionary)
-   if D1.s[1] == "" || D1.s[2] == ""
-      error("Cannot compare `Dictionary`s without identifying strings")
-   end
-   return (D1.s == D2.s)
+function ==(D1::BLDictionary, D2::BLDictionary)
+   return (D1.transform == D2.transform) && (D1.cutoff == D2.cutoff)
 end
+
 
 # generated functions for fast evaluation of monomials
 include("fast_monomials.jl")
@@ -73,41 +100,6 @@ include("invariants.jl")
 # ==================================================================
 
 
-"""
-`struct Dictionary` : specifies all details about the basis functions
-
-## Convenience Constructor
-
-`Dictionary(ftrans, fcut[, rcut])`, where `ftrans`, `fcut` specify in one of several
-ways how the dictionary is defined and `rcut` is the cutoff radius. If
-the radius is not provided then `Dictionary` will try to infer it from the
-`fcut` argument. E.g.,
-```julia
-D = Dictionary((@analytic r -> 1/r), (r -> (r-rcut)^2), rcut)
-D = Dictionary( (:poly, -1), (:square, rcut) )
-D = Dictionary( (:exp, 3.0), (:sw, L, rcut) )
-```
-Known symbols for the transformation are
-```
-[:poly, :exp]
-```
-Known symbols for the cutoff are
-```
-[:cos, :sw, :spline, :square]
-```
-
-
-## Developer Doc: Methods associated with a `D::Dictionary`:
-
-* `invariants`, `invariants_d`, `invariants_ed`: compute invariants and jacobian
-   in transformed coordinates defined by `D.transform`
-* `evaluate`, `evaluate_d`: evaluate the (univariate) basis
-   function associated with this dictionary; at the moment only
-   standard polynomials are admitted
-* `fcut, fcut_d`: evulate the cut-off function and its derivative / gradient
-   when interpreted as a product of cut-off functions
-"""
-Dictionary
 
 # @generated function _sdot(a::T, B::SVector{N, T}) where {N, T}
 #    quote
@@ -127,56 +119,56 @@ Dictionary
    end
 end
 
-@inline invariants(D::Dictionary, r) = invariants(D.transform.(r))
+@inline invariants(D::BLDictionary, r) = invariants(D.transform.(r))
 
-@inline function invariants_d(D::Dictionary, r)
+@inline function invariants_d(D::BLDictionary, r)
    DI1, DI2 = invariants_d(D.transform.(r))
    t_d = D.transform_d.(r)
    return _sdot(t_d, DI1), _sdot(t_d, DI2)
 end
 
-@inline function invariants_ed(D::Dictionary, r)
+@inline function invariants_ed(D::BLDictionary, r)
    t = D.transform.(r)
    I1, I2, DI1, DI2 = invariants_ed(t)
    t_d = D.transform_d.(r)
    return I1, I2, _sdot(t_d, DI1), _sdot(t_d, DI2)
 end
 
-@inline fcut(D::Dictionary, r::Number) = D.fcut(r)
+@inline fcut(D::BLDictionary, r::Number) = D.fcut(r)
 
-@inline fcut_d(D::Dictionary, r::Number) = D.fcut_d(r)
+@inline fcut_d(D::BLDictionary, r::Number) = D.fcut_d(r)
 
-@inline cutoff(D::Dictionary) = D.rcut
+@inline cutoff(D::BLDictionary) = D.rcut
 
 
 # -------------------- generate dictionaries -------------------
 
-Dictionary(t, td, c, cd, rc) = Dictionary(t, td, c, cd, rc, ("",""))
+BLDictionary(t, td, c, cd, rc) = BLDictionary(t, td, c, cd, rc, ("",""))
 
-Dictionary(D::Dictionary, s::Tuple) =
-      Dictionary(D.transform, D.transform_d, D.fcut, D.fcut_d, D.rcut, s)
+BLDictionary(D::BLDictionary, s::Tuple) =
+      BLDictionary(D.transform, D.transform_d, D.fcut, D.fcut_d, D.rcut, s)
 
-function Dictionary(strans::String, scut::String)
+function BLDictionary(strans::String, scut::String)
    # @show strans, scut
-   D = Dictionary(eval(parse(ftrans_analyse(strans))),
+   D = BLDictionary(eval(parse(ftrans_analyse(strans))),
                   eval(parse(scut)))
-   return Dictionary(D, (strans, scut))
+   return BLDictionary(D, (strans, scut))
 end
 
-Dictionary(ftrans::AnalyticFunction, fcut::AnalyticFunction, rcut::AbstractFloat) =
-      Dictionary(ftrans.f, ftrans.f_d, fcut.f, fcut.f_d, rcut)
+BLDictionary(ftrans::AnalyticFunction, fcut::AnalyticFunction, rcut::AbstractFloat) =
+      BLDictionary(ftrans.f, ftrans.f_d, fcut.f, fcut.f_d, rcut)
 
-Dictionary(ftrans::Any, fcut::Any) =
-      Dictionary(ftrans_analyse(ftrans), fcut_analyse(fcut)...)
+BLDictionary(ftrans::Any, fcut::Any) =
+      BLDictionary(ftrans_analyse(ftrans), fcut_analyse(fcut)...)
 
 
 
 # ------------ Saving and Load Dictionaries
 
-Dict(D::Dictionary) = Dict( "id" => "Dictionary", "s" => D.s )
+Dict(D::BLDictionary) = Dict( "id" => "BLDictionary", "s" => D.s )
 
-Dictionary(D::Dict) = Dictionary(D["s"]...)
-Base.convert(::Val{:Dictionary}, D::Dict) = Dictionary(D)
+BLDictionary(D::Dict) = BLDictionary(D["s"]...)
+Base.convert(::Val{:BLDictionary}, D::Dict) = BLDictionary(D)
 
 # ==================================================================
 #           Polynomials of Invariants
@@ -186,7 +178,7 @@ Base.convert(::Val{:Dictionary}, D::Dict) = Dictionary(D)
 @pot struct NBody{N, M, T, TD} <: NBodyFunction{N}
    t::VecTup{M}               # tuples M = #edges + 1
    c::Vector{T}               # coefficients
-   D::TD                      # Dictionary (or nothing)
+   D::TD                      # BLDictionary (or nothing)
    valN::Val{N}               # encodes that this is an N-body term
 end
 
@@ -208,7 +200,7 @@ e.g., if M = 3, α = t[1] is a 3-vector then this corresponds to the basis funct
 
 * `c::Vector{T}`: vector of coefficients for the basis functions
 
-* `D`: a `Dictionary`
+* `D`: a `BLDictionary`
 """
 NBody
 
@@ -300,7 +292,7 @@ function NBody(D::Dict)
    if N == 1
       return NBody(D["t"], D["c"], nothing, Val(1))
    else
-      return NBody(D["t"], D["c"], Dictionary(D["D"]), Val(N))
+      return NBody(D["t"], D["c"], BLDictionary(D["D"]), Val(N))
    end
 end
 
@@ -360,7 +352,7 @@ end
 # ==================================================================
 
 @pot struct SPolyNBody{N, TD, TP} <: NBodyFunction{N}
-   D::TD       # Dictionary (or nothing)
+   D::TD       # BLDictionary (or nothing)
    P::TP       # a static polynomial
    valN::Val{N}
 end
@@ -499,13 +491,13 @@ generates a basis set of
 `N`-body functions, with dictionary `D`, maximal degree `deg`; the precise
 set of basis functions constructed depends on `tuplebound` (see `?gen_tuples`)
 """
-poly_basis(N::Integer, D::Dictionary, deg; kwargs...) =
+poly_basis(N::Integer, D::BLDictionary, deg; kwargs...) =
    poly_basis(gen_tuples(N, deg; kwargs...), D)
 
-poly_basis(ts::VecTup, D::Dictionary) = [NBody(t, 1.0, D) for t in ts]
+poly_basis(ts::VecTup, D::BLDictionary) = [NBody(t, 1.0, D) for t in ts]
 
 poly_basis(N::Integer, strans::String, scut::String, deg; kwargs...) =
-   poly_basis(N, Dictionary(strans, scut), deg; kwargs...)
+   poly_basis(N, BLDictionary(strans, scut), deg; kwargs...)
 
 
 # ---------------------- auxiliary type to

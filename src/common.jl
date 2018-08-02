@@ -3,21 +3,9 @@ using StaticArrays
 
 using JuLIP: AbstractCalculator,
              Atoms,
-             neighbourlist,
-             @D,
-             JVec
 
-using NeighbourLists: nbodies,
-                      maptosites!,
-                      maptosites_d!,
-                      virial!,
-                      max_neigs
 
 import Base:Dict
-
-import JuLIP.Potentials: evaluate,
-                         evaluate_d,
-                         evaluate_dd
 
 import JuLIP: cutoff,
               energy,
@@ -33,7 +21,6 @@ export NBodyIP,
        forces,
        site_energies,
        virial
-
 
 
 # ----------- some generic functions that we like to have available globally
@@ -126,6 +113,5 @@ include("eval_nbody.jl")
 # IO of NBodyIPs
 include("io.jl")
 
-# space transforms
-
-# cutoffs
+# space transforms and cutoffs
+include("aux.jl")

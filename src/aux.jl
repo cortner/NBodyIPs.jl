@@ -1,7 +1,16 @@
 
-using JuLIP.Potentials: @analytic
+using JuLIP.Potentials: @analytic,
+                        cutsw,
+                        cutsw_d,
+                        coscut,
+                        coscut_d
 
-import Base: Dict
+const cutsp = JuLIP.Potentials.fcut
+const cutsp_d = JuLIP.Potentials.fcut_d
+
+
+import Base: Dict,
+             ==
 
 # -------------- Space Tranformations ---------------
 
@@ -10,6 +19,8 @@ struct SpaceTransform{FT, FDT}
    f::FT
    df::FDT
 end
+
+==(T1::SpaceTransform, T2::SpaceTransform) = (T1.id == T2.id)
 
 function SpaceTransform(strans::String)
    strans0 = strans
@@ -48,6 +59,7 @@ struct Cutoff{FT, DFT}
    rcut::Float64
 end
 
+==(C1::Cutoff, C2::Cutoff) = (C1.sym == C2.sym) && (C1.params == C2.params)
 
 Cutoff(args...) = Cutoff(args)
 
