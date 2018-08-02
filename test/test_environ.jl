@@ -3,6 +3,9 @@ using Base.Test
 using NBodyIPs
 const Env = NBodyIPs.EnvBLs
 
+println("-------------------")
+println("Tests for EnvBLs")
+println("-------------------")
 println("Setting up the test systems ...")
 r0 = rnn(:Cu)
 rcut3 = 2.1 * r0
