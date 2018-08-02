@@ -1,6 +1,8 @@
 
 # TODO:
 #  - energy and forces for ASEAtoms ????
+#   -> maybe define these for AbstractAtoms, then remove the
+#      conversion from ASE???
 
 __precompile__()
 
@@ -14,40 +16,27 @@ See `NBodyIPFitting` for the associated fitting and testing framework.
 """
 module NBodyIPs
 
-using Reexport
+# generic types and function prototypes
+include("common.jl")
 
-@reexport using StaticArrays
-@reexport using JuLIP
-
-# two auxiliary functions to make for easier assembly of the code
-# TODO: move these somewhere else, or better get rid of them
-push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
-append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
-
-_decode_dict(D::Dict) = convert(Val(Symbol(D["id"])), D)
-
-
-
+# the machinery for evaluating the invariants as fast as possible
 include("fastpolys.jl")
 
-include("invariants.jl")
 
-include("common.jl")
+
+# include("invariants.jl")
+# include("blpolys.jl")
 
 
 # some generically useful code that
 # could be used across different n-body basis function implementations
 # TODO: move some codes from Invariants submodule to here
 #       or maybe other parts of the package
-include("misc.jl")
+# include("misc.jl")
 
 
-# describe basis functions in terms of symmetry invariants
-include("polynomials.jl")
-@reexport using NBodyIPs.Polys
-
-include("environ.jl")
-import NBodyIPs.EnvBLs: envbl_basis
-export envbl_basis
+# include("environ.jl")
+# import NBodyIPs.EnvBLs: envbl_basis
+# export envbl_basis
 
 end # module

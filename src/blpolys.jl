@@ -1,6 +1,6 @@
 
 """
-`module Polys`
+`module BLPolys`
 
 The exported symbols are
 * `Dictionary`: collects all the information about a basis
@@ -15,9 +15,8 @@ The exported symbols are
 * `M` : number of edges, i.e., M = N (N-1)/2
 * `K` : length of the tuples defining polynomials, K = M+1
 """
-module Polys
+module BLPolys
 
-using Reexport
 import StaticPolynomials
 
 using JuLIP, NeighbourLists, StaticArrays
@@ -641,3 +640,38 @@ include("poly_regularise.jl")
 
 
 end # module
+
+
+# # ----------------- some simplified access functions ------------------
+#
+# evaluate(V::NBodyFunction{2}, r::Number) = evaluate(V, SVector(r))
+#
+# evaluate_d(V::NBodyFunction{2}, r::Number) = evaluate_d(V, SVector(r))[1]
+#
+# evaluate_dd(V::NBodyFunction{2}, r::Number) =
+#       ((@D V(r+1e-5)) - (@D V(r-1e-5))) / 1e-5
+#
+# evaluate(V::NBodyFunction{3}, r1::Number, r2::Number, r3::Number) =
+#       evaluate(V, SVector(r1, r2, r3))
+
+
+
+# # =============== Experimental:
+# #   evaluate NBodyIP
+#
+# (V::NBodyIP)(args...) = evaluate(V, args...)
+#
+# evaluate(V::NBodyIP, r::Number) = evaluate(V::NBodyIP, SVector(r))
+#
+# evaluate(V::NBodyIP, r1::T, r2::T, r3::T) where {T <: Number} =
+#       evaluate(V::NBodyIP, SVector(r1, r2, r3))
+#
+# function evaluate(V::NBodyIP, r::SVector{N, T}) where {N, T}
+#    v = zero(T)
+#    for Vn in V.orders
+#       if bo2edges(bodyorder(Vn)) == N
+#          v += Vn(r)
+#       end
+#    end
+#    return v
+# end

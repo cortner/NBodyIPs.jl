@@ -9,12 +9,12 @@ using NBodyIPs.Polys: Dictionary, NBody, poly_basis
 
 abstract type EnvBLFunction{N} <: AbstractCalculator end
 
-import Base: Dict
-
 import JuLIP: cutoff, energy, forces, virial
 
 import NBodyIPs: NBodyIP, bodyorder, fast,
                  evaluate_many!, evaluate_many_d!,
+                 saveas, loadas,
+                 saveas_json, loadas_json,
                  combine_basis, recover_basis
 
 export envbl_basis
@@ -104,17 +104,23 @@ end
 fast(V::EnvBL) = EnvBL(V.t, fast(V.Vr), V.Vn, V.str_Vn)
 
 
-Base.Dict(V::EnvBL) =
-   Dict("id" => "EnvBL",
-         "t" => V.t,
-         "Vr" => Dict(V.Vr),
-         "str_Vn" => V.str_Vn,
-         "cutoff_Vn" => cutoff(V.Vn) )
+# ----------------------- JLD2 functionality ------------
 
-EnvBL(D::Dict) =
-      EnvBL(D["t"], _decode_dict(D["Vr"]), D["str_Vn"], D["cutoff_Vn"])
+struct EnvBLSerialiser
+   t
+   Vr
+   str_Vn
+   cutoff_Vn
+end
 
-Base.convert(::Val{:EnvBL}, D::Dict) = EnvBL(D)
+saveas(V::EnvBL) =
+   EnvBLSerialiser(V.t, saveas(V.Vr), V.str_Vn, cutoff(V.Vn))
+
+loadas(Vs::EnvBLSerialiser) =
+   EnvBL(Vs.t, loadas(Vs.Vr), Vs.str_Vn, Vs.cutoff_Vn)
+
+
+
 
 # =============== Assembly =================
 

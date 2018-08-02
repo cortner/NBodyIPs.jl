@@ -4,7 +4,7 @@ NeighbourLists
 Reexport
 StaticArrays
 JSON
-JLD2
+FileIO
 Sobol
 StaticPolynomials
 Combinatorics
