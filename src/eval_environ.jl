@@ -1,15 +1,35 @@
 
+using JuLIP: Atoms,
+             neighbourlist,
+             site_energies,
+             sites,
+             JVec
 
+using JuLIP.Potentials: site_virial,
+                        evaluate,
+                        evaluate_d
 
+using NeighbourLists: max_neigs
 
-function cutoff(V::EnvBLFunction)
+import JuLIP: energy,
+              forces,
+              virial,
+              cutoff
+
+import NBodyIPs: evaluate_many!,
+                 evaluate_many_d!,
+                 eval_site_nbody!,
+                 _grad_len2pos!,
+                 _acc_manyfrcs
+
+function cutoff(V::AbstractEnvIP)
    @assert cutoff(Vn(V)) <= cutoff(Vr(V))
-   return cutoff(Vr(V::EnvBL))
+   return cutoff(Vr(V::EnvIP))
 end
 
-n_fun(V::EnvBL, n) = (V.t == 0) ? 1.0 : n^V.t
+n_fun(V::EnvIP, n) = (V.t == 0) ? 1.0 : n^V.t
 
-function n_fun_d(V::EnvBL, n)
+function n_fun_d(V::EnvIP, n)
    if V.t == 0
       return 0.0
    elseif V.t == 1
@@ -19,21 +39,21 @@ function n_fun_d(V::EnvBL, n)
    end
 end
 
-site_ns(V::EnvBL, at) = n_fun.(V, site_energies(Vn(V), at))
+site_ns(V::EnvIP, at) = n_fun.(V, site_energies(Vn(V), at))
 
-function site_ns_ed(V::EnvBL, at)
+function site_ns_ed(V::EnvIP, at)
    Vns = site_energies(Vn(V), at)
    return n_fun.(V, Vns), n_fun_d.(V, Vns)
 end
 
-function site_n_d!(dVn, V::EnvBL, r, R, Ni, dNi)
+function site_n_d!(dVn, V::EnvIP, r, R, Ni, dNi)
    for n = 1:length(r)
       dVn[n] = 0.5 * dNi * evaluate_d(Vn(V), r[n]) * R[n] / r[n]
    end
    return dVn
 end
 
-function energy(V::EnvBLFunction, at::Atoms)
+function energy(V::AbstractEnvIP, at::Atoms)
    # compute the n values
    Ns = site_ns(V, at)
    # compute the inner v values
@@ -43,7 +63,7 @@ function energy(V::EnvBLFunction, at::Atoms)
 end
 
 
-function forces(V::EnvBLFunction{N}, at::Atoms{T}) where {N, T}
+function forces(V::AbstractEnvIP{N}, at::Atoms{T}) where {N, T}
 
    # compute the n values
    Ns, dNs = site_ns_ed(V, at)
@@ -80,7 +100,7 @@ end
 
 
 
-function virial(V::EnvBLFunction{N}, at::Atoms{T}) where {N, T}
+function virial(V::AbstractEnvIP{N}, at::Atoms{T}) where {N, T}
    # compute the n values
    Ns, dNs = site_ns_ed(V, at)
    # compute the inner v values
@@ -108,7 +128,7 @@ function virial(V::EnvBLFunction{N}, at::Atoms{T}) where {N, T}
          dVsite[n] = Ns[i] * dVsite[n] + Vs[i] * dVn[n]
       end
 
-      S += JuLIP.Potentials.site_virial(dVsite, R)
+      S += site_virial(dVsite, R)
    end
    return S
 end
@@ -116,7 +136,7 @@ end
 
 
 function energy(B::Vector{TB}, at::Atoms{T}, typewarn=true
-                ) where {TB <: EnvBL{N}, T} where {N}
+                ) where {TB <: EnvIP{N}, T} where {N}
    if typewarn
       !isleaftype(TB) && warn("TB is not a leaf type")
    end
@@ -153,7 +173,7 @@ end
 
 
 function forces(B::AbstractVector{TB}, at::Atoms{T}, typewarn=true
-              )where {TB <: EnvBL{N}, T} where {N}
+              )where {TB <: EnvIP{N}, T} where {N}
    if typewarn
       !isleaftype(TB) && warn("TB is not a leaf type")
    end
@@ -216,7 +236,7 @@ end
 
 
 function virial(B::AbstractVector{TB}, at::Atoms{T}, typewarn=true
-              )where {TB <: EnvBL{N}, T} where {N}
+              )where {TB <: EnvIP{N}, T} where {N}
    if typewarn
       !isleaftype(TB) && warn("TB is not a leaf type")
    end
@@ -277,7 +297,7 @@ function virial(B::AbstractVector{TB}, at::Atoms{T}, typewarn=true
 
       # update the virials
       for iB = 1:length(B)
-         S[iB] += JuLIP.Potentials.site_virial(dVsite[iB], R) / N
+         S[iB] += site_virial(dVsite[iB], R) / N
       end
    end
    return S

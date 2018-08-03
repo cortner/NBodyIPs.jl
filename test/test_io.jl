@@ -31,3 +31,4 @@ fname = tempname() * ".json"
 save_ip(fname, IP)
 IP2 = load_ip(fname)
 println(@test IP2 == IP)
+run(`rm $fname`)

@@ -4,9 +4,9 @@
 #   -> maybe define these for AbstractAtoms, then remove the
 #      conversion from ASE???
 # * poly_regularise
-# * environ
 # * Remove BLNBody{1} altogether and replace it with an OneBody?
 #   that is available for all sub-modules?
+# * reformulate the basis assembly for EnvIP to allow arbitrary inner functions?
 
 __precompile__()
 
@@ -36,7 +36,7 @@ export bl_basis
 # include("bapolys.jl")
 
 include("environ.jl")
-import NBodyIPs.EnvBLs: envbl_basis
+import NBodyIPs.EnvIPs: envbl_basis
 export envbl_basis
 
 end # module

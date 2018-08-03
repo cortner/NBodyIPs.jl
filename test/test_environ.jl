@@ -2,10 +2,10 @@ using Base.Test
 
 using JuLIP, NBodyIPs
 using NBodyIPs.BLPolys: BLDictionary, BLNBody
-const Env = NBodyIPs.EnvBLs
+const Env = NBodyIPs.EnvIPs
 
 println("-------------------")
-println("Tests for EnvBLs")
+println("Tests for EnvIPs")
 println("-------------------")
 println("Setting up the test systems ...")
 r0 = rnn(:Cu)
@@ -20,9 +20,9 @@ random_3body(ntup=1) = BLNBody( [tuple( [rand(1:4, 3); 0]... ) for n = 1:ntup],
 Vn = ("exp(- 3 * ((r/$r0)-1))", 1.8*r0)
 
 
-V3env_0 = Env.EnvBL(0, random_3body(), Vn...)
-V3env_1 = Env.EnvBL(1, random_3body(), Vn...)
-V3env_2 = Env.EnvBL(2, random_3body(), Vn...)
+V3env_0 = Env.EnvIP(0, random_3body(), Vn...)
+V3env_1 = Env.EnvIP(1, random_3body(), Vn...)
+V3env_2 = Env.EnvIP(2, random_3body(), Vn...)
 
 println("Finite-difference test on configurations")
 println("------------------------------------------------")
@@ -51,3 +51,12 @@ print("virial: ")
 V1 = virial(B, at, false)
 V2 = [ virial(b, at) for b in B ]
 println(@test V1 ≈ V2)
+
+
+println("Check saving and loading of an EnvIP")
+IP = NBodyIP(B, rand(length(B)))
+fname = tempname() * ".json"
+save_ip(fname, IP)
+IP1 = load_ip(fname)
+println(@test IP1 == IP)
+run(`rm $fname`)
