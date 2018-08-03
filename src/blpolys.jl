@@ -19,7 +19,7 @@ module BLPolys
 
 import StaticPolynomials
 
-using JuLIP, NeighbourLists, StaticArrays
+using StaticArrays
 
 using NBodyIPs: NBodyFunction,
                 SpaceTransform,
@@ -42,7 +42,7 @@ import NBodyIPs: bodyorder,
                  evaluate_many!,
                  evaluate_many_d!,
                  degree,
-                 combine_basis
+                 combinebasis
 
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
@@ -54,6 +54,8 @@ export BLNBody,
 
 # import the raw invariant polynomials
 include("blinvariants.jl")
+
+@show BLInvariants
 
 using BLInvariants: invariants,
                     invariants_d,
@@ -187,7 +189,7 @@ function match_dictionary(V::BLNBody, V1::BLNBody)
    return BLNBody(V.t, V.c, V1.D, V.valN)
 end
 
-combine_basis(basis::AbstractVector{TV}, coeffs) where {TV <: BLNBody} =
+combinebasis(basis::AbstractVector{TV}, coeffs) where {TV <: BLNBody} =
       BLNBody(basis, coeffs, basis[1].D)
 
 function degree(V::BLNBody)

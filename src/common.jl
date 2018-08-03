@@ -2,10 +2,10 @@
 using StaticArrays
 
 using JuLIP: AbstractCalculator,
-             Atoms,
+             Atoms
 
 
-import Base:Dict
+import Base: Dict
 
 import JuLIP: cutoff,
               energy,
@@ -58,7 +58,7 @@ concrete subtypes must implement
 """
 abstract type NBodyFunction{N} <: AbstractCalculator end
 
-bodyorder(V::NBodyFunction{N}) = N
+bodyorder(V::NBodyFunction{N}) where {N} = N
 
 
 

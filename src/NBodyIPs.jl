@@ -22,11 +22,10 @@ include("common.jl")
 # the machinery for evaluating the invariants as fast as possible
 include("fastpolys.jl")
 
+# Bond-length polynomials
+include("blpolys.jl")
 
-
-# include("invariants.jl")
-# include("blpolys.jl")
-
+# include("bapolys.jl")
 
 # some generically useful code that
 # could be used across different n-body basis function implementations

@@ -1,6 +1,8 @@
 
 module BLInvariants
 
+using StaticArrays
+
 using NBodyIPs.FastPolys
 
 
@@ -47,7 +49,7 @@ function tdegrees end
 `bo2edges(N)` : bodyorder-to-edges
 """
 bo2edges(N::Integer) = (N * (N-1)) ÷ 2
-bo2edges(::Val{N}) = (N * (N-1)) ÷ 2
+bo2edges(::Val{N}) where {N} = (N * (N-1)) ÷ 2
 
 """
 `edges2bo(M)`: "edges-to-bodyorder", an internal function that translates

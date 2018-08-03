@@ -1,3 +1,4 @@
+import JuLIP
 
 using JuLIP.Potentials: @analytic,
                         cutsw,
@@ -7,7 +8,6 @@ using JuLIP.Potentials: @analytic,
 
 const cutsp = JuLIP.Potentials.fcut
 const cutsp_d = JuLIP.Potentials.fcut_d
-
 
 import Base: Dict,
              ==
