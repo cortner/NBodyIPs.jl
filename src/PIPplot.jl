@@ -27,10 +27,10 @@ function unfold(A)
 end
 
 function PIPpotplot(potname, IP)
-    e0 = string(IP.orders[1].c)
-    cutoff2b = string(IP.orders[3].D.rcut)
-    cutoff3b = string(IP.orders[4].D.rcut)
-    cutoff4b = string(IP.orders[5].D.rcut)
+    e0 = string(IP.components[1].c)
+    cutoff2b = string(IP.components[3].D.rcut)
+    cutoff3b = string(IP.components[4].D.rcut)
+    cutoff4b = string(IP.components[5].D.rcut)
 	r0 = 2.89
 	rr = linspace(2, 9.0, 200)
 	P = plot(rr, IP.(rr); yaxis = ([-0.1, 0.2],), label="2b");

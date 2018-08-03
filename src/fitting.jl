@@ -39,7 +39,7 @@ LsqSys(data, basis) = kron(data, basis)
 config_types(lsq::LsqSys) = unique(config_type.(lsq.data))
 
 """
-Take a basis and split it into individual body-orders.
+Take a basis and split it into individual body-orders / components.
 """
 function split_basis(basis::AbstractVector{TB}) where TB <: AbstractCalculator
    # get the types of the individual basis elements
@@ -638,7 +638,7 @@ function save(fname::AbstractString, lsq::LsqSys)
    IP = NBodyIP(lsq.basis, ones(length(lsq.basis)))
    lsqdict = Dict(
       "data" => lsq.data,
-      "basisgroups" => saveas.(IP.orders),
+      "basisgroups" => saveas.(IP.components),
       "Psi" => lsq.Ψ
    )
    save(fname, lsqdict)

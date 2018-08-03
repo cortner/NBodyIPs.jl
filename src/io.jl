@@ -7,11 +7,11 @@ struct XJld end
 
 
 Dict(IP::NBodyIP) = Dict("__id__" => "NBodyIP",
-                         "orders" => Dict.(IP.orders))
+                         "components" => Dict.(IP.components))
 
-_decode_dict(D::Dict) = convert(Val(Symbol(D["id"])), D)
+_decode_dict(D::Dict) = convert(Val(Symbol(D["__id__"])), D)
 
-NBodyIP(D::Dict) = NBodyIP(_decode_dict.(D["orders"]))
+NBodyIP(D::Dict) = NBodyIP(_decode_dict.(D["components"]))
 
 Base.convert(::Val{:NBodyIP}, D::Dict) = NBodyIP(D)
 
@@ -26,6 +26,9 @@ function _checkextension(fname)
    end
    error("unknown extension for `$fname`")
 end
+
+save_ip(fname::AbstractString, IP) =
+   save_ip(_checkextension(fname), fname, IP)
 
 load_ip(fname::AbstractString) =
    load_ip(_checkextension(fname), fname)

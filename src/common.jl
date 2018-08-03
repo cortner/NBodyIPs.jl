@@ -5,7 +5,8 @@ using JuLIP: AbstractCalculator,
              Atoms
 
 
-import Base: Dict
+import Base: Dict,
+             ==
 
 import JuLIP: cutoff,
               energy,
@@ -76,16 +77,17 @@ mutable struct NBodyIP <: AbstractCalculator
    components::Vector{AbstractCalculator}
 end
 
-cutoff(V::NBodyIP) = maximum( cutoff.(V.orders) )
-energy(V::NBodyIP, at::Atoms) = sum( energy(Vn, at)  for Vn in V.orders )
-forces(V::NBodyIP, at::Atoms) = sum( forces(Vn, at)  for Vn in V.orders )
-virial(V::NBodyIP, at::Atoms) = sum( virial(Vn, at)  for Vn in V.orders )
+==(V1::NBodyIP, V2::NBodyIP) = V1.components == V2.components
+cutoff(V::NBodyIP) = maximum( cutoff.(V.components) )
+energy(V::NBodyIP, at::Atoms) = sum( energy(Vn, at)  for Vn in V.components )
+forces(V::NBodyIP, at::Atoms) = sum( forces(Vn, at)  for Vn in V.components )
+virial(V::NBodyIP, at::Atoms) = sum( virial(Vn, at)  for Vn in V.components )
 
 """
 turn a potentially slow representation of an IP into a fast one,
 by switching to a different representation.
 """
-fast(IP::NBodyIP) = NBodyIP( fast.(IP.orders) )
+fast(IP::NBodyIP) = NBodyIP( fast.(IP.components) )
 
 # construct an NBodyIP from a basis
 function NBodyIP(basis, coeffs)
@@ -97,7 +99,7 @@ function NBodyIP(basis, coeffs)
       Itp = find(tps .== tp)
       # construct a new basis function by combining all of them in one
       # (this assumes that we have NBody types)
-      V_N = combine_basis([basis[Itp]...], coeffs[Itp])
+      V_N = combinebasis([basis[Itp]...], coeffs[Itp])
       push!(components, V_N)
    end
    return NBodyIP(components)

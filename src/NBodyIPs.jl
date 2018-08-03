@@ -5,7 +5,8 @@
 #      conversion from ASE???
 # * poly_regularise
 # * environ
-
+# * Remove BLNBody{1} altogether and replace it with an OneBody?
+#   that is available for all sub-modules?
 
 __precompile__()
 
@@ -33,7 +34,6 @@ import NBodyIPs.BLPolys.bl_basis
 export bl_basis
 
 # include("bapolys.jl")
-
 
 # include("environ.jl")
 # import NBodyIPs.EnvBLs: envbl_basis

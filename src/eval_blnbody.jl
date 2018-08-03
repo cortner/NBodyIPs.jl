@@ -43,8 +43,6 @@ end
 # with the first 6 entries restricted by degree and the 7th tuple must
 # be in the range 0, …, 5
 
-# TODO: explore StaticPolynomials
-
 evaluate(V::BLNBody{1}) = sum(V.c)
 
 function evaluate(V::BLNBody, r::SVector{M, T}) where {M, T}

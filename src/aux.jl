@@ -62,6 +62,8 @@ end
 
 ==(C1::Cutoff, C2::Cutoff) = (C1.sym == C2.sym) && (C1.params == C2.params)
 
+Cutoff(descr::String) = Cutoff(eval(parse(descr)))
+
 Cutoff(args...) = Cutoff(args)
 
 function Cutoff(args::Tuple)

@@ -49,7 +49,7 @@ const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
 export BLNBody,
-       StBLNBody, 
+       StBLNBody,
        BLDictionary,
        bl_basis
 
@@ -213,6 +213,12 @@ end
 
 # -------------- Infrastructure to read/write BLNBody  --------
 
+
+Dict(V::BLNBody{1}) = Dict( "__id__" => "BLNBody",
+                            "t" => V.t,
+                            "c" => V.c,
+                            "D" => nothing,
+                            "N" => 1 )
 
 Dict(V::BLNBody{N}) where {N} = Dict( "__id__" => "BLNBody",
                                       "t" => V.t,
@@ -401,7 +407,7 @@ end # module
 #
 # function evaluate(V::NBodyIP, r::SVector{N, T}) where {N, T}
 #    v = zero(T)
-#    for Vn in V.orders
+#    for Vn in V.components
 #       if bo2edges(bodyorder(Vn)) == N
 #          v += Vn(r)
 #       end

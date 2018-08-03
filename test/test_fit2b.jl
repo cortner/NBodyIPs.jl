@@ -45,7 +45,7 @@ for d in degrees
    rE, rF, mE, mF = fiterrors(IP, data)
    println("   E-rms, E-mae on testset = ", rE, ", ", mE)
    println("   F-rms, F-mae on testset = ", rF, ", ", mF)
-   V2 = IP.orders[2]
+   V2 = IP.components[2]
    ev2 = vecnorm(V2.(rr) - calc.(rr), Inf)
    dev2 = vecnorm(evaluate_d.(V2, rr) - evaluate_d.(calc, rr), Inf)
    println("   V2 - uniform error = ", ev2, " | ", dev2)
