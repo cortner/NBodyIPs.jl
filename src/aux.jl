@@ -65,8 +65,8 @@ end
 Cutoff(args...) = Cutoff(args)
 
 function Cutoff(args::Tuple)
-   fcut, rcut = fcut_analyse(args)
-   return Cutoff(args[1], [args[2:end]...], fcut.f, fcut.f_d, rcut)
+   f, f_d, rcut = fcut_analyse(args)
+   return Cutoff(args[1], [args[2:end]...], f, f_d, rcut)
 end
 
 function fcut_analyse(args::Tuple)
@@ -74,43 +74,39 @@ function fcut_analyse(args::Tuple)
    args = args[2:end]
    if Symbol(sym) == :cos
       rc1, rc2 = args
-      return let rc1=rc1, rc2=rc2
-                  AnalyticFunction( r -> coscut(r, rc1, rc2),
-                                    r -> coscut_d(r, rc1, rc2),
-                                    nothing ); end, rc2
+      return let rc1=args[1], rc2=args[2]
+         r -> coscut(r, rc1, rc2), r -> coscut_d(r, rc1, rc2), rc2
+      end
 
    elseif Symbol(sym) == :sw
-      L, rcut = args
-      return let L=L, rcut=rcut
-                  AnalyticFunction( r -> cutsw(r, rcut, L),
-                                    r -> cutsw_d(r, rcut, L),
-                                    nothing ); end, rcut
+      return let L=args[1], rcut=args[2]
+         r -> cutsw(r, rcut, L), r -> cutsw_d(r, rcut, L), rcut
+      end
 
    elseif Symbol(sym) == :spline
-      rc1, rc2 = args
-      return let rc1=rc1, rc2=rc2
-                  AnalyticFunction( r -> cutsp(r, rc1, rc2),
-                                    r -> cutsp_d(r, rc1, rc2),
-                                    nothing );end , rc2
+      return let rc1=args[1], rc2=args[2]
+         r -> cutsp(r, rc1, rc2), r -> cutsp_d(r, rc1, rc2), rc2
+      end
 
    elseif Symbol(sym) == :square
-      rcut = args[1]
-      return let rcut=rcut; (@analytic r -> (r - rcut)^2); end, rcut
+      return let rcut=args[1]
+         F = (@analytic r -> (r - rcut)^2)
+         F.f, F.f_d, rcut
+      end
 
    elseif Symbol(sym) == :s2rat
       return let rnn=args[1], rin = args[2], rcut = args[3], p = args[4]
          f = @analytic r -> ( ((rnn/r)^p - (rnn/rcut)^p)^2 * ((rnn/r)^p - (rnn/rin)^p)^2 )
-         AnalyticFunction(r -> f.f(r) * (rin < r < rcut),
-                          r -> f.f_d(r) * (rin < r < rcut),
-                          nothing) end, args[2]
+         r -> f.f(r) * (rin < r < rcut), r -> f.f_d(r) * (rin < r < rcut), rcut
+      end
 
    elseif Symbol(sym) == :cos2s
       return let ri1 = args[1], ri2 = args[2], ro1 = args[3], ro2 = args[4]
-            AnalyticFunction(
-                  r -> (1-coscut(r, ri1, ri2)) * coscut(r, ro1, ro2),
-                  r -> (- coscut_d(r, ri1, ri2) * coscut(r, ro1, ro2)
-                        + (1-coscut(r, ri1, ri2)) * coscut_d(r, ro1, ro2)),
-                  nothing) end, args[4]
+         (  r -> (1-coscut(r, ri1, ri2)) * coscut(r, ro1, ro2),
+            r -> (- coscut_d(r, ri1, ri2) * coscut(r, ro1, ro2)
+                  + (1-coscut(r, ri1, ri2)) * coscut_d(r, ro1, ro2)),
+            ro2 )
+         end
    else
       error("Dictionary: unknown symbol $(sym) for fcut.")
    end
