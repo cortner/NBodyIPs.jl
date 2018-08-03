@@ -33,17 +33,17 @@ save_ip(fname::AbstractString, IP) =
 load_ip(fname::AbstractString) =
    load_ip(_checkextension(fname), fname)
 
-save_ip(::Union{XJld2, XJld}, fname, IP) =
-   save(fname, "IP", Dict(IP))
+save_ip(::Union{XJld2, XJld}, args...) = err_jld()
+load_ip(::Union{XJld2, XJld}, args...) = err_jld()
 
-function load_ip(::Union{XJld2, XJld}, fname)
+err_jld() =
    warn("""`load_ip` and `save_ip` do not directly support jld and jld2. In order
            to load an `NBodyIP` stored in one of those formats, please use `FileIO`,
            load the IP as a `ipdict::Dict` and then decode it using
            `NBodyIP(ipdict)`. To save an `ip::NBodyIP` as a jld or jld2 file,
            convert it to a `Dict` using `Dict(ip)` and then save it using
            `FileIO.save`.""")
-end
+
 
 function save_ip(::XJson, fname, IP)
    f = open(fname, "w")
