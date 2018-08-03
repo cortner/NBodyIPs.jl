@@ -1,4 +1,6 @@
 
+module BLInvariants
+
 using NBodyIPs.FastPolys
 
 
@@ -28,18 +30,6 @@ TODO
 function invariants_ed end
 
 """
-`tdegrees(::Val{N})` where `N` is the body-order returns a
-tuple of polynomial <vector degrees> corresponding to the degrees of the
-individual invariants.  E.g. for 3-body, the primary invariants are
-r1 + r2 + r3, r1 r2 + r1 r3 + r2 r3, r1 r2 r3, while there is only a single
-secondary invariant 1.0. The corresponding
-degrees are `( (1,0,0), (1,1,0), (1,1,1) ), ( (0,0,0), )`. Note that only the
-lexicographically leading term is included. The remaining terms are
-obtained from permutation invariance.
-"""
-function degrees end
-
-"""
 need documentation here
 """
 function corners end
@@ -51,15 +41,13 @@ individual invariants.  E.g. for 3-body, the invariants are
 r1 + r2 + r3, r1 r2 + r1 r3 + r2 r3, r1 r2 r3, and the corresponding
 degrees are `(1, 2, 3)`.
 """
-function tdegrees(v)
-   deg1, deg2 = degrees(v)
-   return sum.(deg1), sum.(deg2)
-end
+function tdegrees end
 
 """
 `bo2edges(N)` : bodyorder-to-edges
 """
 bo2edges(N::Integer) = (N * (N-1)) ÷ 2
+bo2edges(::Val{N}) = (N * (N-1)) ÷ 2
 
 """
 `edges2bo(M)`: "edges-to-bodyorder", an internal function that translates
@@ -88,10 +76,7 @@ invariants_ed(r::SVector{1,T}) where {T} =
       (@SVector [ SVector(one(T))  ]),
       (@SVector [ SVector(zero(T)) ])
 
-
-# tdegrees(::Val{2}) = (1,), (0,)
-
-degrees(::Val{2}) = (SVector(1,),), (SVector(0,),)
+tdegrees(::Val{2}) = (1,), (0,)
 
 corners(::Val{2}) = ( SVector(1,2), )
 
@@ -131,33 +116,13 @@ function invariants_ed(r::SVector{3, T}) where {T}
       (@SVector [ (@SVector [0.0, 0.0, 0.0]) ] )
 end
 
-# tdegrees(::Val{3}) = (1, 2, 3), (0,)
-
-degrees(::Val{3}) = ( SVector(1,0,0), SVector(1,1,0), SVector(1,1,1) ),
-                    ( SVector(0,0,0), )
+tdegrees(::Val{3}) = (1, 2, 3), (0,)
 
 corners(::Val{3}) = ( SVector(1,2), SVector(1,3), SVector(2,3) )
 
 # ------------------------------------------------------------------------
 #             4-BODY Invariants
 # ------------------------------------------------------------------------
-
-# tdegrees(::Val{4}) = (1, 2, 2, 3, 3, 4), (0, 3, 4, 5, 6, 9)
-
-degrees(::Val{4}) = ( SVector(1,0,0,0,0,0),
-                      SVector(1,0,0,0,0,1),
-                      SVector(2,0,0,0,0,0),
-                      SVector(1,1,1,0,0,0),
-                      SVector(3,0,0,0,0,0),
-                      SVector(4,0,0,0,0,0) ),
-                    ( SVector(0,0,0,0,0,0),
-                      SVector(2,1,0,0,0,0),
-                      SVector(3,1,0,0,0,0),
-                      SVector(5,0,0,0,0,0),
-                      SVector(4,2,0,0,0,0),
-                      SVector(8,1,0,0,0,0) )
-
-corners(::Val{4}) = ( SVector(1,2), SVector(1,3), SVector(1,4), SVector(2,3), SVector(2,4), SVector(3,4) )
 
 const A = @SMatrix [0 1 1 1 1 0
                     1 0 1 1 0 1
@@ -263,18 +228,17 @@ function invariants_ed(x::SVector{6, T}) where {T}
          SVector(z, ∇PV1, ∇PV2, ∇PV3, 2*PV1*∇PV1, PV3*∇PV2 + PV2*∇PV3)
 end
 
+tdegrees(::Val{4}) = (1, 2, 2, 3, 3, 4), (0, 3, 4, 5, 6, 9)
+
+corners(::Val{4}) = ( SVector(1,2), SVector(1,3), SVector(1,4), SVector(2,3), SVector(2,4), SVector(3,4) )
+
+
 
 # ------------------------------------------------------------------------
 #             5-BODY Invariants
 # ------------------------------------------------------------------------
 
-#Invariants up to degree 7 only.
-# COPIED FROM SLACK:
-# For the 5-body, if I am right, the number of primary invariants is 10 with
-# degrees : [ 1, 2, 2, 3, 3, 4, 4, 5, 5, 6 ]. The number of secondary for each
-# degree (starting from 0) is [ 1, 0, 0, 2, 5, 8, 15, 23, 33, 46 ] which means
-# in total 133 secondary of degree less than 9. That’s quite a lot. Some of
-# them have very long expressions.
+# Invariants up to degree 7 only.
 
 tdegrees(::Val{5}) =
       (@SVector [ 1, 2, 2, 3, 3, 4, 4, 5, 5, 6 ]),
@@ -285,29 +249,10 @@ tdegrees(::Val{5}) =
                   6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
                   7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7 ])
 
-include("../magma/data/NB_5_deg_7/NB_5_deg_7_invariants.jl")
+include("generated/NB_5_deg_7/NB_5_deg_7_invariants.jl")
 @inline invariants(x::SVector{10}) = NB5I.invariants_gen(x)
 @inline invariants_d(x::SVector{10}) = NB5I.invariants_d_gen(x)
 @inline invariants_ed(x::SVector{10}) = NB5I.invariants_ed_gen(x)
 
 
-# ------------------------------------------------------------------------
-#      Utility Functions
-# ------------------------------------------------------------------------
-
-
-# function ispure(vN::Val{N}, t::NTuple{K, Int}) where {N, K}
-#    deg1, deg2 = degrees(vN)
-#    d = sum( deg1[n] * t[n] for n = 1:K-1 ) + deg2[t[end]+1]
-#    contains_x = zeros(Int, N)
-#    c = corners(vN)
-#    for n = 1:length(d)
-#       if d[n] != 0
-#          contains_x[c[n]] += 1
-#       end
-#    end
-#    if length(find(contains_x)) == N
-#       return true
-#    end
-#    return false
-# end
+end
