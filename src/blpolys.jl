@@ -49,6 +49,7 @@ const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
 export BLNBody,
+       StBLNBody, 
        BLDictionary,
        bl_basis
 

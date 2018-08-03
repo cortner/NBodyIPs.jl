@@ -1,8 +1,11 @@
 
 # TODO:
-#  - energy and forces for ASEAtoms ????
+# * energy and forces for ASEAtoms ????
 #   -> maybe define these for AbstractAtoms, then remove the
 #      conversion from ASE???
+# * poly_regularise
+# * environ
+
 
 __precompile__()
 
@@ -16,6 +19,8 @@ See `NBodyIPFitting` for the associated fitting and testing framework.
 """
 module NBodyIPs
 
+using Reexport
+
 # generic types and function prototypes
 include("common.jl")
 
@@ -24,14 +29,10 @@ include("fastpolys.jl")
 
 # Bond-length polynomials
 include("blpolys.jl")
+import NBodyIPs.BLPolys.bl_basis
+export bl_basis
 
 # include("bapolys.jl")
-
-# some generically useful code that
-# could be used across different n-body basis function implementations
-# TODO: move some codes from Invariants submodule to here
-#       or maybe other parts of the package
-# include("misc.jl")
 
 
 # include("environ.jl")
