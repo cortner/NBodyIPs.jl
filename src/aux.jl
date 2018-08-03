@@ -4,7 +4,8 @@ using JuLIP.Potentials: @analytic,
                         cutsw,
                         cutsw_d,
                         coscut,
-                        coscut_d
+                        coscut_d,
+                        AnalyticFunction
 
 const cutsp = JuLIP.Potentials.fcut
 const cutsp_d = JuLIP.Potentials.fcut_d
@@ -17,7 +18,7 @@ import Base: Dict,
 struct SpaceTransform{FT, FDT}
    id::String
    f::FT
-   df::FDT
+   f_d::FDT
 end
 
 ==(T1::SpaceTransform, T2::SpaceTransform) = (T1.id == T2.id)
@@ -37,7 +38,7 @@ function SpaceTransform(strans::String)
          strans = "@analytic " * strans
       end
    end
-   ftrans = eval(parse(ftrans_analyse(strans)))
+   ftrans = eval(parse(strans))
    return SpaceTransform(strans0, ftrans.f, ftrans.f_d)
 end
 
@@ -55,7 +56,7 @@ struct Cutoff{FT, DFT}
    sym::Symbol
    params::Vector{Float64}
    f::FT
-   df::DFT
+   f_d::DFT
    rcut::Float64
 end
 

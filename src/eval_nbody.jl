@@ -10,7 +10,11 @@ using NeighbourLists: nbodies,
                       maptosites!,
                       maptosites_d!,
                       virial!,
-                      max_neigs
+                      max_neigs,
+                      sites
+
+push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
+append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
 
 
 @generated function _simplex_edges(Rs::AbstractVector, J::SVector{K, Int}) where K

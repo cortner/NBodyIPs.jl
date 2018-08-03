@@ -1,6 +1,10 @@
 using NBodyIPs, JuLIP, BenchmarkTools, StaticArrays
 using Base.Test
 
+
+using NBodyIPs.BLPolys: BLNBody, BLDictionary, transform, transform_d, fcut, fcut_d
+using NBodyIPs.BLPolys.BLInvariants: invariants, invariants_d, invariants_ed
+
 profile = false
 
 if profile
@@ -11,45 +15,42 @@ end
 
 println("Setting up the test systems ...")
 r0 = rnn(:Cu)
-TRANSFORM = let r0 = r0
-   # (@analytic r -> (r0/r)^3)
-   (@analytic r -> exp( - 3 * ((r/r0) - 1)))
-end
+TRANSFORM = "r -> exp( - 3 * ((r/$r0) - 1))"
 at = rattle!(bulk(:Cu, cubic=true) * 2, 0.02)
 rcut3 = 3.1 * r0
-D3 = Dictionary(TRANSFORM, (:cos, 0.66*rcut3, rcut3) )
+D3 = BLDictionary(TRANSFORM, (:cos, 0.66*rcut3, rcut3) )
 rcut4 = 2.1 * r0
-D4 = Dictionary(TRANSFORM, (:cos, 0.66*rcut4, rcut4) )
+D4 = BLDictionary(TRANSFORM, (:cos, 0.66*rcut4, rcut4) )
 rcut5 = 1.5 * r0
-D5 = Dictionary(TRANSFORM, (:cos, 0.66*rcut5, rcut5) )
+D5 = BLDictionary(TRANSFORM, (:cos, 0.66*rcut5, rcut5) )
 DD = [nothing, D3, D3, D4, D5]
 
 random_nbody(N, ntup) = (
-   (N <= 3) ? NBody( [tuple( [rand(1:4, ((N*(N-1))÷2)); 0]... ) for n = 1:ntup],
+   (N <= 3) ? BLNBody( [tuple( [rand(1:4, ((N*(N-1))÷2)); 0]... ) for n = 1:ntup],
                      (0.1+rand(ntup))/factorial(N), DD[N] )
-           : NBody( [tuple( rand(0:N, ((N*(N-1))÷2+1))... ) for n = 1:ntup],
+           : BLNBody( [tuple( rand(0:N, ((N*(N-1))÷2+1))... ) for n = 1:ntup],
                    (0.1+rand(ntup))/factorial(N), DD[N] ) )
 
 println("testing the transform")
 println("---------------------")
 D = D3
 rr = linspace(r0, r0+1, 10)
-tdh = (D.transform.(rr + 1e-5) - D.transform.(rr - 1e-5)) / (2e-5)
-(@test norm(tdh - D.transform_d.(rr), Inf) < 1e-8) |> println
+tdh = (transform.(D, rr + 1e-5) - transform.(D, rr - 1e-5)) / (2e-5)
+(@test norm(tdh - transform_d.(D, rr), Inf) < 1e-8) |> println
 
 println("testing the cutoff")
 println("------------------")
 D = D3
 rr = linspace(rcut3-0.9, rcut3+0.1, 100)
-dfh = (D.fcut.(rr + 1e-5) - D.fcut.(rr - 1e-5)) / (2e-5)
-(@test norm(dfh - D.fcut_d.(rr), Inf) < 1e-8) |> println
+dfh = (fcut.(D, rr + 1e-5) - fcut.(D, rr - 1e-5)) / (2e-5)
+(@test norm(dfh - fcut_d.(D, rr), Inf) < 1e-8) |> println
 
 
 println("testing a transformed invariant")
 println("-------------------------------")
 r = SVector( (r0 + rand(3))... )
 rv = Vector(r)
-I1, _, dI1, _ = NBodyIPs.Polys.invariants_ed(D, r)
+I1, _, dI1, _ = invariants_ed(D, r)
 I1 = I1[2]
 dI1 = dI1[2]
 errs = []
@@ -58,7 +59,7 @@ for p = 2:11
    dI1h = zeros(3)
    for n = 1:3
       rv[n] += h
-      dI1h[n] = (NBodyIPs.Polys.invariants(D, SVector(rv...))[1][2] - I1) / h
+      dI1h[n] = (invariants(D, SVector(rv...))[1][2] - I1) / h
       rv[n] -= h
    end
    push!(errs, norm(dI1h - dI1, Inf))
@@ -67,7 +68,7 @@ end
 (@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
 
 
-println("`NBody` gradient-test on simplices")
+println("`BLNBody` gradient-test on simplices")
 println("----------------------------------")
 for N in 2:5, ntup = [1,3]
    VN = random_nbody(N, ntup)
@@ -93,7 +94,7 @@ for N in 2:5, ntup = [1,3]
 end
 
 
-println("`NBody` finite-difference test on configurations")
+println("`BLNBody` finite-difference test on configurations")
 println("------------------------------------------------")
 at1 = rattle!(bulk(:Cu, cubic=true) * (1,2,2), 0.02)
 at2 = bulk(:Cu)

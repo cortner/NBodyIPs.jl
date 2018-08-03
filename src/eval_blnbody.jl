@@ -1,3 +1,11 @@
+
+import NBodyIPs.BLPolys.BLInvariants: invariants,
+                                      invariants_d,
+                                      invariants_ed
+
+
+include("fast_monomials.jl")
+
 @generated function _sdot(a::T, B::SVector{N, T}) where {N, T}
    code = "@SVector $T["
    for n = 1:N

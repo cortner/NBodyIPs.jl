@@ -4,7 +4,5 @@ NeighbourLists
 Reexport
 StaticArrays
 JSON
-FileIO
 Sobol
 StaticPolynomials
-Combinatorics

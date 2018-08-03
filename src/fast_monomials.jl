@@ -1,8 +1,10 @@
 
 
-
 using StaticArrays
-using NBodyIPs: push_str!, append_str!
+
+push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
+append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
+
 
 # univariate monomial
 @inline _m1(α::Number, x::T) where {T <: Number} =
@@ -76,7 +78,7 @@ end
 #   TODO: combine fcut_d and monomial_d into a single function
 # ---------------------------------------------------------------
 
-function fcut(D::Dictionary, r::SVector{M, T}) where {M, T}
+function fcut(D::BLDictionary, r::SVector{M, T}) where {M, T}
    fc = one(T)
    for i = 1:M
       @fastmath fc *= fcut(D, r[i])
@@ -85,7 +87,7 @@ function fcut(D::Dictionary, r::SVector{M, T}) where {M, T}
 end
 
 
-@generated function fcut_d(D::Dictionary, r::SVector{M, T}) where {M, T}
+@generated function fcut_d(D::BLDictionary, r::SVector{M, T}) where {M, T}
    exprs = Expr[]
 
    # evaluate the scalar monomials

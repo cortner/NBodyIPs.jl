@@ -35,7 +35,8 @@ import Base: length,
 import JuLIP: cutoff
 
 import JuLIP.Potentials: evaluate,
-                         evaluate_d
+                         evaluate_d,
+                         @pot
 
 import NBodyIPs: bodyorder,
                  fast,
@@ -55,15 +56,13 @@ export BLNBody,
 # import the raw invariant polynomials
 include("blinvariants.jl")
 
-@show BLInvariants
-
-using BLInvariants: invariants,
-                    invariants_d,
-                    invariants_ed,
-                    corners,
-                    tdegrees,
-                    bo2edges,
-                    edges2bo
+using NBodyIPs.BLPolys.BLInvariants: invariants,
+                                     invariants_d,
+                                     invariants_ed,
+                                     corners,
+                                     tdegrees,
+                                     bo2edges,
+                                     edges2bo
 
 # --------------- BLDictionary -------------
 
@@ -118,8 +117,8 @@ BLDictionary(transform::String, cutoff::Union{String, Tuple}) =
          BLDictionary(SpaceTransform(transform), Cutoff(cutoff))
 
 
-@inline transform(D::BLDictionary, r::Number) = transform.f(r)
-@inline transform_d(D::BLDictionary, r::Number) = transform.f_d(r)
+@inline transform(D::BLDictionary, r::Number) = D.transform.f(r)
+@inline transform_d(D::BLDictionary, r::Number) = D.transform.f_d(r)
 @inline fcut(D::BLDictionary, r::Number) = D.cutoff.f(r)
 @inline fcut_d(D::BLDictionary, r::Number) = D.cutoff.f_d(r)
 @inline cutoff(D::BLDictionary) = D.cutoff.rcut

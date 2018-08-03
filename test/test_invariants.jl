@@ -2,8 +2,10 @@ using NBodyIPs
 using JuLIP, Base.Test, StaticArrays, ForwardDiff, Combinatorics
 using BenchmarkTools
 
-using NBodyIPs.Polys: invariants, invariants_d, invariants_ed
+using NBodyIPs.BLPolys.BLInvariants: invariants, invariants_d, invariants_ed
 using JuLIP.Potentials: evaluate, evaluate_d
+
+include("aux_testing.jl")
 
 all_invariants(r) = vcat(invariants(r)...)  # [I1; I2]
 ad_invariants(r) = ForwardDiff.jacobian(all_invariants, r)
@@ -41,7 +43,7 @@ for dim in [3, 6, 10]
       @printf(" %d | %.2e \n", p, errs[end])
    end
    println("---------------")
-   @test minimum(errs) <= 1e-3 * maximum(errs) 
+   @test minimum(errs) <= 1e-3 * maximum(errs)
 end
 println()
 
@@ -51,7 +53,7 @@ for dim in [3, 6, 10]
    for n = 1:3
       r = 1.0 + SVector(rand(dim)...)
       I = all_invariants(r)
-      for rπ in NBodyIPs.simplex_permutations(r)
+      for rπ in simplex_permutations(r)
          @test I ≈ all_invariants(SVector(rπ...))
       end
       print(".")
