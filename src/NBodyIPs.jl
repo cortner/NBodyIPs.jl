@@ -35,8 +35,8 @@ export bl_basis
 
 # include("bapolys.jl")
 
-# include("environ.jl")
-# import NBodyIPs.EnvBLs: envbl_basis
-# export envbl_basis
+include("environ.jl")
+import NBodyIPs.EnvBLs: envbl_basis
+export envbl_basis
 
 end # module
