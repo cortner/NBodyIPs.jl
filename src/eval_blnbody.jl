@@ -1,4 +1,14 @@
 
+
+using NBodyIPs.FastPolys: fpoly,
+                          fpoly_d
+
+import NBodyIPs: evaluate_many!,
+                 evaluate_many_d!
+
+import JuLIP.Potentials: evaluate,
+                         evaluate_d
+
 import NBodyIPs.BLPolys.BLInvariants: invariants,
                                       invariants_d,
                                       invariants_ed

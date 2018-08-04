@@ -25,23 +25,16 @@ using NBodyIPs: NBodyFunction,
                 SpaceTransform,
                 Cutoff
 
-using NBodyIPs.FastPolys: fpoly,
-                          fpoly_d
-
 import Base: length,
              Dict,
              ==
 
 import JuLIP: cutoff
 
-import JuLIP.Potentials: evaluate,
-                         evaluate_d,
-                         @pot
+import JuLIP.Potentials: @pot
 
 import NBodyIPs: bodyorder,
                  fast,
-                 evaluate_many!,
-                 evaluate_many_d!,
                  degree,
                  combinebasis
 
