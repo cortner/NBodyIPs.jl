@@ -1,6 +1,6 @@
 using Base.Test
 using NBodyIPs
-using NBodyIPs.BLPolys
+using NBodyIPs.Polys
 
 
 println("Check (De-)Dictionisation of `BLDictionary`")
@@ -14,7 +14,7 @@ println("generate some basis functions")
 rcuts = [9.2, 6.2, 4.5]   # 9.2
 TRANSFORM = "r -> (2.9/r)^3"
 CUTOFF = ["(:cos, $(0.66*rcut), $(rcut))" for rcut in rcuts]
-B1 = [BLNBody(1.0)]
+B1 = [NBPoly(1.0)]
 B2 = bl_basis(2, TRANSFORM, CUTOFF[1], 12)
 B3 = bl_basis(3, TRANSFORM, CUTOFF[2], 10)
 B4 = bl_basis(4, TRANSFORM, CUTOFF[3], 6)

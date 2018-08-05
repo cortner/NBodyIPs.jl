@@ -1,5 +1,5 @@
 using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP
-using NBodyIPs.BLPolys
+using NBodyIPs.Polys
 using JuLIP.Potentials: evaluate, evaluate_d
 
 rcut = 7.0
@@ -10,14 +10,14 @@ D = BLDictionary(TRANSFORM, CUTOFF3)
 # 3-body potential
 B3 = bl_basis(3, D, 10)
 c = rand(length(B3))
-V3 = BLNBody(B3, c, D)
-V3sp = StBLNBody(V3)
+V3 = NBPoly(B3, c, D)
+V3sp = StNBPoly(V3)
 
 # 4-body potential
 B4 = bl_basis(4, D, 8)
 c = rand(length(B4))
-V4 = BLNBody(B4, c, D)
-V4sp = StBLNBody(V4)
+V4 = NBPoly(B4, c, D)
+V4sp = StNBPoly(V4)
 
 r3 = (@SVector rand(3)) + 3.0
 r4 = (@SVector rand(6)) + 3.0

@@ -1,11 +1,4 @@
 
-module BLInvariants
-
-using StaticArrays
-
-using NBodyIPs.FastPolys
-
-
 """
 `invariants(r::SVector{M,T}) -> SVector` : computes the invariant descriptors as a function of the
 lengths in a simplex. The order is lexicographical, i.e.,
@@ -18,18 +11,17 @@ lengths in a simplex. The order is lexicographical, i.e.,
 The first `n*(n-1)/2` invariants are the primary invariants; the remainind
 ones are the secondary invariants.
 """
-function invariants end
+module BLInvariants
 
-"""
-`invariants(r::SVector{M,T}) -> SMatrix` : computes the jacobian of
-`invariants`
-"""
-function invariants_d end
+using StaticArrays
 
-"""
-TODO
-"""
-function invariants_ed end
+using NBodyIPs.FastPolys
+
+# import NBodyIPs: invariants,
+#                  invariants_d,
+#                  invariants_ed
+
+
 
 """
 need documentation here

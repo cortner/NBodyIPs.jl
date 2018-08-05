@@ -4,7 +4,7 @@
 #   -> maybe define these for AbstractAtoms, then remove the
 #      conversion from ASE???
 # * poly_regularise
-# * Remove BLNBody{1} altogether and replace it with an OneBody?
+# * Remove NBPoly{1} altogether and replace it with an OneBody?
 #   that is available for all sub-modules?
 # * reformulate the basis assembly for EnvIP to allow arbitrary inner functions?
 
@@ -28,15 +28,22 @@ include("common.jl")
 # the machinery for evaluating the invariants as fast as possible
 include("fastpolys.jl")
 
-# Bond-length polynomials
-include("blpolys.jl")
-import NBodyIPs.BLPolys.bl_basis
+# bond-length invariants
+include("blinvariants.jl")
+
+# # bond-angle invariants
+# include("bainvariants.jl")
+
+include("nbdescriptors.jl")
+
+# Polynomials of an invariant coordinate system
+include("polys.jl")
+import NBodyIPs.Polys.bl_basis
 export bl_basis
 
-# include("bapolys.jl")
 
-include("environ.jl")
-import NBodyIPs.EnvIPs: envbl_basis
-export envbl_basis
+# include("environ.jl")
+# import NBodyIPs.EnvIPs: envbl_basis
+# export envbl_basis
 
 end # module

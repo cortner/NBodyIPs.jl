@@ -6,7 +6,7 @@ using JuLIP:              AbstractCalculator
 using JuLIP.Potentials:   Shift,
                           @analytic,
                           @pot
-using NBodyIPs.BLPolys:   BLDictionary,
+using NBodyIPs.Polys:   BLDictionary,
                           bl_basis
 
 import Base:              Dict,

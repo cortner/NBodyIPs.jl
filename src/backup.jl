@@ -82,3 +82,62 @@ d1 = JLD.load("temp.jld", "d1")
 
 
 JLD.@load "temp.jld" lsq
+
+
+
+"""
+`struct BLDictionary` : specifies all details about the basis functions
+
+## Constructor
+
+`BLDictionary(ftrans, fcut)`, where `ftrans`, `fcut` specify in one of several
+ways how the dictionary is defined. If
+the radius is not provided then `BLDictionary` will try to infer it from the
+`fcut` argument. E.g.,
+```julia
+D = BLDictionary("r -> 1/r", (:cos, rcut1, rcut2))
+```
+
+Known symbols for the cutoff are
+```
+[:cos, :sw, :spline, :square, :cos2s]
+```
+
+## Developer Doc: Methods associated with a `D::BLDictionary`:
+
+* `invariants`, `invariants_d`, `invariants_ed`: compute invariants and jacobian
+   in transformed coordinates defined by `D.transform`
+* `evaluate`, `evaluate_d`: evaluate the (univariate) basis
+   function associated with this dictionary; at the moment only
+   standard polynomials are admitted
+* `fcut, fcut_d`: evulate the cut-off function and its derivative / gradient
+   when interpreted as a product of cut-off functions
+"""
+struct BLDictionary{TT, TC}
+   transform::TT
+   cutoff::TC
+end
+
+function ==(D1::BLDictionary, D2::BLDictionary)
+   return (D1.transform == D2.transform) && (D1.cutoff == D2.cutoff)
+end
+
+Dict(D::BLDictionary) = Dict("__id__" => "BLDictionary",
+                             "transform" => Dict(D.transform),
+                             "cutoff" => Dict(D.cutoff))
+
+BLDictionary(D::Dict) = BLDictionary( SpaceTransform(D["transform"]),
+                                      Cutoff(D["cutoff"]) )
+
+Base.convert(::Val{:BLDictionary}, D::Dict) = BLDictionary(D)
+
+
+BLDictionary(transform::String, cutoff::Union{String, Tuple}) =
+         BLDictionary(SpaceTransform(transform), Cutoff(cutoff))
+
+
+@inline transform(D::BLDictionary, r::Number) = D.transform.f(r)
+@inline transform_d(D::BLDictionary, r::Number) = D.transform.f_d(r)
+@inline fcut(D::BLDictionary, r::Number) = D.cutoff.f(r)
+@inline fcut_d(D::BLDictionary, r::Number) = D.cutoff.f_d(r)
+@inline cutoff(D::BLDictionary) = D.cutoff.rcut

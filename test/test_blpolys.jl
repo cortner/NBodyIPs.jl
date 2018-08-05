@@ -2,8 +2,8 @@ using NBodyIPs, JuLIP, BenchmarkTools, StaticArrays
 using Base.Test
 
 
-using NBodyIPs.BLPolys: BLNBody, BLDictionary, transform, transform_d, fcut, fcut_d
-using NBodyIPs.BLPolys.BLInvariants: invariants, invariants_d, invariants_ed
+using NBodyIPs.Polys: NBPoly, BLDictionary, transform, transform_d, fcut, fcut_d
+using NBodyIPs.Polys.BLInvariants: invariants, invariants_d, invariants_ed
 
 profile = false
 
@@ -26,9 +26,9 @@ D5 = BLDictionary(TRANSFORM, (:cos, 0.66*rcut5, rcut5) )
 DD = [nothing, D3, D3, D4, D5]
 
 random_nbody(N, ntup) = (
-   (N <= 3) ? BLNBody( [tuple( [rand(1:4, ((N*(N-1))÷2)); 0]... ) for n = 1:ntup],
+   (N <= 3) ? NBPoly( [tuple( [rand(1:4, ((N*(N-1))÷2)); 0]... ) for n = 1:ntup],
                      (0.1+rand(ntup))/factorial(N), DD[N] )
-           : BLNBody( [tuple( rand(0:N, ((N*(N-1))÷2+1))... ) for n = 1:ntup],
+           : NBPoly( [tuple( rand(0:N, ((N*(N-1))÷2+1))... ) for n = 1:ntup],
                    (0.1+rand(ntup))/factorial(N), DD[N] ) )
 
 println("testing the transform")
@@ -68,7 +68,7 @@ end
 (@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
 
 
-println("`BLNBody` gradient-test on simplices")
+println("`NBPoly` gradient-test on simplices")
 println("----------------------------------")
 for N in 2:5, ntup = [1,3]
    VN = random_nbody(N, ntup)
@@ -94,7 +94,7 @@ for N in 2:5, ntup = [1,3]
 end
 
 
-println("`BLNBody` finite-difference test on configurations")
+println("`NBPoly` finite-difference test on configurations")
 println("------------------------------------------------")
 at1 = rattle!(bulk(:Cu, cubic=true) * (1,2,2), 0.02)
 at2 = bulk(:Cu)

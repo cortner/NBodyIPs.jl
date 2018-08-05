@@ -4,7 +4,7 @@ module BAPolys
 
 
 """
-`module BLPolys`
+`module Polys`
 
 The exported symbols are
 * `BLDictionary`: collects all the information about a basis
@@ -19,7 +19,7 @@ The exported symbols are
 * `M` : number of edges, i.e., M = N (N-1)/2
 * `K` : length of the tuples defining polynomials, K = M+1
 """
-module BLPolys
+module Polys
 
 import StaticPolynomials
 using StaticArrays
@@ -41,8 +41,8 @@ import NBodyIPs:          bodyorder,
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
-export BLNBody,
-       StBLNBody,
+export NBPoly,
+       StNBPoly,
        BLDictionary,
        bl_basis
 

@@ -1,7 +1,7 @@
 using Base.Test
 
 using JuLIP, NBodyIPs
-using NBodyIPs.BLPolys: BLDictionary, BLNBody
+using NBodyIPs.Polys: BLDictionary, NBPoly
 const Env = NBodyIPs.EnvIPs
 
 println("-------------------")
@@ -14,7 +14,7 @@ at = rattle!(bulk(:Cu, cubic=true) * 2, 0.02)
 D3 = BLDictionary("exp( - 3 * ((r/$r0) - 1))",
                  "(:cos, $(0.66*rcut3), $rcut3)" )
 
-random_3body(ntup=1) = BLNBody( [tuple( [rand(1:4, 3); 0]... ) for n = 1:ntup],
+random_3body(ntup=1) = NBPoly( [tuple( [rand(1:4, 3); 0]... ) for n = 1:ntup],
                                  (0.1+rand(ntup))/factorial(3), D3 )
 
 Vn = ("exp(- 3 * ((r/$r0)-1))", 1.8*r0)

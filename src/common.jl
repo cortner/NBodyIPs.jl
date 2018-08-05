@@ -23,6 +23,21 @@ export NBodyIP,
        site_energies,
        virial
 
+# ----------- some auxiliaries we will use throughout -------------
+
+"""
+`push_str!(ex::Vector{Expr}, s::String)` : parse the string and
+append it to the expressions.
+"""
+push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
+
+
+"""
+`append_str!(ex::Vector{Expr}, s::Vector{String})` : parse the strings and
+append them to the expressions.
+"""
+append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
+
 
 # ----------- some generic functions that we like to have available globally
 #             to overload as needed
@@ -46,6 +61,14 @@ that combines all basis function into a single IP.
 """
 function combinebasis end
 
+# prototypes for the invariants
+function invariants end
+function invariants_d end
+function invariants_ed end
+
+# prototypes for obtaining the descriptor
+function descriptor end
+
 
 # ----------- Abstract Supertype for pure NBodyFunctions --------------
 
@@ -61,6 +84,17 @@ abstract type NBodyFunction{N} <: AbstractCalculator end
 
 bodyorder(V::NBodyFunction{N}) where {N} = N
 
+"""
+`AbstractDescriptor`: abstract supertype for different descriptors
+of N-body configurations.
+"""
+abstract type AbstractDescriptor end
+
+"""
+`NBSiteDescriptor`: abstract supertype for descriptors that start from
+a site-based formulation.
+"""
+abstract type NBSiteDescriptor <: AbstractDescriptor end
 
 
 """
