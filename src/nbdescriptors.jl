@@ -6,6 +6,10 @@ struct BondLengthDesc{TT, TC} <: NBSiteDescriptor
    cutoff::TC
 end
 
+BondLengthDesc(transform::String, cutoff::Union{String, Tuple}) =
+         BondLengthDesc(SpaceTransform(transform), Cutoff(cutoff))
+
+
 struct BondAngleDesc{TT, TC} <: NBSiteDescriptor
    transform::TT
    cutoff::TC
@@ -20,11 +24,11 @@ end
 @inline cutoff(D::AbstractDescriptor) = D.cutoff.rcut
 
 
-evaluate(V::NBodyFunction, args...) =
-      evaluate(V, descriptor(V), args...)
+evaluate(V::NBodyFunction, Rs, J) =
+      evaluate_desc(V, descriptor(V), Rs, J)
 
-evaluate_d!(dVsite, V::NBodyFunction, args...) =
-      evaluate_d!(dVsite, V, descriptor(V), args...)
+evaluate_d!(dVsite, V::NBodyFunction, Rs, J) =
+      evaluate_desc_d!(dVsite, V, descriptor(V), Rs, J)
 
 """
 `_sdot(a::T, B::SVector{N, T})`: efficiently compute `[ a .* b for b in B ]`
@@ -128,18 +132,19 @@ J : neighbour (sub-) indices
    quote
       $(Expr(:meta, :inline))
       @inbounds $(Expr(:block, code...))
-      return dVsite
+      return dVsite 
    end
 end
 
 
 
-function evaluate(V::NBodyFunction{N},
+function evaluate_desc(V::NBodyFunction{N},
                   desc::BondLengthDesc,
                   Rs::AbstractVector{JVec{T}},
                   J::SVector{K, Int}) where {N, T, K}
 
    # get bond-lengths (and bond directions => throw those away)
+   rcut = cutoff(V)
    r, _ = _simplex_edges(Rs, J)
    if maximum(r) > rcut
       return zero(T)
@@ -156,23 +161,22 @@ function evaluate(V::NBodyFunction{N},
 end
 
 # (out, s, S, J, _) -> _grad_len2pos!(out, evaluate_d(V, s)/N, J, S),
-function evaluate_d!(dVsite::AbstractVector,
-                     V::NBodyFunction{N},
-                     desc::BondLengthDesc,
-                     Rs::AbstractVector{JVec{T}},
-                     J::SVector{K, Int}) where {N, T, K}
-
+function evaluate_desc_d!(dVsite::AbstractVector,
+                          V::NBodyFunction{N},
+                          desc::BondLengthDesc,
+                          Rs::AbstractVector{JVec{T}},
+                          J::SVector{K, Int}) where {N, T, K}
    # get bond-lengths (and bond directions => throw those away)
+   rcut = cutoff(V)
    r, S = _simplex_edges(Rs, J)
    if maximum(r) > rcut
-      return zero(T)
+      return dVsite
    end
    # compute the cut-off
-   fc = fcut(desc.cutoff, r)
+   fc, fc_d = fcut_d(desc.cutoff, r)
    if fc == 0
-      return zero(T)
+      return dVsite
    end
-   fc_d = fcut_d(desc, r)
    # get the invariants
    I1, I2, I1_d, I2_d = invariants_ed(desc, r)
    # evaluate the inner potential function (e.g. polynomial)

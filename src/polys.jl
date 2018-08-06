@@ -26,7 +26,9 @@ using NBodyIPs: NBodyFunction,
                 Cutoff,
                 bodyorder,
                 _decode_dict,
-                BondLengthDesc
+                BondLengthDesc,
+                edges2bo,
+                bo2edges
 
 import Base: length,
              Dict,

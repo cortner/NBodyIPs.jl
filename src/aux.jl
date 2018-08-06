@@ -122,7 +122,8 @@ Dict(fcut::Cutoff) = Dict( "__id__" => "Cutoff",
 Cutoff(D::Dict) = Cutoff(Symbol(D["sym"]), D["params"]...)
 
 
-
+fcut(C::Cutoff, r::Number) = C.f(r)
+fcut_d(C::Cutoff, r::Number) = C.f_d(r)
 
 
 # ---------------------------------------------------------------

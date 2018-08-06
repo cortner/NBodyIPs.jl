@@ -132,8 +132,6 @@ BLDictionary(D::Dict) = BLDictionary( SpaceTransform(D["transform"]),
 Base.convert(::Val{:BLDictionary}, D::Dict) = BLDictionary(D)
 
 
-BLDictionary(transform::String, cutoff::Union{String, Tuple}) =
-         BLDictionary(SpaceTransform(transform), Cutoff(cutoff))
 
 
 @inline transform(D::BLDictionary, r::Number) = D.transform.f(r)

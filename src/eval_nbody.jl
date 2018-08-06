@@ -97,7 +97,7 @@ function forces(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    F = zeros(JVec{T}, length(at))
    dVsite = zeros(JVec{T}, maxneigs)
    for (i, j, r, R) in sites(nlist)
-      dVsite .*= 0.0
+      fill!(dVsite, zero(JVec{T}))
       eval_site_nbody!(
             Val(N), R, cutoff(V),
             (out, R, J, temp) -> evaluate_d!(out, V, R, J),

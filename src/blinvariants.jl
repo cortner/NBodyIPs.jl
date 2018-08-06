@@ -37,18 +37,6 @@ degrees are `(1, 2, 3)`.
 """
 function tdegrees end
 
-"""
-`bo2edges(N)` : bodyorder-to-edges
-"""
-bo2edges(N::Integer) = (N * (N-1)) ÷ 2
-bo2edges(::Val{N}) where {N} = (N * (N-1)) ÷ 2
-
-"""
-`edges2bo(M)`: "edges-to-bodyorder", an internal function that translates
-the number of edges in a simplex into the body-order
-"""
-edges2bo(M::Integer) = (M <= 0) ? 1 : round(Int, 0.5 + sqrt(0.25 + 2 * M))
-
 
 # ------------------------------------------------------------------------
 #             2-BODY Invariants

@@ -4,7 +4,9 @@ import NBodyIPs: evaluate_many!,
                  evaluate_many_d!,
                  invariants,
                  invariants_d,
-                 invariants_ed
+                 invariants_ed,
+                 evaluate_I,
+                 evaluate_I_d
 
 import JuLIP.Potentials: evaluate,
                          evaluate_d
@@ -29,7 +31,7 @@ evaluate_I(V::NBPoly, I1, I2, fc) = sum( c * I2[1+α[end]] * monomial(α, I1)
                                          for  (α, c) in zip(V.t, V.c) ) * fc
 
 
-function evaluate_I_d(V::NBPoly, I1::SVector{M,T}, I2, I1_d, I2_d, fc, fc_d
+function evaluate_I_d(V::NBPoly, I1::SVector{M,T}, I2, dI1, dI2, fc, fc_d
                       ) where {M, T}
    E = zero(T)
    dM = zero(SVector{M, T})
@@ -45,7 +47,6 @@ function evaluate_I_d(V::NBPoly, I1::SVector{M,T}, I2, I1_d, I2_d, fc, fc_d
    for i = 1:length(dI1)   # dI1' * dM
       dE += dM[i] * dI1[i]
    end
-   fc, fc_d = fcut_d(D, r)
    return dE * fc + E * fc_d
 end
 

@@ -2,7 +2,7 @@ using NBodyIPs
 using JuLIP, Base.Test, StaticArrays, ForwardDiff, Combinatorics
 using BenchmarkTools
 
-using NBodyIPs.Polys.BLInvariants: invariants, invariants_d, invariants_ed
+using NBodyIPs.BLInvariants: invariants, invariants_d, invariants_ed
 using JuLIP.Potentials: evaluate, evaluate_d
 
 include("aux_testing.jl")
