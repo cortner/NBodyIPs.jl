@@ -9,7 +9,7 @@ const blinvariants = NBodyIPs.BLInvariants.invariants
 const blinvariants_d = NBodyIPs.BLInvariants.invariants_d
 const blinvariants_ed = NBodyIPs.BLInvariants.invariants_ed
 
-profile = false
+profile = true
 
 if profile
    nbasis = [0, 10, 50, 100, 300]
@@ -20,7 +20,7 @@ end
 println("Setting up the test systems ...")
 r0 = rnn(:Cu)
 TRANSFORM = "r -> exp( - 3 * ((r/$r0) - 1))"
-at = rattle!(bulk(:Cu, cubic=true) * 2, 0.02)
+at = rattle!(bulk(:Cu, cubic=true) * 2, 0.05)
 rcut3 = 3.1 * r0
 D3 = BondLengthDesc(TRANSFORM, (:cos, 0.66*rcut3, rcut3) )
 rcut4 = 2.1 * r0
@@ -115,8 +115,7 @@ end
 println("Testing Collective Assembly across a Basis Set")
 println("----------------------------------------------")
 
-# BB = [ nothing; [ [random_nbody(N, 1) for _=1:nbasis[N]] for N = 2:5 ] ]
-BB = [ nothing; [ [random_nbody(N, 1) for _=1:3] for N = 2:5 ] ]
+BB = [ nothing; [ [random_nbody(N, 1) for _=1:nbasis[N]] for N = 2:5 ] ]
 
 for N = 2:5
    B = BB[N]

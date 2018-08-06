@@ -201,9 +201,9 @@ function evaluate_many!(Es,
 
    rcut = cutoff(desc.cutoff)
    r, _ = _simplex_edges(Rs, J)
-   maximum(r) > rcut && return zero(T)
+   maximum(r) > rcut && return Es
    fc = fcut(desc.cutoff, r)
-   fc == 0 && return zero(T)
+   fc == 0 && return Es
 
    # get the invariants
    I1, I2 = invariants(desc, r)
@@ -222,7 +222,7 @@ function evaluate_many_d!(dVsite::AbstractVector,
                           J)  where {TB <: NBodyFunction{N}} where {N}
    rcut = cutoff(desc.cutoff)
    r, S = _simplex_edges(Rs, J)
-   maximum(r) > rcut && dVsite
+   maximum(r) > rcut && return dVsite
    fc, fc_d = fcut_d(desc.cutoff, r)
    fc == 0 && return dVsite
 

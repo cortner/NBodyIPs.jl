@@ -193,10 +193,10 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
 
    for (i, j, r, R) in sites(nlist)
       # clear dVsite
-      for n = 1:nB; dVsite[n] .*= 0.0; end
+      for n = 1:nB; fill!(dVsite[n], zero(JVec{T})); end
       # fill dVsite
       eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many!(out, B, R, J),
+                       (out, R, J, temp) -> evaluate_many_d!(out, B, R, J),
                        dVsite, nothing)
       # write it into the force vectors
       for ib = 1:nB, n = 1:length(j)
@@ -212,7 +212,7 @@ forces(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
 
 
 function virial(B::AbstractVector{TB}, at::Atoms{T}
-              ) where {TB <: NBodyFunction{N}, T} where {N}
+                ) where {TB <: NBodyFunction{N}, T} where {N}
    rcut = cutoff(B[1])
    nlist = neighbourlist(at, rcut)
    maxneigs = max_neigs(nlist)
@@ -227,11 +227,10 @@ function virial(B::AbstractVector{TB}, at::Atoms{T}
       for n = 1:nB; dVsite[n] .*= 0.0; end
       # fill dVsite
       eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many!(out, B, R, J),
+                       (out, R, J, temp) -> evaluate_many_d!(out, B, R, J),
                        dVsite, nothing)
       # update the virials
       for iB = 1:nB
-         @show dVsite[iB]
          S[iB] += JuLIP.Potentials.site_virial(dVsite[iB], R)
       end
    end
