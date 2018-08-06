@@ -34,7 +34,7 @@ include("blinvariants.jl")
 # # bond-angle invariants
 # include("bainvariants.jl")
 
-include("nbdescriptors.jl")
+include("descriptors.jl")
 
 # Polynomials of an invariant coordinate system
 include("polys.jl")

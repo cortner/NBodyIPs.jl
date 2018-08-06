@@ -22,40 +22,55 @@ import StaticPolynomials
 using StaticArrays
 
 using NBodyIPs: NBodyFunction,
-                SpaceTransform,
-                Cutoff,
                 bodyorder,
                 _decode_dict,
                 BondLengthDesc,
                 edges2bo,
                 bo2edges
 
-import Base: length,
-             Dict,
-             ==
-
-import JuLIP: cutoff
-import JuLIP.Potentials: @pot
-
-import NBodyIPs:  fast,
-                  degree,
-                  combinebasis,
-                  descriptor
+import Base:              length,
+                          Dict,
+                          ==
+import JuLIP:             cutoff
+import JuLIP.Potentials:  @pot
+import NBodyIPs:          fast,
+                          degree,
+                          combinebasis,
+                          descriptor
 
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
 export NBPoly,
        StNBPoly,
-       bl_basis
+       blpolys
 
 
 # ==================================================================
 #           Polynomials of Invariants
 # ==================================================================
 
+"""
+`struct NBPoly`  (N-Body Polynomial, slow implementation)
 
-@pot struct NBPoly{N, M, T, TD} <: NBodyFunction{N}
+A `struct` storing the information for a (pure) N-body potential, i.e.,
+containing *only* terms of a specific body-order. Several `NBPoly`s can be
+combined into an interatomic potential via `NBodyIP`.
+
+### Fields
+
+* `t::Vector{NTuple{M,TI}}` : list of M-tuples containing basis function information
+e.g., if M = 7, α = t[n] is a 7-vector then this corresponds to the basis function
+```
+I2[α[7]] * ∏_{j=1..6} I1[j]^α[j]
+```
+where `I1, I2` are the 4-body invariants.
+
+* `c::Vector{T}`: vector of coefficients for the basis functions
+
+* `D`: a descriptor (cf `NBodyIPs.AbstractDescriptor`)
+"""
+struct NBPoly{N, M, T, TD} <: NBodyFunction{N}
    t::VecTup{M}               # tuples M = #edges + 1
    c::Vector{T}               # coefficients
    D::TD                      # Descriptor
@@ -66,25 +81,6 @@ end
 
 descriptor(V::NBPoly) = V.D
 
-"""
-`struct NBPoly`  (N-Body Basis Function)
-
-A struct storing the information for a pure N-body potential, i.e., containing
-*only* terms of a specific body-order. Several `NBPoly`s can be
-combined into an interatomic potential via `NBodyIP`.
-
-### Fields
-
-* `t::Vector{NTuple{M,TI}}` : list of M-tuples containing basis function information
-e.g., if M = 3, α = t[1] is a 3-vector then this corresponds to the basis function
-`f[α[1]](Q[1]) * f[α[2]](Q[2]) * f[α[3]](Q[3])` where `Q` are the 3-body invariants.
-
-* `c::Vector{T}`: vector of coefficients for the basis functions
-
-* `D`: a descriptor (cf `NBodyIPs.AbstractDescriptor`)
-"""
-NBPoly
-
 # standard constructor (N can be inferred)
 NBPoly(t::VecTup{K}, c, D) where {K} = NBPoly(t, c, D, Val(edges2bo(K-1)))
 
@@ -93,12 +89,12 @@ NBPoly(t::Tup, c, D) = NBPoly([t], [c], D)
 
 # collect multiple basis functions represented as NBPoly's into a single NBPoly
 # (for performance reasons)
+# TODO: this is not general enough!
 NBPoly(B::Vector{TB}, c, D) where {TB <: NBPoly} =
       NBPoly([b.t[1] for b in B], c .* [b.c[1] for b in B], D)
 
 # 1-body term (on-site energy)
-NBPoly(c::Float64) =
-      NBPoly([Tup{0}()], [c], nothing, Val(1))
+NBPoly(c::Float64) = NBPoly([Tup{0}()], [c], nothing, Val(1))
 
 # number of basis functions which this term is made from
 length(V::NBPoly) = length(V.t)
@@ -208,7 +204,7 @@ fast(Vn::NBPoly) =  StNBPoly(Vn)
 fast(Vn::NBPoly{1}) = Vn
 
 # --------- EVALUATION OF THE NBPoly and StNBPoly potentials ---------
-include("eval_blnbody.jl")
+include("eval_nbpoly.jl")
 
 
 # ==================================================================
@@ -300,47 +296,3 @@ blpoly_basis(N::Integer, strans::String, scut::String, deg; kwargs...) =
 
 
 end # module
-
-
-
-
-# TODO TODO
-
-# include("poly_regularise.jl")
-
-
-# # ----------------- some simplified access functions ------------------
-#
-# evaluate(V::NBodyFunction{2}, r::Number) = evaluate(V, SVector(r))
-#
-# evaluate_d(V::NBodyFunction{2}, r::Number) = evaluate_d(V, SVector(r))[1]
-#
-# evaluate_dd(V::NBodyFunction{2}, r::Number) =
-#       ((@D V(r+1e-5)) - (@D V(r-1e-5))) / 1e-5
-#
-# evaluate(V::NBodyFunction{3}, r1::Number, r2::Number, r3::Number) =
-#       evaluate(V, SVector(r1, r2, r3))
-
-
-
-# # =============== Experimental:
-# #   evaluate NBodyIP
-#
-# (V::NBodyIP)(args...) = evaluate(V, args...)
-#
-# evaluate(V::NBodyIP, r::Number) = evaluate(V::NBodyIP, SVector(r))
-#
-# evaluate(V::NBodyIP, r1::T, r2::T, r3::T) where {T <: Number} =
-#       evaluate(V::NBodyIP, SVector(r1, r2, r3))
-#
-# function evaluate(V::NBodyIP, r::SVector{N, T}) where {N, T}
-#    v = zero(T)
-#    for Vn in V.components
-#       if bo2edges(bodyorder(Vn)) == N
-#          v += Vn(r)
-#       end
-#    end
-#    return v
-# end
-
-# dim(V::NBPoly{N,M}) where {N, M} = M-1

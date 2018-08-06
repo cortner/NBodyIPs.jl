@@ -112,39 +112,39 @@ for at in [at1, at2]
 end
 
 
-# TODO: TURN COLLECTIVE ASSEMBLY TESTS BACK ON
-# println("Testing Collective Assembly across a Basis Set")
-# println("----------------------------------------------")
-#
+println("Testing Collective Assembly across a Basis Set")
+println("----------------------------------------------")
+
 # BB = [ nothing; [ [random_nbody(N, 1) for _=1:nbasis[N]] for N = 2:5 ] ]
-#
-# for N = 2:5
-#    B = BB[N]
-#    println("[$N-body]")
-#    E1 = [energy(b, at) for b in B]
-#    E2 = energy( B, at )
-#    print("E: "); (@test E1 ≈ E2) |> println
-#    F1 = [forces(b, at) for b in B]
-#    F2 = forces(B, at)
-#    print("F: "); (@test F1 ≈ F2) |> println
-#    S1 = [virial(b, at) for b in B]
-#    S2 = virial(B, at)
-#    print("S: "); (@test S1 ≈ S2) |> println;
-# end
-#
-# if profile
-#    println("Performance Tests")
-#    println("-----------------")
-#    println("to get a rough estimate of the cost per atom take the `separate`")
-#    println("timing and multiply by the factor provided")
-#    for N = 2:5
-#       B = BB[N]
-#       println("[$N-body], length(B) == $(length(B)), factor = $(1/(length(at)*length(B)))")
-#       print(" E separate:" ); @btime ([energy(b, $at) for b in $B])
-#       print(" E combined:" ); @btime energy( $B, $at )
-#       print(" F separate:" ); @btime ([forces(b, $at) for b in $B])
-#       print(" F combined:" ); @btime forces( $B, $at )
-#       print(" S separate:" ); @btime ([virial(b, $at) for b in $B])
-#       print(" S combined:" ); @btime virial( $B, $at )
-#    end
-# end
+BB = [ nothing; [ [random_nbody(N, 1) for _=1:3] for N = 2:5 ] ]
+
+for N = 2:5
+   B = BB[N]
+   println("[$N-body]")
+   E1 = [energy(b, at) for b in B]
+   E2 = energy( B, at )
+   print("E: "); (@test E1 ≈ E2) |> println
+   F1 = [forces(b, at) for b in B]
+   F2 = forces(B, at)
+   print("F: "); (@test F1 ≈ F2) |> println
+   S1 = [virial(b, at) for b in B]
+   S2 = virial(B, at)
+   print("S: "); (@test S1 ≈ S2) |> println;
+end
+
+if profile
+   println("Performance Tests")
+   println("-----------------")
+   println("to get a rough estimate of the cost per atom take the `separate`")
+   println("timing and multiply by the factor provided")
+   for N = 2:5
+      B = BB[N]
+      println("[$N-body], length(B) == $(length(B)), factor = $(1/(length(at)*length(B)))")
+      print(" E separate:" ); @btime ([energy(b, $at) for b in $B])
+      print(" E combined:" ); @btime energy( $B, $at )
+      print(" F separate:" ); @btime ([forces(b, $at) for b in $B])
+      print(" F combined:" ); @btime forces( $B, $at )
+      print(" S separate:" ); @btime ([virial(b, $at) for b in $B])
+      print(" S combined:" ); @btime virial( $B, $at )
+   end
+end

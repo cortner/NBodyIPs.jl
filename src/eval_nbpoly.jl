@@ -2,14 +2,8 @@
 
 import NBodyIPs: evaluate_many!,
                  evaluate_many_d!,
-                 invariants,
-                 invariants_d,
-                 invariants_ed,
                  evaluate_I,
                  evaluate_I_d
-
-import JuLIP.Potentials: evaluate,
-                         evaluate_d
 
 
 include("fast_monomials.jl")
@@ -63,7 +57,7 @@ end
 
 
 
-
+#
 # function evaluate_many!(temp, B::Vector{TB}, r::SVector{M, T}
 #                ) where {TB <: NBPoly{N}} where {N, M, T}
 #    E = temp # zeros(T, length(B))

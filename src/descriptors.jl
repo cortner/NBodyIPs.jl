@@ -25,10 +25,18 @@ end
 
 
 evaluate(V::NBodyFunction, Rs, J) =
-      evaluate_desc(V, descriptor(V), Rs, J)
+      evaluate(V, descriptor(V), Rs, J)
 
 evaluate_d!(dVsite, V::NBodyFunction, Rs, J) =
-      evaluate_desc_d!(dVsite, V, descriptor(V), Rs, J)
+      evaluate_d!(dVsite, V, descriptor(V), Rs, J)
+
+
+evaluate_many!(out, B, Rs, J) =
+      evaluate_many!(out, B, descriptor(B[1]), Rs, J)
+
+evaluate_many_d!(out, B, Rs, J) =
+      evaluate_many_d!(out, B, descriptor(B[1]), Rs, J)
+
 
 """
 `_sdot(a::T, B::SVector{N, T})`: efficiently compute `[ a .* b for b in B ]`
@@ -132,19 +140,19 @@ J : neighbour (sub-) indices
    quote
       $(Expr(:meta, :inline))
       @inbounds $(Expr(:block, code...))
-      return dVsite 
+      return dVsite
    end
 end
 
 
 
-function evaluate_desc(V::NBodyFunction{N},
+function evaluate(V::NBodyFunction{N},
                   desc::BondLengthDesc,
                   Rs::AbstractVector{JVec{T}},
                   J::SVector{K, Int}) where {N, T, K}
 
    # get bond-lengths (and bond directions => throw those away)
-   rcut = cutoff(V)
+   rcut = cutoff(desc.cutoff)
    r, _ = _simplex_edges(Rs, J)
    if maximum(r) > rcut
       return zero(T)
@@ -161,13 +169,13 @@ function evaluate_desc(V::NBodyFunction{N},
 end
 
 # (out, s, S, J, _) -> _grad_len2pos!(out, evaluate_d(V, s)/N, J, S),
-function evaluate_desc_d!(dVsite::AbstractVector,
-                          V::NBodyFunction{N},
-                          desc::BondLengthDesc,
-                          Rs::AbstractVector{JVec{T}},
-                          J::SVector{K, Int}) where {N, T, K}
+function evaluate_d!(dVsite,
+                     V::NBodyFunction{N},
+                     desc::BondLengthDesc,
+                     Rs,
+                     J) where {N}
    # get bond-lengths (and bond directions => throw those away)
-   rcut = cutoff(V)
+   rcut = cutoff(desc.cutoff)
    r, S = _simplex_edges(Rs, J)
    if maximum(r) > rcut
       return dVsite
@@ -183,4 +191,47 @@ function evaluate_desc_d!(dVsite::AbstractVector,
    dV_dr = evaluate_I_d(V, I1, I2, I1_d, I2_d, fc, fc_d)
    # convert to gradient w.r.t. (relative) position vectors and write into dVsite
    return _grad_len2pos!(dVsite, dV_dr, J, S)
+end
+
+
+function evaluate_many!(Es,
+                        B::AbstractVector{TB},
+                        desc::BondLengthDesc,
+                        Rs, J)  where {TB <: NBodyFunction{N}} where {N}
+
+   rcut = cutoff(desc.cutoff)
+   r, _ = _simplex_edges(Rs, J)
+   maximum(r) > rcut && return zero(T)
+   fc = fcut(desc.cutoff, r)
+   fc == 0 && return zero(T)
+
+   # get the invariants
+   I1, I2 = invariants(desc, r)
+   # evaluate the inner potential function (e.g. polynomial)
+   for n = 1:length(B)
+      Es[n] += evaluate_I(B[n], I1, I2, fc)
+   end
+   return Es
+end
+
+
+function evaluate_many_d!(dVsite::AbstractVector,
+                          B::AbstractVector{TB},
+                          desc::BondLengthDesc,
+                          Rs,
+                          J)  where {TB <: NBodyFunction{N}} where {N}
+   rcut = cutoff(desc.cutoff)
+   r, S = _simplex_edges(Rs, J)
+   maximum(r) > rcut && dVsite
+   fc, fc_d = fcut_d(desc.cutoff, r)
+   fc == 0 && return dVsite
+
+   # get the invariants
+   I1, I2, I1_d, I2_d = invariants_ed(desc, r)
+   # evaluate the inner potential function (e.g. polynomial)
+   for n = 1:length(B)
+      dV_dr = evaluate_I_d(B[n], I1, I2, I1_d, I2_d, fc, fc_d)
+      _grad_len2pos!(dVsite[n], dV_dr, J, S)
+   end
+   return dVsite
 end

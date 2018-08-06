@@ -13,6 +13,8 @@ const cutsp_d = JuLIP.Potentials.fcut_d
 import Base: Dict,
              ==
 
+import JuLIP: cutoff
+
 # -------------- Space Tranformations ---------------
 
 struct SpaceTransform{FT, FDT}
@@ -59,6 +61,8 @@ struct Cutoff{FT, DFT}
    f_d::DFT
    rcut::Float64
 end
+
+cutoff(C::Cutoff) = C.rcut
 
 ==(C1::Cutoff, C2::Cutoff) = (C1.sym == C2.sym) && (C1.params == C2.params)
 
