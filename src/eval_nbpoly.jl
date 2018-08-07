@@ -21,9 +21,13 @@ include("fast_monomials.jl")
 evaluate_I(V::NBPoly{1}, args...) = sum(V.c)
 
 
-evaluate_I(V::NBPoly, I1, I2, fc) = sum( c * I2[1+α[end]] * monomial(α, I1)
-                                         for  (α, c) in zip(V.t, V.c) ) * fc
-
+function evaluate_I(V::NBPoly, I1, I2, fc)
+   E = zero(eltype(I1))
+   for (α, c) in zip(V.t, V.c)
+      E += c * I2[1+α[end]] * monomial(α, I1)
+   end
+   return E * fc
+end
 
 function evaluate_I_d(V::NBPoly, I1::SVector{M,T}, I2, dI1, dI2, fc, fc_d
                       ) where {M, T}
