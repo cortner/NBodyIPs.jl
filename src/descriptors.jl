@@ -10,6 +10,7 @@ BondLengthDesc(transform::String, cutoff::Union{String, Tuple}) =
          BondLengthDesc(SpaceTransform(transform), Cutoff(cutoff))
 
 
+
 struct BondAngleDesc{TT, TC} <: NBSiteDescriptor
    transform::TT
    cutoff::TC
@@ -56,6 +57,8 @@ end
 
 
 # ============== Bond Length Descriptor =================
+
+tdegrees(::BondLengthDesc, vN::Val{N}) where {N} = BLInvariants.tdegrees(vN)
 
 @inline invariants(D::BondLengthDesc, r) = BLInvariants.invariants(transform.(D, r))
 
@@ -234,4 +237,17 @@ function evaluate_many_d!(dVsite::AbstractVector,
       _grad_len2pos!(dVsite[n], dV_dr, J, S)
    end
    return dVsite
+end
+
+
+# ======= experimental ============
+
+function evaluate(V::NBodyFunction{N}, r::SVector{M}) where {N, M}
+   D = descriptor(V)
+   return evaluate_I(V, invariants(D, r)..., fcut(D.cutoff, r))
+end
+
+function evaluate_d(V::NBodyFunction{N}, r::SVector{M}) where {N, M}
+   D = descriptor(V)
+   return evaluate_I_d(V, invariants_ed(D, r)..., fcut_d(D.cutoff, r)...)
 end

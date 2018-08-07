@@ -53,8 +53,8 @@ evaluate_I(V::StNBPoly, I1, I2, fc) =
       StaticPolynomials.evaluate(V.P, vcat(I1, I2)) * fc
 
 
-function evaluate_I_d(V::StNBPoly, I1::SVector{M, T}, I2, I1_d, I2_d,
-                                   fc, fc_dr) where {M, T}
+function evaluate_I_d(V::StNBPoly, I1::SVector{M, T}, I2, dI1, dI2,
+                                   fc, fc_d) where {M, T}
    V, dV_dI = StaticPolynomials.evaluate_and_gradient(V.P, vcat(I1, I2))
    return V * fc_d + fc * dot(vcat(dI1, dI2), dV_dI)  # (dI' * dV_dI)
 end

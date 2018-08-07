@@ -9,7 +9,7 @@ const blinvariants = NBodyIPs.BLInvariants.invariants
 const blinvariants_d = NBodyIPs.BLInvariants.invariants_d
 const blinvariants_ed = NBodyIPs.BLInvariants.invariants_ed
 
-profile = true
+profile = false
 
 if profile
    nbasis = [0, 10, 50, 100, 300]
@@ -71,31 +71,30 @@ for p = 2:11
 end
 (@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
 
-# TODO : REWRITE THIS TO USE VECTORS OF VECTORS AS THE ARGUMENT!!!
-# println("`NBPoly` gradient-test on simplices")
-# println("----------------------------------")
-# for N in 2:5, ntup = [1,3]
-#    VN = random_nbody(N, ntup)
-#    println("[$N-body, ntup=$ntup, t[1] = $(VN.t[1])]")
-#    r = SVector( (r0 + rand((N*(N-1))÷2))... )
-#    dvN = @D VN(r)
-#    vN = VN(r)
-#    rv = Vector(r)
-#    errs = []
-#    println("      h   |    err")
-#    for p = 2:10
-#       h = 0.1^p
-#       dvh = zeros(length(dvN))
-#       for i = 1:length(rv)
-#          rv[i] += h
-#          dvh[i] = (VN( SVector(rv...) ) - vN) / h
-#          rv[i] -=h
-#       end
-#       push!(errs, vecnorm(dvN - dvh, Inf))
-#       @printf(" %.2e | %.2e \n", h, errs[end])
-#    end
-#    (@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
-# end
+println("`NBPoly` gradient-test on simplices")
+println("----------------------------------")
+for N in 2:5, ntup = [1,3]
+   VN = random_nbody(N, ntup)
+   println("[$N-body, ntup=$ntup, t[1] = $(VN.t[1])]")
+   r = SVector( (r0 + rand((N*(N-1))÷2))... )
+   dvN = @D VN(r)
+   vN = VN(r)
+   rv = Vector(r)
+   errs = []
+   println("      h   |    err")
+   for p = 2:10
+      h = 0.1^p
+      dvh = zeros(length(dvN))
+      for i = 1:length(rv)
+         rv[i] += h
+         dvh[i] = (VN( SVector(rv...) ) - vN) / h
+         rv[i] -=h
+      end
+      push!(errs, vecnorm(dvN - dvh, Inf))
+      @printf(" %.2e | %.2e \n", h, errs[end])
+   end
+   (@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
+end
 
 
 println("`NBPoly` finite-difference test on configurations")

@@ -1,26 +1,37 @@
 using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP
-using NBodyIPs.Polys
+
 using JuLIP.Potentials: evaluate, evaluate_d
+using NBodyIPs: BondLengthDesc, invariants, invariants_d, descriptor
+using NBodyIPs.Polys
+
+const blinvariants = NBodyIPs.BLInvariants.invariants
+const blinvariants_d = NBodyIPs.BLInvariants.invariants_d
 
 rcut = 7.0
 TRANSFORM = "r -> (2.9/r)^3"
 CUTOFF3 = (:cos, 0.66*rcut, rcut)
-D = BLDictionary(TRANSFORM, CUTOFF3)
+D = BondLengthDesc(TRANSFORM, CUTOFF3)
 
 # 3-body potential
-B3 = bl_basis(3, D, 10)
+B3 = blpolys(3, D, 10)
 c = rand(length(B3))
 V3 = NBPoly(B3, c, D)
 V3sp = StNBPoly(V3)
 
 # 4-body potential
-B4 = bl_basis(4, D, 8)
+B4 = blpolys(4, D, 8)
 c = rand(length(B4))
 V4 = NBPoly(B4, c, D)
 V4sp = StNBPoly(V4)
 
 r3 = (@SVector rand(3)) + 3.0
 r4 = (@SVector rand(6)) + 3.0
+I3 = blinvariants(r3)
+I4 = blinvariants(r4)
+
+println("================")
+println(" StNBPoly Tests ")
+println("================")
 
 println("3-body test:")
 @show errV3 = V3(r3) - V3sp(r3)

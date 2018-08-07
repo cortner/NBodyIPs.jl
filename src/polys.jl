@@ -26,7 +26,9 @@ using NBodyIPs: NBodyFunction,
                 _decode_dict,
                 BondLengthDesc,
                 edges2bo,
-                bo2edges
+                bo2edges,
+                tdegrees,
+                invariants
 
 import Base:              length,
                           Dict,
@@ -50,6 +52,13 @@ export NBPoly,
 #           Polynomials of Invariants
 # ==================================================================
 
+@pot struct NBPoly{N, M, T, TD} <: NBodyFunction{N}
+   t::VecTup{M}               # tuples M = #edges + 1
+   c::Vector{T}               # coefficients
+   D::TD                      # Descriptor
+   valN::Val{N}               # encodes that this is an N-body function
+end
+
 """
 `struct NBPoly`  (N-Body Polynomial, slow implementation)
 
@@ -70,12 +79,7 @@ where `I1, I2` are the 4-body invariants.
 
 * `D`: a descriptor (cf `NBodyIPs.AbstractDescriptor`)
 """
-struct NBPoly{N, M, T, TD} <: NBodyFunction{N}
-   t::VecTup{M}               # tuples M = #edges + 1
-   c::Vector{T}               # coefficients
-   D::TD                      # Descriptor
-   valN::Val{N}               # encodes that this is an N-body function
-end
+NBPoly
 
 ==(V1::NBPoly, V2::NBPoly) = ( (V1.t == V2.t) && (V1.c == V2.c) && (V1.D == V2.D) )
 
@@ -178,10 +182,11 @@ fast evaluation of the outer polynomial using `StaticPolynomials`
 """
 StNBPoly
 
+descriptor(V::StNBPoly) = V.D
 
 function StNBPoly(V::NBPoly{N}) where {N}
    M = bo2edges(N)  # number of edges for body-order N
-   I1, I2 = BLInvariants.invariants(V.D, SVector(ones(M)...))  # how many invariants
+   I1, I2 = invariants(V.D, SVector(ones(M)...))  # how many invariants
    nI1 = length(I1)
    ninvariants = length(I1) + length(I2)
    nmonomials = length(V.c)
@@ -217,9 +222,9 @@ compute the total degree of the polynomial represented by α.
 Note that `M = K-1` where `K` is the tuple length while
 `M` is the number of edges.
 """
-function tdegree(α)
+function tdegree(desc, α)
    K = length(α)
-   degs1, degs2 = tdegrees(Val(edges2bo(K-1)))
+   degs1, degs2 = tdegrees(desc, Val(edges2bo(K-1)))
    # primary invariants
    d = sum(α[j] * degs1[j] for j = 1:K-1)
    # secondary invariants
@@ -242,12 +247,12 @@ the degree w.r.t. lengths, not w.r.t. invariants!) The `tuplebound` function
 must be **monotone**, that is, `α,β` are tuples with `all(α .≦ β)` then
 `tuplebound(β) == true` must imply that also `tuplebound(α) == true`.
 """
-gen_tuples(N, deg; tuplebound = (α -> (0 < tdegree(α) <= deg))) =
-   gen_tuples(Val(N), Val(bo2edges(Val(N))+1), deg, tuplebound)
+gen_tuples(desc, N, deg; tuplebound = (α -> (0 < tdegree(desc, α) <= deg))) =
+   gen_tuples(desc, Val(N), Val(bo2edges(Val(N))+1), deg, tuplebound)
 
-function gen_tuples(vN::Val{N}, vK::Val{K}, deg, tuplebound) where {N, K}
+function gen_tuples(desc, vN::Val{N}, vK::Val{K}, deg, tuplebound) where {N, K}
    A = Tup{K}[]
-   degs1, degs2 = tdegrees(vN)
+   degs1, degs2 = tdegrees(desc, vN)
 
    α = @MVector zeros(Int, K)
    α[1] = 1
@@ -278,20 +283,20 @@ end
 
 
 """
-* `blpoly_basis(N, D, deg; tuplebound = ...)`
-* `blpoly_basis(N, strans, scut, deg; tuplebound = ...)`
+* `blpolys(N, D, deg; tuplebound = ...)`
+* `blpolys(N, strans, scut, deg; tuplebound = ...)`
 
 generates a basis set of
 `N`-body functions, with dictionary `D`, maximal degree `deg`; the precise
 set of basis functions constructed depends on `tuplebound` (see `?gen_tuples`)
 """
-blpoly_basis(N::Integer, D::BondLengthDesc, deg; kwargs...) =
-   blpoly_basis(gen_tuples(N, deg; kwargs...), D)
+blpolys(N::Integer, desc::BondLengthDesc, deg; kwargs...) =
+   blpolys(gen_tuples(desc, N, deg; kwargs...), desc)
 
-blpoly_basis(ts::VecTup, D::BondLengthDesc) = [NBPoly(t, 1.0, D) for t in ts]
+blpolys(ts::VecTup, desc::BondLengthDesc) = [NBPoly(t, 1.0, desc) for t in ts]
 
-blpoly_basis(N::Integer, strans::String, scut::String, deg; kwargs...) =
-   blpoly_basis(N, BondLengthDesc(strans, scut), deg; kwargs...)
+blpolys(N::Integer, strans::String, scut::String, deg; kwargs...) =
+   blpolys(N, BondLengthDesc(strans, scut), deg; kwargs...)
 
 
 
