@@ -116,6 +116,7 @@ println("Testing Collective Assembly across a Basis Set")
 println("----------------------------------------------")
 
 BB = [ nothing; [ [random_nbody(N, 1) for _=1:nbasis[N]] for N = 2:5 ] ]
+at = rattle!(bulk(:Cu, cubic=true) * 2, 0.05)
 
 for N = 2:5
    B = BB[N]
