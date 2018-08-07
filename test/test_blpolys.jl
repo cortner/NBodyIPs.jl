@@ -5,7 +5,7 @@ using Base.Test
 using NBodyIPs.BLPolys: BLNBody, BLDictionary, transform, transform_d, fcut, fcut_d
 using NBodyIPs.BLPolys.BLInvariants: invariants, invariants_d, invariants_ed
 
-profile = false
+profile = true
 
 if profile
    nbasis = [0, 10, 50, 100, 300]
