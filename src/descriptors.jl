@@ -9,6 +9,17 @@ end
 BondLengthDesc(transform::String, cutoff::Union{String, Tuple}) =
          BondLengthDesc(SpaceTransform(transform), Cutoff(cutoff))
 
+Dict(D::BondLengthDesc) = Dict( "__id__"    =>  "BondLengthDesc",
+                                "transform" =>  Dict(D.transform),
+                                "cutoff"    =>  Dict(D.cutoff) )
+
+BondLengthDesc(D::Dict) = BondLengthDesc( SpaceTransform(D["transform"]),
+                                          Cutoff(D["cutoff"]) )
+
+==(D1::BondLengthDesc, D2::BondLengthDesc) =
+      ( (D1.transform == D2.transform) && (D1.cutoff == D2.cutoff) ) 
+
+Base.convert(::Val{:BondLengthDesc}, D::Dict) = BondLengthDesc(D)
 
 
 struct BondAngleDesc{TT, TC} <: NBSiteDescriptor

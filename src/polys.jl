@@ -139,30 +139,18 @@ end
 # -------------- Infrastructure to read/write NBPoly  --------
 
 
-Dict(V::NBPoly{1}) = Dict( "__id__" => "NBPoly",
-                            "t" => V.t,
-                            "c" => V.c,
-                            "D" => nothing,
-                            "N" => 1 )
-
 Dict(V::NBPoly{N}) where {N} = Dict( "__id__" => "NBPoly",
                                       "t" => V.t,
                                       "c" => V.c,
                                       "D" => Dict(V.D),
                                       "N" => N )
 
-function NBPoly(D::Dict)
-   N = D["N"]
-   t = [ tuple(ti...) for ti in D["t"] ]
-   c = Vector{Float64}(D["c"])
-   if N == 1
-      return NBPoly(t, c, nothing, Val(1))
-   end
-   return NBPoly(t, c, _decode_dict(D["D"]), Val(N))
-end
+NBPoly(D::Dict) = NBPoly([ tuple(ti...) for ti in D["t"] ],
+                           Vector{Float64}(D["c"]),
+                           _decode_dict(D["D"]),
+                           Val(D["N"]))
 
 Base.convert(::Val{:NBPoly}, D::Dict) = NBPoly(D)
-
 
 
 # ==================================================================

@@ -6,15 +6,25 @@ struct XJson end
 struct XJld end
 
 
-Dict(IP::NBodyIP) = Dict("__id__" => "NBodyIP",
-                         "components" => Dict.(IP.components))
 
 _decode_dict(D::Dict) = convert(Val(Symbol(D["__id__"])), D)
 
+# ------------ writing and reading NBodyIP ------------
+
 NBodyIP(D::Dict) = NBodyIP(_decode_dict.(D["components"]))
+
+Dict(IP::NBodyIP) = Dict("__id__" => "NBodyIP",
+                         "components" => Dict.(IP.components))
 
 Base.convert(::Val{:NBodyIP}, D::Dict) = NBodyIP(D)
 
+# ------------ writing and reading nothing ------------
+
+Dict(::Void) = Dict("__id__" => "Void")
+
+Base.convert(::Val{:Void}, D::Dict) = nothing
+
+# ------------ FileIO -------------------
 
 function _checkextension(fname)
    if fname[end-3:end] == "jld2"
