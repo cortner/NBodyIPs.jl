@@ -1,3 +1,7 @@
+# TODO:
+#   - allow Vn to be an arbitrary pair potential
+#   - replace the polynomial with an arbitrary family of pair potentials
+#   - (or even nbody?)
 
 module EnvIPs
 
@@ -6,8 +10,8 @@ using JuLIP:              AbstractCalculator
 using JuLIP.Potentials:   Shift,
                           @analytic,
                           @pot
-using NBodyIPs.Polys:   BLDictionary,
-                          bl_basis
+using NBodyIPs:           BondLengthDesc
+using NBodyIPs.Polys:     blpolys
 
 import Base:              Dict,
                           ==,
@@ -19,7 +23,7 @@ import NBodyIPs:          NBodyIP,
                           _decode_dict
 
 
-export envbl_basis
+export envblpolys
 
 abstract type AbstractEnvIP{N} <: AbstractCalculator end
 
@@ -77,9 +81,9 @@ bodyorder(V::AbstractEnvIP) = bodyorder(Vr(V))
 
 # ----------------- generate basis / IP / convert ----------------
 
-function envbl_basis(N::Integer, D::BLDictionary, deg_poly::Integer,
+function envblpolys(N::Integer, D::BondLengthDesc, deg_poly::Integer,
                      Vn_descr, deg_n::Integer; kwargs...)
-   B_poly = bl_basis(N, D, deg_poly; kwargs...)
+   B_poly = blpolys(N, D, deg_poly; kwargs...)
    B = EnvIP[]
    str_Vn = Vn_descr[1]
    Vn = analyse_Vn(Vn_descr...)

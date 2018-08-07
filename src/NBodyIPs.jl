@@ -42,8 +42,8 @@ import NBodyIPs.Polys.bl_basis
 export bl_basis
 
 
-# include("environ.jl")
-# import NBodyIPs.EnvIPs: envbl_basis
-# export envbl_basis
+include("environ.jl")
+import NBodyIPs.EnvIPs: envbl_basis
+export envbl_basis
 
 end # module

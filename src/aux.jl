@@ -158,14 +158,8 @@ end
    end
    ex_f  =  ex_f[1:end-2] * "]"
    ex_df = ex_df[1:end-2] * "]"
-
    push_str!(exprs, ex_f)
    push_str!(exprs, ex_df)
-
-
-   push_str!(exprs, ex_f)
-   push_str!(exprs, ex_df)
-
 
    # evaluate the multi-variate monomial
    push_str!(exprs, "fc = 1.0")
