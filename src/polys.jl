@@ -43,7 +43,7 @@ import NBodyIPs:          fast,
                           evaluate_many!,
                           evaluate_many_d!,
                           evaluate_I,
-                          evaluate_I_d
+                          evaluate_I_ed
 
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
@@ -156,20 +156,20 @@ include("fast_monomials.jl")
 
 evaluate_I(V::NBPoly{1}, args...) = sum(V.c)
 
-
-function evaluate_I(V::NBPoly, I1, I2, fc)
+function evaluate_I(V::NBPoly, II)
+   I1, I2 = II
    E = zero(eltype(I1))
    for (α, c) in zip(V.t, V.c)
       E += c * I2[1+α[end]] * monomial(α, I1)
    end
-   return E * fc
+   return E
 end
 
-function evaluate_I_d(V::NBPoly, I1::SVector{M,T}, I2, dI1, dI2, fc, fc_d
-                      ) where {M, T}
-   E = zero(T)
-   dM = zero(SVector{M, T})
-   dE = zero(SVector{M, T})
+function evaluate_I_ed(V::NBPoly, II)
+   I1, I2, dI1, dI2 = II
+   E = zero(eltype(I1))
+   dM = zero(typeof(I1))
+   dE = zero(typeof(I1))
    #
    for (α, c) in zip(V.t, V.c)
       m, m_d = monomial_d(α, I1)
@@ -181,7 +181,7 @@ function evaluate_I_d(V::NBPoly, I1::SVector{M,T}, I2, dI1, dI2, fc, fc_d
    for i = 1:length(dI1)   # dI1' * dM
       dE += dM[i] * dI1[i]
    end
-   return dE * fc + E * fc_d
+   return E, dE
 end
 
 
