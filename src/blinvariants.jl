@@ -17,11 +17,6 @@ using StaticArrays
 
 using NBodyIPs.FastPolys
 
-# import NBodyIPs: invariants,
-#                  invariants_d,
-#                  invariants_ed
-
-
 
 """
 need documentation here

@@ -21,8 +21,7 @@ import JuLIP: site_energies,
 import NBodyIPs: evaluate_many!,
                  evaluate_many_d!,
                  eval_site_nbody!,
-                 _grad_len2pos!,
-                 _acc_manyfrcs
+                 _grad_len2pos!
 
 function cutoff(V::AbstractEnvIP)
    @assert cutoff(Vn(V)) <= cutoff(Vr(V))
@@ -237,7 +236,7 @@ function virial(B::AbstractVector{TB}, at::Atoms{T}, typewarn=true
    nlist = neighbourlist(at, rcut)
    maxneigs = max_neigs(nlist)
    nedges = (N*(N-1))÷2
-   nB = length(B) 
+   nB = length(B)
    # virials (main output)
    S = fill((@SMatrix zeros(3,3)), length(B))
    # site gradient

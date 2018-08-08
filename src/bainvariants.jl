@@ -1,10 +1,8 @@
 
 module BAInvariants
 
+using StaticArrays
 
-function invariants end
-function invariants_d end
-function invariants_ed end
 
 
 # ------------------------------------------------------------------------

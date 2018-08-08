@@ -6,7 +6,6 @@
 # * poly_regularise
 # * Remove NBPoly{1} altogether and replace it with an OneBody?
 #   that is available for all sub-modules?
-# * reformulate the basis assembly for EnvIP to allow arbitrary inner functions?
 
 __precompile__()
 
@@ -31,19 +30,19 @@ include("fastpolys.jl")
 # bond-length invariants
 include("blinvariants.jl")
 
-# # bond-angle invariants
-# include("bainvariants.jl")
+# bond-angle invariants
+include("bainvariants.jl")
 
 include("descriptors.jl")
 
 # Polynomials of an invariant coordinate system
 include("polys.jl")
-import NBodyIPs.Polys.bl_basis
-export bl_basis
+import NBodyIPs.Polys: blpolys # , bapolys
+export blpolys # , bapolys
 
 
 include("environ.jl")
-import NBodyIPs.EnvIPs: envbl_basis
-export envbl_basis
+import NBodyIPs.EnvIPs: envblpolys # , envbapolys
+export envblpolys # , envbapolys
 
 end # module

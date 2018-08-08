@@ -60,6 +60,7 @@ is basis-specific
 """
 function degree end
 
+
 """
 `basisid`: returns an identifier (string) specifying which basis functions
 may be combined into a single function.
@@ -167,3 +168,18 @@ include("io.jl")
 
 # space transforms and cutoffs
 include("aux.jl")
+
+
+
+
+# ======= experimental ============
+
+function evaluate(V::NBodyFunction{N}, r::SVector{M}) where {N, M}
+   D = descriptor(V)
+   return evaluate_I(V, invariants(D, r)..., fcut(D.cutoff, r))
+end
+
+function evaluate_d(V::NBodyFunction{N}, r::SVector{M}) where {N, M}
+   D = descriptor(V)
+   return evaluate_I_d(V, invariants_ed(D, r)..., fcut_d(D.cutoff, r)...)
+end

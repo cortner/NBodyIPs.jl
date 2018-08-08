@@ -2,9 +2,7 @@ module BA_5B
 
 using NBodyIPs.FastPolys
 using StaticArrays
-using BenchmarkTools: @btime
 
-import NBodyIPs.tdegrees
 
 const G_BA_5B = [
 [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
@@ -664,7 +662,7 @@ P6, dP6 = fpoly_ed((x3,),(dx3,) , BA_5B.P6)
 P7, dP7 = fpoly_ed((x1,x1,x1,),(dx1,dx1,dx1,) , BA_5B.P7)
 P8, dP8 = fpoly_ed((x3,),(dx3,) , BA_5B.P8)
 P9, dP9 = fpoly_ed((x4,),(dx4,) , BA_5B.P9)
-P10, dP10 = fpoly_ed((x3,x1),(dx3,dx1) , BA_5B.P10) 
+P10, dP10 = fpoly_ed((x3,x1),(dx3,dx1) , BA_5B.P10)
 
 
 
