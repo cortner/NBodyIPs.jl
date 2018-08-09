@@ -79,7 +79,6 @@ function fcut_analyse(args::Tuple)
    sym = args[1]::Symbol
    args = args[2:end]
    if Symbol(sym) == :cos
-      rc1, rc2 = args
       return let rc1=args[1], rc2=args[2]
          r -> coscut(r, rc1, rc2), r -> coscut_d(r, rc1, rc2), rc2
       end
@@ -135,55 +134,35 @@ fcut_d(C::Cutoff, r::Number) = C.f_d(r)
 #   TODO: combine fcut_d and monomial_d into a single function
 # ---------------------------------------------------------------
 
-function fcut(D::Cutoff, r::SVector{M, T}) where {M, T}
-   fc = one(T)
-   for i = 1:M
-      @fastmath fc *= fcut(D, r[i])
-   end
-   return fc
-end
-
+fcut(C::Cutoff, r::SVector) = prod(C.f, r)
 
 @generated function fcut_d(D::Cutoff, r::SVector{M, T}) where {M, T}
    exprs = Expr[]
-
-   # evaluate the scalar monomials
-   #  f = SVector{...}( x[1]^α[1], ...)
-   # df = SVector{...}( α[1] * x[1]^(α[1]-1), ...)
-   ex_f =   "f = @SVector $T["
-   ex_df = "df = @SVector $T["
+   # evaluate the cutoff function
    for i = 1:M
-      ex_f  *=   "fcut(D, r[$i]), "
-      ex_df *= "fcut_d(D, r[$i]), "
+      push_str!(exprs, " f_$(i) = fcut(D, r[$i]) ")
+      push_str!(exprs, " fc_d_$(i) = fcut_d(D, r[$i]) ")
    end
-   ex_f  =  ex_f[1:end-2] * "]"
-   ex_df = ex_df[1:end-2] * "]"
-   push_str!(exprs, ex_f)
-   push_str!(exprs, ex_df)
-
-   # evaluate the multi-variate monomial
-   push_str!(exprs, "fc = 1.0")
-   for i = 1:M
-      push_str!(exprs, "fc *= f[$i]")
+   # Forward pass
+   push_str!(exprs, " a = one($T) ")
+   for i = 1:M-1
+      push_str!(exprs, " a *= f_$(i) ")
+      push_str!(exprs, " fc_d_$(i+1) *= a ")
    end
-
-   for i = 1:M
-      push_str!(exprs, "fc_d_$i = 1.0")
-      for j = 1:M
-         if i == j
-            push_str!(exprs, "fc_d_$i *= df[$j]")
-         else
-            push_str!(exprs, "fc_d_$i *= f[$j]")
-         end
-      end
+   # finish the cutoff itself
+   push_str!(exprs, " fc = a * f_$(M) ")
+   # Backward pass
+   push_str!(exprs, "a = one($T)")
+   for i = M:-1:2
+      push_str!(exprs, " a *= f_$(i) ")
+      push_str!(exprs, " fc_d_$(i-1) *= a ")
    end
-
-   # evaluate the derivative
-   ex_dm = "fc_d = @SVector $T["
+   # put derivative into an SVector
+   ex_dm = "fc_d = SVector{M,T}("
    for i = 1:M
       ex_dm *= "fc_d_$i, "
    end
-   ex_dm = ex_dm[1:end-2] * "]"
+   ex_dm = ex_dm[1:end-2] * ")"
    push_str!(exprs, ex_dm)
 
    quote

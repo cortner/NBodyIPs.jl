@@ -176,10 +176,12 @@ include("aux.jl")
 
 function evaluate(V::NBodyFunction{N}, r::SVector{M}) where {N, M}
    D = descriptor(V)
-   return evaluate_I(V, invariants(D, r)..., fcut(D.cutoff, r))
+   return evaluate_I(V, invariants(D, r)) * fcut(D, r)
 end
 
 function evaluate_d(V::NBodyFunction{N}, r::SVector{M}) where {N, M}
    D = descriptor(V)
-   return evaluate_I_d(V, invariants_ed(D, r)..., fcut_d(D.cutoff, r)...)
+   fc, fc_d = fcut_d(D, r)
+   Vn, Vn_d = evaluate_I_ed(V, invariants_ed(D, r))
+   return fc * Vn_d + fc_d * Vn
 end

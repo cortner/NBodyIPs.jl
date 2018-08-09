@@ -23,13 +23,15 @@ function edgelengths1(Rs, J)
    return r, S
 end
 
-edgelengths(Rs, J) = NBodyIPs._simplex_edges(Rs, J)
+# function edgelengths(Rs, J)
+#    r = NBodyIPs.edge_lengths(Rs, J)
+
 
 evaluate(V::TestBL{N}, Rs, J) where {N} =
-      fnbody(edgelengths(Rs, J)[1], V.r0, V.rcut) / N
+      fnbody(edgelengths1(Rs, J)[1], V.r0, V.rcut) / N
 
 function evaluate_d!(dVsite, V::TestBL{N}, Rs, J) where {N}
-   r, S = edgelengths(Rs, J)
+   r, S = edgelengths1(Rs, J)
    dV = (fnbody_d(r, V.r0, V.rcut) / N) .* S
    idx = 0
    for i = 1:length(J)
@@ -115,9 +117,9 @@ for N in [2,2,3,3,4,4,5]
    end
    J = SVector(J[1:N]...)
    r1, S1 = edgelengths1(Rs, J)
-   r, S = edgelengths(Rs, J)
+   r = NBodyIPs.edge_lengths(Rs, J)
    (@test r1 ≈ Vector(r)) |> print; print(" ")
-   (@test S1 ≈ Vector(S)) |> print; print(" ")
+   # (@test S1 ≈ Vector(S)) |> print; print(" ")
 end
 println()
 
