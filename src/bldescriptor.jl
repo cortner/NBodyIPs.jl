@@ -21,7 +21,7 @@ Base.convert(::Val{:BondLengthDesc}, D::Dict) = BondLengthDesc(D)
 
 tdegrees(::BondLengthDesc, vN::Val{N}) where {N} = BLInvariants.tdegrees(vN)
 
-@inline ricoords(D::BondLengthDesc, Rs, J) = 
+# @inline ricoords(D::BondLengthDesc, Rs, J) = 
 
 @inline invariants(D::BondLengthDesc, r) = BLInvariants.invariants(transform.(D, r))
 
