@@ -35,6 +35,93 @@ evaluate_many_d!(out, B, Rs, J) =
    end
 end
 
+
+# ------------- main evaluation code -----------
+
+function evaluate(V::NBodyFunction{N},
+                  desc::NBSiteDescriptor,
+                  Rs::AbstractVector{JVec{T}},
+                  J::SVector{K, Int}) where {N, T, K}
+
+   # get the physical descriptor: bond-lengths (+ bond-angles)
+   rθ = ricoords(desc, Rs, J)
+   # check whether to skip this N-body term?
+   skip_simplex(desc, rθ) && return zero(T)
+   # compute the cutoff (and skip this site if the cutoff is zero)
+   fc = fcut(desc, rθ)
+   fc == 0 && return zero(T)
+   # compute the invariants (this also applies the transform)
+   II = invariants(desc, rθ)
+   # evaluate the inner potential function (e.g. polynomial)
+   return evaluate_I(V, II) * fc
+end
+
+# (out, s, S, J, _) -> _grad_len2pos!(out, evaluate_d(V, s)/N, J, S),
+function evaluate_d!(dVsite,
+                     V::NBodyFunction{N},
+                     desc::NBSiteDescriptor,
+                     Rs,
+                     J) where {N}
+   # get the physical descriptor: bond-lengths (+ bond-angles)
+   rθ = ricoords(desc, Rs, J)
+   # check whether to skip this N-body term?
+   skip_simplex(desc, rθ) && return dVsite
+   # compute the cutoff (and skip this site if the cutoff is zero)
+   fc, fc_d = fcut_d(desc, rθ)
+   fc == 0 && return dVsite
+   # get the invariants
+   II = invariants_ed(desc, rθ)
+   # evaluate the inner potential function (e.g. polynomial)
+   V, dV_drθ = evaluate_I_ed(V, II)
+   # convert to gradient w.r.t. rθ
+   dV_drθ = dV_drθ * fc + V * fc_d
+   # convert to gradient w.r.t. dR
+   return gradri2gradR!(desc, dVsite, dV_drθ, Rs, J, rθ)
+end
+
+
+function evaluate_many!(Es,
+                        B::AbstractVector{TB},
+                        desc::NBSiteDescriptor,
+                        Rs, J)  where {TB <: NBodyFunction{N}} where {N}
+
+   rθ = ricoords(desc, Rs, J)
+   skip_simplex(desc, rθ) && return Es
+   fc = fcut(desc, rθ)
+   fc == 0 && return Es
+   II = invariants(desc, rθ)
+
+   # evaluate the inner potential function (e.g. polynomial)
+   for n = 1:length(B)
+      Es[n] += evaluate_I(B[n], II) * fc
+   end
+   return Es
+end
+
+
+function evaluate_many_d!(dVsite::AbstractVector,
+                          B::AbstractVector{TB},
+                          desc::NBSiteDescriptor,
+                          Rs,
+                          J)  where {TB <: NBodyFunction{N}} where {N}
+   rθ = ricoords(desc, Rs, J)
+   skip_simplex(desc, rθ) && return dVsite
+   fc, fc_d = fcut_d(desc, rθ)
+   fc == 0 && return dVsite
+   II = invariants_ed(desc, rθ)
+
+   # evaluate the inner potential function (e.g. polynomial)
+   for n = 1:length(B)
+      V, dV_drθ = evaluate_I_ed(B[n], II)
+      dV_drθ = dV_drθ * fc + V * fc_d
+      gradri2gradR!(desc, dVsite[n], dV_drθ, Rs, J, rθ)
+   end
+   return dVsite
+end
+
+
+
+
 # bond length descriptor
 include("bldescriptor.jl")
 

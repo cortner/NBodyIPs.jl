@@ -136,39 +136,39 @@ fcut_d(C::Cutoff, r::Number) = C.f_d(r)
 
 fcut(C::Cutoff, r::SVector) = prod(C.f, r)
 
-fcut_d(C::Cutoff, r::SVector{1}) = C.f(r[1]), C.f_d(r[1])
-
-function fcut_d(C::Cutoff, r::SVector{3})
-   f = C.f.(r)
-   f_d = C.f_d.(r)
-   f12 = f[1]*f[2]
-   f23 = f[2]*f[3]
-   return f12*f[3], @SVector [f_d[1]*f23, f[1]*f_d[2]*f[3], f12*f_d[3]]
-end
-
-function fcut_d(C::Cutoff, r::SVector{6})
-   # f = C.f.(r)
-   # f_d = C.f_d.(r)
-   f1 = C.f(r[1])
-   f2 = C.f(r[2])
-   f3 = C.f(r[3])
-   f4 = C.f(r[4])
-   f5 = C.f(r[5])
-   f6 = C.f(r[6])
-   f12 = f1*f2
-   f123 = f12*f3
-   f56 = f5*f6
-   f456 = f4*f56
-   f3456 = f3*f456
-   f1234 = f123*f4
-   return f123*f456,
-          @SVector [C.f_d(r[1])*f2*f3456,
-                    C.f_d(r[2])*f1*f3456,
-                    C.f_d(r[3])*f12*f456,
-                    C.f_d(r[4])*f123*f56,
-                    C.f_d(r[5])*f1234*f6,
-                    C.f_d(r[6])*f1234*f5]
-end
+# fcut_d(C::Cutoff, r::SVector{1}) = C.f(r[1]), C.f_d(r[1])
+#
+# function fcut_d(C::Cutoff, r::SVector{3})
+#    f = C.f.(r)
+#    f_d = C.f_d.(r)
+#    f12 = f[1]*f[2]
+#    f23 = f[2]*f[3]
+#    return f12*f[3], @SVector [f_d[1]*f23, f[1]*f_d[2]*f[3], f12*f_d[3]]
+# end
+#
+# function fcut_d(C::Cutoff, r::SVector{6})
+#    # f = C.f.(r)
+#    # f_d = C.f_d.(r)
+#    f1 = C.f(r[1])
+#    f2 = C.f(r[2])
+#    f3 = C.f(r[3])
+#    f4 = C.f(r[4])
+#    f5 = C.f(r[5])
+#    f6 = C.f(r[6])
+#    f12 = f1*f2
+#    f123 = f12*f3
+#    f56 = f5*f6
+#    f456 = f4*f56
+#    f3456 = f3*f456
+#    f1234 = f123*f4
+#    return f123*f456,
+#           @SVector [C.f_d(r[1])*f2*f3456,
+#                     C.f_d(r[2])*f1*f3456,
+#                     C.f_d(r[3])*f12*f456,
+#                     C.f_d(r[4])*f123*f56,
+#                     C.f_d(r[5])*f1234*f6,
+#                     C.f_d(r[6])*f1234*f5]
+# end
 
 
 
@@ -220,3 +220,39 @@ end
 #       return fc, fc_d
 #    end
 # end
+
+@generated function fcut_d(D::Cutoff, r::SVector{M, T}) where {M, T}
+   exprs = Expr[]
+   # evaluate the cutoff function
+   for i = 1:M
+      push_str!(exprs, " f_$(i) = fcut(D, r[$i]) ")
+      push_str!(exprs, " fc_d_$(i) = fcut_d(D, r[$i]) ")
+   end
+   # Forward pass
+   push_str!(exprs, " a = one($T) ")
+   for i = 1:M-1
+      push_str!(exprs, " a *= f_$(i) ")
+      push_str!(exprs, " fc_d_$(i+1) *= a ")
+   end
+   # finish the cutoff itself
+   push_str!(exprs, " fc = a * f_$(M) ")
+   # Backward pass
+   push_str!(exprs, "a = one($T)")
+   for i = M:-1:2
+      push_str!(exprs, " a *= f_$(i) ")
+      push_str!(exprs, " fc_d_$(i-1) *= a ")
+   end
+   # put derivative into an SVector
+   ex_dm = "fc_d = SVector{M,T}("
+   for i = 1:M
+      ex_dm *= "fc_d_$i, "
+   end
+   ex_dm = ex_dm[1:end-2] * ")"
+   push_str!(exprs, ex_dm)
+
+   quote
+      $(Expr(:meta, :inline))
+      @inbounds $(Expr(:block, exprs...))
+      return fc, fc_d
+   end
+end

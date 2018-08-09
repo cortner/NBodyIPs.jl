@@ -246,14 +246,13 @@ fast(Vn::NBPoly) =  StNBPoly(Vn)
 fast(Vn::NBPoly{1}) = Vn
 
 
-evaluate_I(V::StNBPoly, I1, I2, fc) =
-      StaticPolynomials.evaluate(V.P, vcat(I1, I2)) * fc
+evaluate_I(V::StNBPoly, II) =
+      StaticPolynomials.evaluate(V.P, vcat(II...))
 
 
-function evaluate_I_d(V::StNBPoly, I1::SVector{M, T}, I2, dI1, dI2,
-                                   fc, fc_d) where {M, T}
-   V, dV_dI = StaticPolynomials.evaluate_and_gradient(V.P, vcat(I1, I2))
-   return V * fc_d + fc * dot(vcat(dI1, dI2), dV_dI)  # (dI' * dV_dI)
+function evaluate_I_ed(V::StNBPoly, II)
+   V, dV_dI = StaticPolynomials.evaluate_and_gradient(V.P, vcat(II[1], II[2]))
+   return V, dot(vcat(II[3], II[4]), dV_dI)  # (dI' * dV_dI)
 end
 
 
