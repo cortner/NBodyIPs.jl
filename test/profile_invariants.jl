@@ -2,7 +2,7 @@ using NBodyIPs, StaticArrays, JuLIP, BenchmarkTools
 
 # using NBodyIPs.Polys: invariants, invariants_d, invariants_ed
 # using JuLIP.Potentials: evaluate, evaluate_d
-BLI = NBodyIPs.BLInvariants
+const BLI = NBodyIPs.BLInvariants
 
 println("----------------------------------------")
 println("  [1] Single Invariants Evaluation:")

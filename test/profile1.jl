@@ -34,7 +34,7 @@ println("Performance Tests")
 println("-----------------")
 println("to get a rough estimate of the cost per atom take the `separate`")
 println("timing and multiply by the factor provided")
-for N = 2:5
+for N = 2:4
    B = BB[N]
    println("[$N-body], length(B) == $(length(B)), factor = $(1/(length(at)*length(B)))")
    print(" E separate:" ); @btime ([energy(b, $at) for b in $B])
@@ -44,6 +44,18 @@ for N = 2:5
    print(" S separate:" ); @btime ([virial(b, $at) for b in $B])
    print(" S combined:" ); @btime virial( $B, $at )
 end
+
+# B = BB[4]
+#
+# # @time [energy(b, at) for b in B]
+# # @time [energy(b, at) for b in B]
+# # @profile [energy(b, at) for b in B]
+# # Base.Profile.print()
+#
+# @time [forces(b, at) for b in B];
+# @time [forces(b, at) for b in B];
+# @profile [forces(b, at) for b in B];
+# Base.Profile.print()
 
 
 # # THE CURRENT IMPLEMENTATION
