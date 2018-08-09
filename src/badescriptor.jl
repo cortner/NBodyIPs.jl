@@ -1,10 +1,15 @@
 
 using JuLIP: JVec
+const BAI = BAInvariants
 
 struct BondAngleDesc{TT, TC} <: NBSiteDescriptor
    transform::TT
    cutoff::TC
 end
+
+
+# -------------- IO -------------------
+
 
 BondAngleDesc(transform::String, cutoff::Union{String, Tuple}) =
          BondAngleDesc(SpaceTransform(transform), Cutoff(cutoff))
@@ -21,29 +26,37 @@ BondAngleDesc(D::Dict) = BondAngleDesc( SpaceTransform(D["transform"]),
 
 Base.convert(::Val{:BondAngleDesc}, D::Dict) = BondAngleDesc(D)
 
+# ------------- Interface Code ---------------
 
+tdegrees(::BondAngleDesc, vN::Val{N}) where {N} = BAI.tdegrees(vN)
 
-tdegrees(::BondAngleDesc, vN::Val{N}) where {N} = BAInvariants.tdegrees(vN)
+@inline ricoords(D::BondAngleDesc, Rs, J) = lengths_and_angles(Rs, J)
+
+@inline gradri2gradR!(desc::BondAngleDesc, dVsite, dV_dr, Rs, J, rθ) =
+   _grad_rθ2pos!(dVsite, dV_drθ, Rs, J, rθ...)
+
+# the cut-off for the bond-angle descriptor depends only on r but not on θ
+@inline fcut(D::BondAngleDesc, rθ) = fcut(D.cutoff, rθ[1])
+@inline fcut_d(D::BondAngleDesc, rθ) = vcat( fcut_d(D.cutoff, rθ[1]),
+                                             zero(typeof(rθ[2])) )
+
+@inline skip_simplex(D::BondAngleDesc, rθ) = (maximum(rθ[1]) > cutoff(D.cutoff))
 
 @inline _rθ2x(D, r, θ) = vcat(transform.(D, r), θ)
 @inline _rθ2x_d(D, r, θ) = vcat(transform_d.(D, r), θ)
 
-@inline invariants(D::BondAngleDesc, r, θ) =
-      BAInvariants.invariants(_rθ2x(D, r, θ))
+@inline invariants(D::BondAngleDesc, rθ) = BAI.invariants(_rθ2x(D, rθ...))
 
-@inline function invariants_d(D::BondAngleDesc, r, θ)
-   x = _rθ2x(D, r, θ)
-   DI1, DI2 = BAInvariants.invariants_d(x)
-   x_d = _rθ2x_d(D, r, θ)
-   return _sdot(x_d, DI1), _sdot(x_d, DI2)
-end
-
-@inline function invariants_ed(D::BondAngleDesc, r, θ)
-   x = _rθ2x(D, r, θ)
+@inline function invariants_ed(D::BondAngleDesc, rθ)
+   x = _rθ2x(D, rθ...)
    I1, I2, DI1, DI2 = BAInvariants.invariants_ed(x)
-   x_d = _rθ2x_d(D, r, θ)
+   x_d = _rθ2x_d(D, rθ...)
    return I1, I2, _sdot(x_d, DI1), _sdot(x_d, DI2)
 end
+
+
+
+# -------------- Kernel Functions --------------
 
 """
 `_bondangles(Rs::AbstractVector)`
@@ -55,7 +68,7 @@ and convert into an ordered vector of bondlengths and bondangle
 [ r1, r2, r3, r4], [θ12, θ13, θ14, θ23, θ24, θ34 ]
 ```
 """
-@generated function _bondangles(Rs::SVector{K, JVec{T}}) where {K}
+@generated function lengths_and_angles(Rs::SVector{K, JVec{T}}) where {K}
    # note K = N-1; eltype(Rs) == JVec{T}
    code = Expr[]
    idx = 0
@@ -81,118 +94,26 @@ end
 convert ∇V (where ∇ is the gradient w.r.t. bond-lengths and bond-angle) into
 forces, i.e., into ∇Vsite (where ∇ is the gradient w.r.t. positions)
 """
-@generated function _grad_rθ2pos!(dVsite, dV, J::SVector{K, Int}, R, r) where {K}
+@generated function _grad_rθ2pos!(dVsite, dV_drθ, Rs, J::SVector{K, Int}, r, θ) where {K}
    # K is the number of neighbours, i.e. N = K+1 counting also the center atom
-   # length(dV) == length(s) == length(S) == K * (K+1)/2
    # ------
    code = Expr[]
    idx = 0
-   # the first K entries of dV, s, S are the |Ri - 0|
+   # the first K entries of dV, are the derivatives w.r.t. |Ri|
    for k = 1:K
       idx += 1   # idx == k of course
-      push!(code, :( dVsite[J[$k]] += dV[$idx] * S[$idx] ))
+      push!(code, :( dVsite[J[$k]] += (dV[$idx]/r[$k]) * Rs[J[$k]] ))
    end
-   # the remaining ones are |R_i - R_j|
+   # the remaining ones are dot(R_i,R_j)
    for n = 1:K-1, m = (n+1):K
       idx += 1
-      push!(code, :( dVsite[J[$n]] += dV[$idx] * S[$idx] ))
-      push!(code, :( dVsite[J[$m]] -= dV[$idx] * S[$idx] ))
+      # str_theta *= "dot(R[$n], R[$m]), "
+      push!(code, :( dVsite[J[$n]] += dV[$idx] * Rs[J[$m]] ))
+      push!(code, :( dVsite[J[$m]] += dV[$idx] * Rs[J[$n]] ))
    end
    quote
       $(Expr(:meta, :inline))
       @inbounds $(Expr(:block, code...))
       return dVsite
    end
-end
-
-
-
-function evaluate(V::NBodyFunction{N},
-                  desc::BondAngleDesc,
-                  Rs::AbstractVector{JVec{T}},
-                  J::SVector{K, Int}) where {N, T, K}
-
-   # get bond-lengths (and bond directions => throw those away)
-   rcut = cutoff(desc.cutoff)
-   r, _ = _simplex_edges(Rs, J)
-   if maximum(r) > rcut
-      return zero(T)
-   end
-   # compute the cut-off
-   fc = fcut(desc.cutoff, r)
-   if fc == 0
-      return zero(T)
-   end
-   # get the invariants
-   I1, I2 = invariants(desc, r)
-   # evaluate the inner potential function (e.g. polynomial)
-   return evaluate_I(V, I1, I2, fc)
-end
-
-# (out, s, S, J, _) -> _grad_len2pos!(out, evaluate_d(V, s)/N, J, S),
-function evaluate_d!(dVsite,
-                     V::NBodyFunction{N},
-                     desc::BondAngleDesc,
-                     Rs,
-                     J) where {N}
-   # get bond-lengths (and bond directions => throw those away)
-   rcut = cutoff(desc.cutoff)
-   r, S = _simplex_edges(Rs, J)
-   if maximum(r) > rcut
-      return dVsite
-   end
-   # compute the cut-off
-   fc, fc_d = fcut_d(desc.cutoff, r)
-   if fc == 0
-      return dVsite
-   end
-   # get the invariants
-   I1, I2, I1_d, I2_d = invariants_ed(desc, r)
-   # evaluate the inner potential function (e.g. polynomial)
-   dV_dr = evaluate_I_d(V, I1, I2, I1_d, I2_d, fc, fc_d)
-   # convert to gradient w.r.t. (relative) position vectors and write into dVsite
-   return _grad_len2pos!(dVsite, dV_dr, J, S)
-end
-
-
-function evaluate_many!(Es,
-                        B::AbstractVector{TB},
-                        desc::BondAngleDesc,
-                        Rs, J)  where {TB <: NBodyFunction{N}} where {N}
-
-   rcut = cutoff(desc.cutoff)
-   r, _ = _simplex_edges(Rs, J)
-   maximum(r) > rcut && return Es
-   fc = fcut(desc.cutoff, r)
-   fc == 0 && return Es
-
-   # get the invariants
-   I1, I2 = invariants(desc, r)
-   # evaluate the inner potential function (e.g. polynomial)
-   for n = 1:length(B)
-      Es[n] += evaluate_I(B[n], I1, I2, fc)
-   end
-   return Es
-end
-
-
-function evaluate_many_d!(dVsite::AbstractVector,
-                          B::AbstractVector{TB},
-                          desc::BondAngleDesc,
-                          Rs,
-                          J)  where {TB <: NBodyFunction{N}} where {N}
-   rcut = cutoff(desc.cutoff)
-   r, S = _simplex_edges(Rs, J)
-   maximum(r) > rcut && return dVsite
-   fc, fc_d = fcut_d(desc.cutoff, r)
-   fc == 0 && return dVsite
-
-   # get the invariants
-   I1, I2, I1_d, I2_d = invariants_ed(desc, r)
-   # evaluate the inner potential function (e.g. polynomial)
-   for n = 1:length(B)
-      dV_dr = evaluate_I_d(B[n], I1, I2, I1_d, I2_d, fc, fc_d)
-      _grad_len2pos!(dVsite[n], dV_dr, J, S)
-   end
-   return dVsite
 end

@@ -1,3 +1,6 @@
+
+const BLI = BLInvariants
+
 struct BondLengthDesc{TT, TC} <: NBSiteDescriptor
    transform::TT
    cutoff::TC
@@ -21,7 +24,7 @@ Base.convert(::Val{:BondLengthDesc}, D::Dict) = BondLengthDesc(D)
 
 # ------------- Interface Code ---------------
 
-tdegrees(::BondLengthDesc, vN::Val{N}) where {N} = BLInvariants.tdegrees(vN)
+tdegrees(::BondLengthDesc, vN::Val{N}) where {N} = BLI.tdegrees(vN)
 
 @inline ricoords(D::BondLengthDesc, Rs, J) = edge_lengths(Rs, J)
 
@@ -33,11 +36,11 @@ tdegrees(::BondLengthDesc, vN::Val{N}) where {N} = BLInvariants.tdegrees(vN)
 
 @inline skip_simplex(D::BondLengthDesc, r) = (maximum(r) > cutoff(D.cutoff))
 
-@inline invariants(D::BondLengthDesc, r) = BLInvariants.invariants(transform.(D, r))
+@inline invariants(D::BondLengthDesc, r) = BLI.invariants(transform.(D, r))
 
 @inline function invariants_ed(D::BondLengthDesc, r)
    x = transform.(D, r)
-   I1, I2, DI1, DI2 = BLInvariants.invariants_ed(x)
+   I1, I2, DI1, DI2 = BLI.invariants_ed(x)
    x_d = transform_d.(D, r)
    return I1, I2, _sdot(x_d, DI1), _sdot(x_d, DI2)
 end

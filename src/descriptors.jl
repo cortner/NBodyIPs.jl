@@ -125,5 +125,5 @@ end
 # bond length descriptor
 include("bldescriptor.jl")
 
-# # bond angle descriptor
-# include("badescriptor.jl")
+# bond angle descriptor
+include("badescriptor.jl")
