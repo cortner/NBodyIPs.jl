@@ -4,9 +4,9 @@ using NBodyIPs, StaticArrays, JuLIP, BenchmarkTools
 # using JuLIP.Potentials: evaluate, evaluate_d
 const BLI = NBodyIPs.BLInvariants
 
-println("----------------------------------------")
-println("  [1] Single Invariants Evaluation:")
-println("----------------------------------------")
+println("------------------------------------------")
+println("  [1] Bond-Length Invariants Evaluation:")
+println("------------------------------------------")
 for r in [ (@SVector [1.234]),
            (@SVector rand(3)),
            (@SVector rand(6)),
@@ -18,6 +18,24 @@ for r in [ (@SVector [1.234]),
    @btime BLI.invariants_d($r)
    print("  invariants_ed: ")
    @btime BLI.invariants_ed($r)
+end
+
+const BAI = NBodyIPs.BAInvariants
+
+println("------------------------------------------")
+println("  [2] Bond-Angle Invariants Evaluation:")
+println("------------------------------------------")
+for x in [ (@SVector [1.234]),
+           (@SVector rand(3)),
+           (@SVector rand(6)),
+           (@SVector rand(10)) ]
+   println("dim = $(length(x))")
+   print("     invariants: ")
+   @btime BAI.invariants($x)
+   print("   invariants_d: ")
+   @btime BAI.invariants_d($x)
+   print("  invariants_ed: ")
+   @btime BAI.invariants_ed($x)
 end
 
 

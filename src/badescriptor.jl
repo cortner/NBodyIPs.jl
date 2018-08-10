@@ -46,7 +46,8 @@ end
 @inline skip_simplex(D::BondAngleDesc, rθ) = (maximum(rθ[1]) > cutoff(D.cutoff))
 
 @inline _rθ2x(D, r, θ) = vcat(transform.(D, r), θ)
-@inline _rθ2x_d(D, r, θ) = vcat(transform_d.(D, r), θ)
+@inline _rθ2x_d(D, r, θ::SVector{K}) where {K} =
+   vcat(transform_d.(D, r), @SVector ones(K))
 
 @inline invariants(D::BondAngleDesc, rθ) = BAI.invariants(_rθ2x(D, rθ...))
 

@@ -18,8 +18,8 @@ else
    nbasis = [0, 10, 10, 10, 10]
 end
 
-# for Desc in [BondAngleDesc, ] # BondLengthDesc,
-Desc = BondAngleDesc
+for Desc in [BondLengthDesc, BondAngleDesc]
+# Desc = BondAngleDesc
 
 println("Setting up the test systems ...")
 r0 = rnn(:Cu)
@@ -104,7 +104,7 @@ dfh = (fcut.(D.cutoff, rr + 1e-5) - fcut.(D.cutoff, rr - 1e-5)) / (2e-5)
 #    (@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
 # end
 
-
+##
 println("`NBPoly` finite-difference test on configurations")
 println("------------------------------------------------")
 at1 = rattle!(bulk(:Cu, cubic=true) * (1,2,2), 0.02)
@@ -118,7 +118,7 @@ for at in [at1, at2]
    end
 end
 
-
+##
 println("Testing Collective Assembly across a Basis Set")
 println("----------------------------------------------")
 

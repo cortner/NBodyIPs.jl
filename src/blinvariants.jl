@@ -77,21 +77,15 @@ invariants_d(  r::SVector{3, T}) where {T} =
                   (@SVector [r[2] * r[3], r[1] * r[3], r[1] * r[2]]) ]),
       (@SVector [ (@SVector [0.0, 0.0, 0.0]) ])
 
-function invariants_ed(r::SVector{3, T}) where {T}
-   r1 = r[1]
-   r2 = r[2]
-   r3 = r[3]
-   r12 = r[1]*r[2]
-   r13 = r[1]*r[3]
-   r23 = r[2]*r[3]
-   r123 = r12*r3
-   return (@SVector T[ r1+r2+r3, r12 + r13 + r23, r123 ]),
-          (@SVector T[ 1.0 ]),
+invariants_ed(r::SVector{3, T}) where {T} =
+      (@SVector T[ r[1]+r[2]+r[3],
+                   r[1]*r[2] + r[1]*r[3] + r[2]*r[3],
+                   r[1]*r[2]*r[3] ]),
+      (@SVector T[ 1.0 ]),
       (@SVector [ (@SVector [1.0, 1.0, 1.0]),
-                  (@SVector [r2+r3, r1+r3, r1+r2]),
-                  (@SVector [r23, r13, r12]) ]),
-      (@SVector [ (@SVector [0.0, 0.0, 0.0]) ] )
-end
+                  (@SVector [r[2]+r[3], r[1]+r[3], r[1]+r[2]]),
+                  (@SVector [r[2] * r[3], r[1] * r[3], r[1] * r[2]]) ]),
+      (@SVector [ (@SVector [0.0, 0.0, 0.0]) ])
 
 tdegrees(::Val{3}) = (1, 2, 3), (0,)
 

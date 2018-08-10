@@ -7,6 +7,7 @@ using JuLIP, Base.Test, StaticArrays
 @testset "NBodyIPs" begin
    # @testset "Iterators" begin include("test_iterators.jl") end
    # @testset "Invariants" begin include("test_invariants.jl") end
+   # @testset "BA Descriptor" begin include("test_badesc.jl") end
    @testset "Bond-Length Polys" begin include("test_blpolys.jl") end
    # @testset "Static Bond-Length Polys" begin include("test_stblpoly.jl") end
    # @testset "NBodyIP IO" begin include("test_io.jl") end
