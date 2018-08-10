@@ -1,13 +1,14 @@
 using NBodyIPs, JuLIP, BenchmarkTools, StaticArrays
 using Base.Test
 
-using NBodyIPs: BondLengthDesc, transform, transform_d, fcut, fcut_d,
+using NBodyIPs: BondLengthDesc, BondAngleDesc,
+                transform, transform_d, fcut, fcut_d,
                 invariants, invariants_d, invariants_ed
 using NBodyIPs.Polys: NBPoly
 
-const blinvariants = NBodyIPs.BLInvariants.invariants
-const blinvariants_d = NBodyIPs.BLInvariants.invariants_d
-const blinvariants_ed = NBodyIPs.BLInvariants.invariants_ed
+# const blinvariants = NBodyIPs.BLInvariants.invariants
+# const blinvariants_d = NBodyIPs.BLInvariants.invariants_d
+# const blinvariants_ed = NBodyIPs.BLInvariants.invariants_ed
 
 profile = false
 
@@ -17,16 +18,19 @@ else
    nbasis = [0, 10, 10, 10, 10]
 end
 
+# for Desc in [BondAngleDesc, ] # BondLengthDesc,
+Desc = BondAngleDesc
+
 println("Setting up the test systems ...")
 r0 = rnn(:Cu)
 TRANSFORM = "r -> exp( - 3 * ((r/$r0) - 1))"
 at = rattle!(bulk(:Cu, cubic=true) * 2, 0.05)
 rcut3 = 3.1 * r0
-D3 = BondLengthDesc(TRANSFORM, (:cos, 0.66*rcut3, rcut3) )
+D3 = Desc(TRANSFORM, (:cos, 0.66*rcut3, rcut3) )
 rcut4 = 2.1 * r0
-D4 = BondLengthDesc(TRANSFORM, (:cos, 0.66*rcut4, rcut4) )
+D4 = Desc(TRANSFORM, (:cos, 0.66*rcut4, rcut4) )
 rcut5 = 1.5 * r0
-D5 = BondLengthDesc(TRANSFORM, (:cos, 0.66*rcut5, rcut5) )
+D5 = Desc(TRANSFORM, (:cos, 0.66*rcut5, rcut5) )
 DD = [nothing, D3, D3, D4, D5]
 
 random_nbody(N, ntup) = (
@@ -34,6 +38,10 @@ random_nbody(N, ntup) = (
                      (0.1+rand(ntup))/factorial(N), DD[N] )
            : NBPoly( [tuple( rand(0:N, ((N*(N-1))÷2+1))... ) for n = 1:ntup],
                    (0.1+rand(ntup))/factorial(N), DD[N] ) )
+
+rand_rθ(::Type{BondLengthDesc}, N) = SVector( (1.0 + rand((N*(N-1))÷2))... )
+rand_rθ(::Type{BondAngleDesc}, N) = SVector((1.0+rand(N-1))...),
+                               SVector( (-0.5+rand(((N-1)*(N-2))÷2))... )
 
 println("testing the transform")
 println("---------------------")
@@ -50,51 +58,51 @@ dfh = (fcut.(D.cutoff, rr + 1e-5) - fcut.(D.cutoff, rr - 1e-5)) / (2e-5)
 (@test norm(dfh - fcut_d.(D.cutoff, rr), Inf) < 1e-8) |> println
 
 
-println("testing a transformed invariant")
-println("-------------------------------")
-r = SVector( (r0 + rand(3))... )
-rv = Vector(r)
-I1, _, dI1, _ = invariants_ed(D, r)
-I1 = I1[2]
-dI1 = dI1[2]
-errs = []
-for p = 2:11
-   h = 0.1^p
-   dI1h = zeros(3)
-   for n = 1:3
-      rv[n] += h
-      dI1h[n] = (invariants(D, SVector(rv...))[1][2] - I1) / h
-      rv[n] -= h
-   end
-   push!(errs, norm(dI1h - dI1, Inf))
-   @printf(" %.2e | %.2e \n", h, errs[end])
-end
-(@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
+# println("testing a transformed invariant")
+# println("-------------------------------")
+# r = SVector( (r0 + rand(3))... )
+# rv = Vector(r)
+# I1, _, dI1, _ = invariants_ed(D, r)
+# I1 = I1[2]
+# dI1 = dI1[2]
+# errs = []
+# for p = 2:11
+#    h = 0.1^p
+#    dI1h = zeros(3)
+#    for n = 1:3
+#       rv[n] += h
+#       dI1h[n] = (invariants(D, SVector(rv...))[1][2] - I1) / h
+#       rv[n] -= h
+#    end
+#    push!(errs, norm(dI1h - dI1, Inf))
+#    @printf(" %.2e | %.2e \n", h, errs[end])
+# end
+# (@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
 
-println("`NBPoly` gradient-test on simplices")
-println("----------------------------------")
-for N in 2:5, ntup = [1,3]
-   VN = random_nbody(N, ntup)
-   println("[$N-body, ntup=$ntup, t[1] = $(VN.t[1])]")
-   r = SVector( (r0 + rand((N*(N-1))÷2))... )
-   dvN = @D VN(r)
-   vN = VN(r)
-   rv = Vector(r)
-   errs = []
-   println("      h   |    err")
-   for p = 2:10
-      h = 0.1^p
-      dvh = zeros(length(dvN))
-      for i = 1:length(rv)
-         rv[i] += h
-         dvh[i] = (VN( SVector(rv...) ) - vN) / h
-         rv[i] -=h
-      end
-      push!(errs, vecnorm(dvN - dvh, Inf))
-      @printf(" %.2e | %.2e \n", h, errs[end])
-   end
-   (@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
-end
+# println("`NBPoly` gradient-test on simplices")
+# println("----------------------------------")
+# for N in 2:5, ntup = [1,3]
+#    VN = random_nbody(N, ntup)
+#    println("[$N-body, ntup=$ntup, t[1] = $(VN.t[1])]")
+#    r = SVector( (r0 + rand((N*(N-1))÷2))... )
+#    dvN = @D VN(r)
+#    vN = VN(r)
+#    rv = Vector(r)
+#    errs = []
+#    println("      h   |    err")
+#    for p = 2:10
+#       h = 0.1^p
+#       dvh = zeros(length(dvN))
+#       for i = 1:length(rv)
+#          rv[i] += h
+#          dvh[i] = (VN( SVector(rv...) ) - vN) / h
+#          rv[i] -=h
+#       end
+#       push!(errs, vecnorm(dvN - dvh, Inf))
+#       @printf(" %.2e | %.2e \n", h, errs[end])
+#    end
+#    (@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
+# end
 
 
 println("`NBPoly` finite-difference test on configurations")
@@ -146,4 +154,7 @@ if profile
       print(" S separate:" ); @btime ([virial(b, $at) for b in $B])
       print(" S combined:" ); @btime virial( $B, $at )
    end
+end
+
+
 end

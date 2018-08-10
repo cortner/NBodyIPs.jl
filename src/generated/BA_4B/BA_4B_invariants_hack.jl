@@ -3,6 +3,7 @@ module BA_4B
 using NBodyIPs.FastPolys
 using StaticArrays
 
+import NBodyIPs.BAInvariants: invariants, invariants_d, invariants_ed
 
 const G_BA_4B = [
 [ 1, 2, 3, 4, 5, 6 ]

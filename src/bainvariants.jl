@@ -20,7 +20,7 @@ invariants_d(x::SVector{1, T}) where {T} =
       (@SVector [ SVector(one(T))  ]),
       (@SVector [ SVector(zero(T)) ])
 
-invariants_ed(r::SVector{1,T}) where {T} =
+invariants_ed(x::SVector{1,T}) where {T} =
       copy(x),
       SVector{1, T}(1.0),
       (@SVector [ SVector(one(T))  ]),
@@ -46,7 +46,7 @@ invariants_d(x::SVector{3, T}) where {T} =
                   (@SVector T[0.0, 0.0, 1.0]) ]),
       (@SVector [ (@SVector T[0.0, 0.0, 0.0]) ])
 
-invariants_ed(r::SVector{3, T}) where {T} =
+invariants_ed(x::SVector{3, T}) where {T} =
       (@SVector T[ x[1] + x[2], x[1] * x[2], x[3] ]),
       (@SVector T[ 1.0 ]),
       (@SVector [ (@SVector T[1.0, 1.0, 0.0]),
