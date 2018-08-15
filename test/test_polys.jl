@@ -6,10 +6,6 @@ using NBodyIPs: BondLengthDesc, BondAngleDesc,
                 invariants, invariants_d, invariants_ed
 using NBodyIPs.Polys: NBPoly
 
-# const blinvariants = NBodyIPs.BLInvariants.invariants
-# const blinvariants_d = NBodyIPs.BLInvariants.invariants_d
-# const blinvariants_ed = NBodyIPs.BLInvariants.invariants_ed
-
 profile = false
 
 if profile
@@ -18,8 +14,33 @@ else
    nbasis = [0, 10, 10, 10, 10]
 end
 
+const Ir = @SVector [1,2,3]
+const Iθ = @SVector [4,5,6]
+all_invs(desc::BondLengthDesc, r) = vcat(invariants(desc, r)...)
+jac_all_invs(desc::BondLengthDesc, r) = hcat(vcat(invariants_ed(desc, r)[3:4]...)...)'
+all_invs(desc::BondAngleDesc, rθ) = vcat(invariants(desc, (rθ[Ir], rθ[Iθ]))...)
+jac_all_invs(desc::BondAngleDesc, rθ) = hcat(vcat(invariants_ed(desc, (rθ[Ir], rθ[Iθ]))[3:4]...)...)'
+
+function fdjac(desc, rθ; h=1e-5)
+   v = Vector(rθ)
+   f = all_invs(desc, rθ)
+   J = zeros(length(f), length(v))
+   for i = 1:length(v)
+      v[i] += h
+      fh = all_invs(desc, SVector(v...))
+      J[:, i] = (fh-f) / h
+      v[i] -= h
+   end
+   return J
+end
+
+
 for Desc in [BondLengthDesc, BondAngleDesc]
 # Desc = BondAngleDesc
+
+println("------------------------------------------------")
+println(" Testing Polys based on $(Desc) descriptors")
+println("------------------------------------------------")
 
 println("Setting up the test systems ...")
 r0 = rnn(:Cu)
@@ -43,6 +64,7 @@ rand_rθ(::Type{BondLengthDesc}, N) = SVector( (1.0 + rand((N*(N-1))÷2))... )
 rand_rθ(::Type{BondAngleDesc}, N) = SVector((1.0+rand(N-1))...),
                                SVector( (-0.5+rand(((N-1)*(N-2))÷2))... )
 
+
 println("testing the transform")
 println("---------------------")
 D = D3
@@ -57,27 +79,18 @@ rr = linspace(rcut3-0.9, rcut3+0.1, 100)
 dfh = (fcut.(D.cutoff, rr + 1e-5) - fcut.(D.cutoff, rr - 1e-5)) / (2e-5)
 (@test norm(dfh - fcut_d.(D.cutoff, rr), Inf) < 1e-8) |> println
 
-
-# println("testing a transformed invariant")
-# println("-------------------------------")
-# r = SVector( (r0 + rand(3))... )
-# rv = Vector(r)
-# I1, _, dI1, _ = invariants_ed(D, r)
-# I1 = I1[2]
-# dI1 = dI1[2]
-# errs = []
-# for p = 2:11
-#    h = 0.1^p
-#    dI1h = zeros(3)
-#    for n = 1:3
-#       rv[n] += h
-#       dI1h[n] = (invariants(D, SVector(rv...))[1][2] - I1) / h
-#       rv[n] -= h
-#    end
-#    push!(errs, norm(dI1h - dI1, Inf))
-#    @printf(" %.2e | %.2e \n", h, errs[end])
-# end
-# (@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
+println(" testing a transformed 4B invariant")
+println("------------------------------------")
+r = SVector( (r0 + rand(6))... )
+DI = jac_all_invs(D4, r)
+errs = []
+for p = 2:11
+   h = 0.1^p
+   DIh = fdjac(D4, r; h = h)
+   push!(errs, vecnorm(DIh - DI, Inf))
+   @printf(" %.2e | %.2e \n", h, errs[end])
+end
+(@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
 
 # println("`NBPoly` gradient-test on simplices")
 # println("----------------------------------")
