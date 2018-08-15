@@ -1,8 +1,10 @@
 
 
-
 using StaticArrays
-using NBodyIPs: push_str!, append_str!
+
+push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
+append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
+
 
 # univariate monomial
 @inline _m1(α::Number, x::T) where {T <: Number} =
@@ -66,76 +68,5 @@ end
       $(Expr(:meta, :inline))
       @inbounds $(Expr(:block, exprs...))
       return m, m_d
-   end
-end
-
-
-
-# ---------------------------------------------------------------
-# NOT TECHNICALLY MONOMIALS, BUT VERY SIMILAR OBJECT:
-#   TODO: combine fcut_d and monomial_d into a single function
-# ---------------------------------------------------------------
-
-function fcut(D::Dictionary, r::SVector{M, T}) where {M, T}
-   fc = one(T)
-   for i = 1:M
-      @fastmath fc *= fcut(D, r[i])
-   end
-   return fc
-end
-
-
-@generated function fcut_d(D::Dictionary, r::SVector{M, T}) where {M, T}
-   exprs = Expr[]
-
-   # evaluate the scalar monomials
-   #  f = SVector{...}( x[1]^α[1], ...)
-   # df = SVector{...}( α[1] * x[1]^(α[1]-1), ...)
-   ex_f =   "f = @SVector $T["
-   ex_df = "df = @SVector $T["
-   for i = 1:M
-      ex_f  *=   "fcut(D, r[$i]), "
-      ex_df *= "fcut_d(D, r[$i]), "
-   end
-   ex_f  =  ex_f[1:end-2] * "]"
-   ex_df = ex_df[1:end-2] * "]"
-
-   push_str!(exprs, ex_f)
-   push_str!(exprs, ex_df)
-
-
-   push_str!(exprs, ex_f)
-   push_str!(exprs, ex_df)
-
-
-   # evaluate the multi-variate monomial
-   push_str!(exprs, "fc = 1.0")
-   for i = 1:M
-      push_str!(exprs, "fc *= f[$i]")
-   end
-
-   for i = 1:M
-      push_str!(exprs, "fc_d_$i = 1.0")
-      for j = 1:M
-         if i == j
-            push_str!(exprs, "fc_d_$i *= df[$j]")
-         else
-            push_str!(exprs, "fc_d_$i *= f[$j]")
-         end
-      end
-   end
-
-   # evaluate the derivative
-   ex_dm = "fc_d = @SVector $T["
-   for i = 1:M
-      ex_dm *= "fc_d_$i, "
-   end
-   ex_dm = ex_dm[1:end-2] * "]"
-   push_str!(exprs, ex_dm)
-
-   quote
-      $(Expr(:meta, :inline))
-      @inbounds $(Expr(:block, exprs...))
-      return fc, fc_d
    end
 end

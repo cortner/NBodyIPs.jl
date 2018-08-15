@@ -1,16 +1,15 @@
 using NBodyIPs
 using JuLIP, Base.Test, StaticArrays
-using BenchmarkTools
+
+# TODO: * monomials testset
+#       * fast_polys testset
 
 @testset "NBodyIPs" begin
-   # TODO: monomials testset
-   # TODO: fast_polys testset
-   @testset "Misc" begin include("test_misc.jl") end
-   @testset "Iterators" begin include("test_iterators.jl") end
-   @testset "Invariants" begin include("test_invariants.jl") end
-   @testset "Polynomials" begin include("test_polynomials.jl") end
-   @testset "Fitting" begin include("test_fit.jl") end
-   @testset "EnvironmentIPs" begin include("test_environ.jl") end 
-   # TODO: Data testset
-   # TODO: IO / serialization testset
+   # @testset "Iterators" begin include("test_iterators.jl") end
+   # @testset "Invariants" begin include("test_invariants.jl") end
+   # @testset "BA Descriptor" begin include("test_badesc.jl") end
+   @testset "Bond-Length Polys" begin include("test_blpolys.jl") end
+   # @testset "Static Bond-Length Polys" begin include("test_stblpoly.jl") end
+   # @testset "NBodyIP IO" begin include("test_io.jl") end
+   # @testset "EnvironmentIPs" begin include("test_environ.jl") end
 end

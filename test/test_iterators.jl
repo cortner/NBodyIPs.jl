@@ -3,19 +3,52 @@
 using NeighbourLists, NBodyIPs, JuLIP, StaticArrays, Base.Test,
       ForwardDiff, Base.Test
 using NBodyIPs: NBodyFunction
-import JuLIP.Potentials: evaluate, cutoff, evaluate_d
+import JuLIP.Potentials: evaluate, cutoff, evaluate_d!
 
 # --------- MANY BODY CODE THAT IS SHARED ACROSS TESTS ------------
 
-@pot struct TestNB{N} <: NBodyFunction{N}
+@pot struct TestBL{N} <: NBodyFunction{N}
    r0::Float64
    rcut::Float64
    vN::Val{N}
 end
 
-evaluate(V::TestNB, r) = fnbody(r, V.r0, V.rcut)
-evaluate_d(V::TestNB, r) = fnbody_d(r, V.r0, V.rcut)
-cutoff(V::TestNB) = V.rcut
+function edgelengths1(Rs, J)
+   r = [ norm(Rs[j])         for j in J ]
+   S = [ Rs[j] / norm(Rs[j]) for j in J ]
+   for i = 1:length(J)-1, j = i+1:length(J)
+      push!(r, norm(Rs[J[j]]-Rs[J[i]]))
+      push!(S, (Rs[J[i]]-Rs[J[j]]) / norm(Rs[J[i]]-Rs[J[j]]))
+   end
+   return r, S
+end
+
+# function edgelengths(Rs, J)
+#    r = NBodyIPs.edge_lengths(Rs, J)
+
+
+evaluate(V::TestBL{N}, Rs, J) where {N} =
+      fnbody(edgelengths1(Rs, J)[1], V.r0, V.rcut) / N
+
+function evaluate_d!(dVsite, V::TestBL{N}, Rs, J) where {N}
+   r, S = edgelengths1(Rs, J)
+   dV = (fnbody_d(r, V.r0, V.rcut) / N) .* S
+   idx = 0
+   for i = 1:length(J)
+      idx += 1
+      dVsite[J[i]] += dV[idx]
+   end
+   for i = 1:length(J)-1, j = i+1:length(J)
+      idx += 1
+      dVsite[J[i]] += dV[idx]
+      dVsite[J[j]] -= dV[idx]
+   end
+   return dVsite
+end
+
+evaluate(V::TestBL, rs::Vector{Float64}) = fnbody(rs, V.r0, V.rcut)
+
+cutoff(V::TestBL) = V.rcut
 
 sqrt1p(x) = expm1( 0.5 * log1p( x ) )   # sqrt(1 + x) - 1
 sqrt1p_d(x) = 0.5 / sqrt(1+x)
@@ -36,7 +69,7 @@ end
 
 # Generate a MODEL N-Body function
 gen_fnbody(N; r0=1.0, rcut = N < 5 ? 2.5 * r0 : 1.7 * r0) =
-   TestNB(r0, rcut, Val(N))
+   TestBL(r0, rcut, Val(N))
 
 println("Checking that `fnbody` is correct...")
 fnbody_ad(rs, r0, rcut) = ForwardDiff.gradient( t -> fnbody(t, r0, rcut), rs )
@@ -72,6 +105,23 @@ function naive_n_body(X::Vector{JVec{T}}, V::NBodyFunction{N}) where {T, N}
    return E
 end
 
+
+println("--------------------------------------")
+println("    Testing EdgeLength Implementation")
+println("--------------------------------------")
+for N in [2,2,3,3,4,4,5]
+   Rs = rand(JVecF, 20)
+   J = unique(rand(1:20, 30))
+   if length(J) < N
+      continue
+   end
+   J = SVector(J[1:N]...)
+   r1, S1 = edgelengths1(Rs, J)
+   r = NBodyIPs.edge_lengths(Rs, J)
+   (@test r1 ≈ Vector(r)) |> print; print(" ")
+   # (@test S1 ≈ Vector(S)) |> print; print(" ")
+end
+println()
 
 println("--------------------------------------")
 println("    Testing NBodyIterator")
@@ -116,6 +166,7 @@ for N in MM
 
    nat = length(positions(at))
    dE = gradient(at)
+   dEh = nothing
    E = energy(at)
    println("[N = $N]")
    @printf("    h    | error \n")

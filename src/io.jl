@@ -1,49 +1,68 @@
-"""
-# `module IO`
 
-Writing and reading of `NBodyIPs`.
+using JSON
 
-## Usage
+struct XJld2 end
+struct XJson end
+struct XJld end
 
-If `V <: NBodyIP` then
-```
-NBodyIPs.IO.write(fname, V)
-```
-will write `V` into a file, while
-```
-V = NBodyIPs.IO.read(fname)
-```
-will load a previously saved `NBodyIP`. One can then simply call
-`energy(V), forces(V)`, etc, as with any `JuLIP.AbstractCalculator`.
 
-## Restrictions
 
-`NBodyIP` simply stores a list of N-body terms, where each of these
-N-body terms must implement `serialize` and `deserialize`. At the moment,
-only `NBodyIPs.Polys.NBody` is available for this. Currently,
-and `NBody` can only be serialised if its dictionary constructed using
-strings as parameters, e.g.,
-```
-Dictionary("@analytic r -> (\$(r0)/r)^3", "(:cos, \$(0.66*rcut), \$rcut)")
-```
-since this allows the `Dictionary` to store the string from which it is
-constructed, which can be easily (de-)serialized.
-"""
-module IO
+_decode_dict(D::Dict) = convert(Val(Symbol(D["__id__"])), D)
 
-using JLD
-using NBodyIPs: NBodyIP
-using NBodyIPs.Polys: NBody, Dictionary
+# ------------ writing and reading NBodyIP ------------
 
-function write(fname::AbstractString, IP::NBodyIP)
-   @assert fname[end-3:end] == ".jld"
-   IPs = serialize.(IP.orders)
-   JLD.save(fname, "IP", IPs)
+NBodyIP(D::Dict) = NBodyIP(_decode_dict.(D["components"]))
+
+Dict(IP::NBodyIP) = Dict("__id__" => "NBodyIP",
+                         "components" => Dict.(IP.components))
+
+Base.convert(::Val{:NBodyIP}, D::Dict) = NBodyIP(D)
+
+# ------------ writing and reading nothing ------------
+
+Dict(::Void) = Dict("__id__" => "Void")
+
+Base.convert(::Val{:Void}, D::Dict) = nothing
+
+# ------------ FileIO -------------------
+
+function _checkextension(fname)
+   if fname[end-3:end] == "jld2"
+      return XJld2()
+   elseif fname[end-2:end] == "jld"
+      return XJld()
+   elseif fname[end-3:end] == "json"
+      return XJson()
+   end
+   error("unknown extension for `$fname`")
 end
 
-function read(fname::AbstractString)
-   IPs = JLD.load(fname, "IP")
-   return NBodyIP(deserialize.(NBody, IPs))
+save_ip(fname::AbstractString, IP) =
+   save_ip(_checkextension(fname), fname, IP)
+
+load_ip(fname::AbstractString) =
+   load_ip(_checkextension(fname), fname)
+
+save_ip(::Union{XJld2, XJld}, args...) = err_jld()
+load_ip(::Union{XJld2, XJld}, args...) = err_jld()
+
+err_jld() =
+   warn("""`load_ip` and `save_ip` do not directly support jld and jld2. In order
+           to load an `NBodyIP` stored in one of those formats, please use `FileIO`,
+           load the IP as a `ipdict::Dict` and then decode it using
+           `NBodyIP(ipdict)`. To save an `ip::NBodyIP` as a jld or jld2 file,
+           convert it to a `Dict` using `Dict(ip)` and then save it using
+           `FileIO.save`.""")
+
+
+function save_ip(::XJson, fname, IP)
+   f = open(fname, "w")
+   print(f, JSON.json(Dict(IP)))
+   close(f)
 end
 
+function load_ip(::XJson, fname)
+   IPj = JSON.parsefile(fname)
+   @assert IPj["__id__"] == "NBodyIP"
+   return NBodyIP(IPj)
 end

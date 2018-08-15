@@ -1,69 +1,48 @@
 
+# TODO:
+# * energy and forces for ASEAtoms ????
+#   -> maybe define these for AbstractAtoms, then remove the
+#      conversion from ASE???
+# * poly_regularise
+# * Remove NBPoly{1} altogether and replace it with an OneBody?
+#   that is available for all sub-modules?
+
+__precompile__()
+
 """
 # `NBodyIPs.jl`
 
-Package for defining and fitting interatomic potentials based on the
-N-Body expansion (ANOVA, HDMR, ...). The main exported type is
-`NBodyIP` which is a `JuLIP` calculator.
+Package for specifying interatomic potentials based on the
+N-Body expansion (ANOVA, HDMR, ...).
 
-See `?...` on how to
-* `?NBodyIPs.Polys` : specify a polynomial basis set
-* `?NBodyIPs.Fitting` : fit an `NBodyIP`
-* `?NBodyIPs.Data` : load data sets
-* `?NBodyIPs.IO` : write and read an `NBodyIP`
+See `NBodyIPFitting` for the associated fitting and testing framework.
 """
 module NBodyIPs
 
 using Reexport
 
-@reexport using StaticArrays
-@reexport using FileIO
-@reexport using JuLIP
-
-
-# two auxiliary functions to make for easier assembly of the code
-# TODO: move these somewhere else
-push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
-append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
-
-
-include("fastpolys.jl")
-
-include("invariants.jl")
-
+# generic types and function prototypes
 include("common.jl")
 
+# the machinery for evaluating the invariants as fast as possible
+include("fastpolys.jl")
 
-# some generically useful code that
-# could be used across different n-body basis function implementations
-# TODO: move some codes from Invariants submodule to here
-#       or maybe other parts of the package
-include("misc.jl")
+# bond-length invariants
+include("blinvariants.jl")
 
+# bond-angle invariants
+include("bainvariants.jl")
 
-# describe basis functions in terms of symmetry invariants
-include("polynomials.jl")
-@reexport using NBodyIPs.Polys
+include("descriptors.jl")
+
+# Polynomials of an invariant coordinate system
+include("polys.jl")
+import NBodyIPs.Polys: blpolys # , bapolys
+export blpolys # , bapolys
+
 
 include("environ.jl")
-import NBodyIPs.EnvBLs: envbl_basis
-export envbl_basis
-
-# loading data
-include("data.jl")
-@reexport using NBodyIPs.Data
-
-# fitting from data (e.g., least squares)
-# TODO: make this a sub-module and re-export
-include("fitting.jl")
-
-include("errors.jl")
-
-# # IP i/o
-# include("io.jl")
-
-#visualisation module
-include("PIPplot.jl")
-@reexport using NBodyIPs.PIPplot
+import NBodyIPs.EnvIPs: envblpolys # , envbapolys
+export envblpolys # , envbapolys
 
 end # module
