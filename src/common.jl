@@ -167,7 +167,7 @@ include("eval_nbody.jl")
 include("io.jl")
 
 # space transforms and cutoffs
-include("aux.jl")
+include("descsupp.jl")
 
 
 
