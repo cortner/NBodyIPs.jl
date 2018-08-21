@@ -33,16 +33,18 @@ include("blinvariants.jl")
 # bond-angle invariants
 include("bainvariants.jl")
 
+# generic and specific descriptors for BL and BA
 include("descriptors.jl")
 
-# Polynomials of an invariant coordinate system
+# evaluating Polynomials of an invariant coordinate system
 include("polys.jl")
-import NBodyIPs.Polys: blpolys # , bapolys
-export blpolys # , bapolys
 
+# codes to generate basis functions
+include("polybasis.jl")
+@reexport using NBodyIPs.PolyBasis
 
+# environment dependent potentials
 include("environ.jl")
-import NBodyIPs.EnvIPs: envblpolys # , envbapolys
-export envblpolys # , envbapolys
+@reexport using NBodyIPs.EnvIPs
 
 end # module

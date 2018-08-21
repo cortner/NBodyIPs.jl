@@ -33,7 +33,7 @@ for Venv in [V3env_0, V3env_1, V3env_2]
 end
 
 println("Testing combined assembly of basis")
-B = Env.envblpolys(3, D3, 5, Vn, 2)
+B = Env.envpolys(3, D3, 5, Vn, 2)
 
 # nb: the , false is to set typewarn=false, since eltype(B) is not a leaftype
 print("energy: ")

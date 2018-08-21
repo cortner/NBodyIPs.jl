@@ -50,6 +50,18 @@ the number of edges in a simplex into the body-order
 """
 edges2bo(M::Integer) = (M <= 0) ? 1 : round(Int, 0.5 + sqrt(0.25 + 2 * M))
 
+"""
+`bo2angles(N)` : bodyorder-to-angles in one corner of a simplex
+"""
+bo2angles(N::Integer) = ((N-2) * (N-1)) ÷ 2
+bo2angles(::Val{N}) where {N} = ((N-2) * (N-1)) ÷ 2
+
+"""
+`angles2bo(M)`: "angles-to-bodyorder", an internal function that translates
+the number of angles in one corner of a simplex into the body-order
+"""
+angles2bo(A::Integer) = (M <= 0) ? 2 : round(Int, 3/2 + sqrt((9/4) + (2-2*A)))
+
 
 # ----------- some generic functions that we like to have available globally
 #             to overload as needed
@@ -175,13 +187,29 @@ include("descsupp.jl")
 # ======= experimental ============
 
 function evaluate(V::NBodyFunction{N}, r::SVector{M}) where {N, M}
-   D = descriptor(V)
+   # this assumes that D is a BondLengthDesc
+   D = descriptor(V)::BondLengthDesc
    return evaluate_I(V, invariants(D, r)) * fcut(D, r)
 end
 
 function evaluate_d(V::NBodyFunction{N}, r::SVector{M}) where {N, M}
-   D = descriptor(V)
+   D = descriptor(V)::BondLengthDesc
    fc, fc_d = fcut_d(D, r)
    Vn, Vn_d = evaluate_I_ed(V, invariants_ed(D, r))
+   return fc * Vn_d + fc_d * Vn
+end
+
+function evaluate(V::NBodyFunction{N}, r::SVector{M1}, θ::SVector{M2}
+                  ) where {N, M1, M2}
+   # this assumes that D is a BondAngleDesc
+   D = descriptor(V)::BondAngleDesc
+   return evaluate_I(V, invariants(D, (r, θ))) * fcut(D, r)
+end
+
+function evaluate_d(V::NBodyFunction{N}, r::SVector{M1}, θ::SVector{M2}
+                  ) where {N, M1, M2}
+   D = descriptor(V)::BondAngleDesc
+   fc, fc_d = fcut_d(D, r)
+   Vn, Vn_d = evaluate_I_ed(V, invariants_ed(D, (r,θ)))
    return fc * Vn_d + fc_d * Vn
 end

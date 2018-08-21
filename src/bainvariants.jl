@@ -26,6 +26,12 @@ invariants_ed(x::SVector{1,T}) where {T} =
       (@SVector [ SVector(one(T))  ]),
       (@SVector [ SVector(zero(T)) ])
 
+tdegrees(::Val{2}) = (1,), (0,)
+
+# this is a terrible hack that mostly likely will not work as we want.
+# see Slack discussion for more details.
+rtdegrees(::Val{2}) =
+   ( (1,0), ), ( (0,0), )
 
 
 # ------------------------------------------------------------------------
@@ -54,6 +60,13 @@ invariants_ed(x::SVector{3, T}) where {T} =
                   (@SVector T[0.0, 0.0, 1.0]) ]),
       (@SVector [ (@SVector T[0.0, 0.0, 0.0]) ])
 
+
+tdegrees(::Val{3}) = (1, 2, 1), (0,)
+
+# this is a terrible hack that mostly likely will not work as we want.
+# see Slack discussion for more details.
+rtdegrees(::Val{3}) =
+   ( (1,0), (2,0), (0,1) ), ( (0,0), )
 
 
 # ------------------------------------------------------------------------

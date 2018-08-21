@@ -11,7 +11,7 @@ using JuLIP.Potentials:   Shift,
                           @analytic,
                           @pot
 using NBodyIPs:           BondLengthDesc
-using NBodyIPs.Polys:     blpolys
+using NBodyIPs.PolyBasis: nbpolys
 
 import Base:              Dict,
                           ==,
@@ -23,7 +23,7 @@ import NBodyIPs:          NBodyIP,
                           _decode_dict
 
 
-export envblpolys
+export envpolys
 
 abstract type AbstractEnvIP{N} <: AbstractCalculator end
 
@@ -81,9 +81,9 @@ bodyorder(V::AbstractEnvIP) = bodyorder(Vr(V))
 
 # ----------------- generate basis / IP / convert ----------------
 
-function envblpolys(N::Integer, D::BondLengthDesc, deg_poly::Integer,
-                     Vn_descr, deg_n::Integer; kwargs...)
-   B_poly = blpolys(N, D, deg_poly; kwargs...)
+function envpolys(N::Integer, D::BondLengthDesc, deg_poly::Integer,
+                  Vn_descr, deg_n::Integer; kwargs...)
+   B_poly = nbpolys(N, D, deg_poly; kwargs...)
    B = EnvIP[]
    str_Vn = Vn_descr[1]
    Vn = analyse_Vn(Vn_descr...)

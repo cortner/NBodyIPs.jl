@@ -24,11 +24,9 @@ using StaticArrays
 using NBodyIPs: NBodyFunction,
                 bodyorder,
                 _decode_dict,
-                BondLengthDesc,
+                invariants,
                 edges2bo,
-                bo2edges,
-                tdegrees,
-                invariants
+                bo2edges 
 
 
 import Base:              length,
@@ -255,92 +253,6 @@ function evaluate_I_ed(V::StNBPoly, II)
    return V, dot(vcat(II[3], II[4]), dV_dI)  # (dI' * dV_dI)
 end
 
-
-# ==================================================================
-#           Generate a NBPoly Basis
-# ==================================================================
-
-
-"""
-compute the total degree of the polynomial represented by α.
-Note that `M = K-1` where `K` is the tuple length while
-`M` is the number of edges.
-"""
-function tdegree(desc, α)
-   K = length(α)
-   degs1, degs2 = tdegrees(desc, Val(edges2bo(K-1)))
-   # primary invariants
-   d = sum(α[j] * degs1[j] for j = 1:K-1)
-   # secondary invariants
-   d += degs2[1+α[end]]
-   return d
-end
-
-
-"""
-`gen_tuples(N, deg; tuplebound = ...)` : generates a list of tuples, where
-each tuple defines a basis function. Use `gen_basis` to convert the tuples
-into a basis, or use `gen_basis` directly.
-
-* `N` : body order
-* `deg` : maximal degree
-* `tuplebound` : a function that takes a tuple as an argument and returns
-`true` if that tuple should be in the basis and `false` if not. The default is
-`α -> (0 < tdegree(α) <= deg)` i.e. the standard monomial degree. (note this is
-the degree w.r.t. lengths, not w.r.t. invariants!) The `tuplebound` function
-must be **monotone**, that is, `α,β` are tuples with `all(α .≦ β)` then
-`tuplebound(β) == true` must imply that also `tuplebound(α) == true`.
-"""
-gen_tuples(desc, N, deg; tuplebound = (α -> (0 < tdegree(desc, α) <= deg))) =
-   gen_tuples(desc, Val(N), Val(bo2edges(Val(N))+1), deg, tuplebound)
-
-function gen_tuples(desc, vN::Val{N}, vK::Val{K}, deg, tuplebound) where {N, K}
-   A = Tup{K}[]
-   degs1, degs2 = tdegrees(desc, vN)
-
-   α = @MVector zeros(Int, K)
-   α[1] = 1
-   lastinc = 1
-
-   while true
-      admit_tuple = false
-      if α[end] <= length(degs2)-1
-         if tuplebound(α)
-            admit_tuple = true
-         end
-      end
-      if admit_tuple
-         push!(A, SVector(α).data)
-         α[1] += 1
-         lastinc = 1
-      else
-         if lastinc == K
-            return A
-         end
-         α[1:lastinc] = 0
-         α[lastinc+1] += 1
-         lastinc += 1
-      end
-   end
-   error("I shouldn't be here!")
-end
-
-
-"""
-* `blpolys(N, D, deg; tuplebound = ...)`
-* `blpolys(N, strans, scut, deg; tuplebound = ...)`
-
-generates a basis set of
-`N`-body functions, with dictionary `D`, maximal degree `deg`; the precise
-set of basis functions constructed depends on `tuplebound` (see `?gen_tuples`)
-"""
-blpolys(N::Integer, desc::BondLengthDesc, deg; kwargs...) =
-   blpolys(gen_tuples(desc, N, deg; kwargs...), desc)
-
-blpolys(ts::VecTup, desc::BondLengthDesc) = [NBPoly(t, 1.0, desc) for t in ts]
-
-blpolys(N::Integer, strans::String, scut::String, deg; kwargs...) =
-   blpolys(N, BondLengthDesc(strans, scut), deg; kwargs...)
 
 
 
