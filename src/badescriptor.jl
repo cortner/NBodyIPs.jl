@@ -2,7 +2,7 @@
 using JuLIP: JVec
 const BAI = BAInvariants
 
-struct BondAngleDesc{TT, TC} <: NBSiteDescriptor
+struct BondAngleDesc{TT <: SpaceTransform, TC <: Cutoff} <: NBSiteDescriptor
    transform::TT
    cutoff::TC
 end

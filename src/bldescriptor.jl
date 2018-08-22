@@ -1,7 +1,7 @@
 
 const BLI = BLInvariants
 
-struct BondLengthDesc{TT, TC} <: NBSiteDescriptor
+struct BondLengthDesc{TT <: SpaceTransform, TC <: Cutoff} <: NBSiteDescriptor
    transform::TT
    cutoff::TC
 end
