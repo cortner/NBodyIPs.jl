@@ -3,16 +3,16 @@ module BA_4B
 using NBodyIPs.FastPolys
 using StaticArrays
 
-import NBodyIPs.BAInvariants: invariants, invariants_d, invariants_ed
+import NBodyIPs.BAInvariants: invariants, invariants_d, invariants_ed, tdegrees
 
 tdegrees(::Val{4}) =
-   (1, 1, 2, 2, 3, 3), (0, 2, 2, 3, 3, 3, 3, 3, 3, 4, 6)
+   (1, 1, 2, 2, 3, 3), (0, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 6)
 
 # this is a terrible hack that mostly likely will not work as we want.
 # see Slack discussion for more details.
 rtdegrees(::Val{4}) =
    ( (1,0), (0,1), (2,0), (1,1), (0, 3), (3, 1) ),
-   ( (0,0), (1,1), (0,2), (3,0), (2,1), (1,2), (2,1), (1,2), (0,3), (0,4), (4,2) )
+   ( (0,0), (1,1), (0,2), (3,0), (2,1), (1,2), (2,1), (1,2), (0,3), (0,4), (2, 2), (4,2) )
 
 
 const G_BA_4B = [
@@ -294,7 +294,10 @@ dSEC11  =  + dIS2*2IS2
 dSEC12  =  + dIS4*2IS4
 
 
-return (@SVector [P1,P2,P3,P4,P5,P6,]), (@SVector [SEC1,SEC2,SEC3,SEC4,SEC5,SEC6,SEC7,SEC8,SEC9,SEC10,SEC11,SEC12,]), (@SVector [dP1,dP2,dP3,dP4,dP5,dP6,]), (@SVector [dSEC1,dSEC2,dSEC3,dSEC4,dSEC5,dSEC6,dSEC7,dSEC8,dSEC9,dSEC10,dSEC11,dSEC12,])
- end
+return (@SVector [P1,P2,P3,P4,P5,P6,]),
+       (@SVector [SEC1,SEC2,SEC3,SEC4,SEC5,SEC6,SEC7,SEC8,SEC9,SEC10,SEC11,SEC12,]),
+       (@SVector [dP1,dP2,dP3,dP4,dP5,dP6,]),
+       (@SVector [dSEC1,dSEC2,dSEC3,dSEC4,dSEC5,dSEC6,dSEC7,dSEC8,dSEC9,dSEC10,dSEC11,dSEC12,])
+end
 
 end

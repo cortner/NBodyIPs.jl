@@ -62,7 +62,6 @@ the number of angles in one corner of a simplex into the body-order
 """
 angles2bo(A::Integer) = (M <= 0) ? 2 : round(Int, 3/2 + sqrt((9/4) + (2-2*A)))
 
-
 # ----------- some generic functions that we like to have available globally
 #             to overload as needed
 
@@ -199,17 +198,17 @@ function evaluate_d(V::NBodyFunction{N}, r::SVector{M}) where {N, M}
    return fc * Vn_d + fc_d * Vn
 end
 
-function evaluate(V::NBodyFunction{N}, r::SVector{M1}, θ::SVector{M2}
+function evaluate(V::NBodyFunction{N}, rθ::Tuple{SVector{M1}, SVector{M2}}
                   ) where {N, M1, M2}
    # this assumes that D is a BondAngleDesc
    D = descriptor(V)::BondAngleDesc
-   return evaluate_I(V, invariants(D, (r, θ))) * fcut(D, r)
+   return evaluate_I(V, invariants(D, rθ)) * fcut(D, rθ)
 end
 
-function evaluate_d(V::NBodyFunction{N}, r::SVector{M1}, θ::SVector{M2}
+function evaluate_d(V::NBodyFunction{N}, rθ::Tuple{SVector{M1}, SVector{M2}}
                   ) where {N, M1, M2}
    D = descriptor(V)::BondAngleDesc
-   fc, fc_d = fcut_d(D, r)
-   Vn, Vn_d = evaluate_I_ed(V, invariants_ed(D, (r,θ)))
+   fc, fc_d = fcut_d(D, rθ)
+   Vn, Vn_d = evaluate_I_ed(V, invariants_ed(D, rθ))
    return fc * Vn_d + fc_d * Vn
 end

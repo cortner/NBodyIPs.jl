@@ -1,6 +1,9 @@
 
 # ============= General Utility functions ==================
 
+ninvariants(D::AbstractDescriptor, N::Integer) = ninvariants(D, Val(N))
+ninvariants(D::AbstractDescriptor, vN::Val{N}) where {N} = length.(tdegrees(D, vN))
+
 @inline transform(D::AbstractDescriptor, r::Number) = D.transform.f(r)
 @inline transform_d(D::AbstractDescriptor, r::Number) = D.transform.f_d(r)
 @inline cutoff(D::AbstractDescriptor) = D.cutoff.rcut

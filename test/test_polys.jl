@@ -99,9 +99,9 @@ if D isa BondLengthDesc
       VN = random_nbody(N, ntup)
       println("[$N-body, ntup=$ntup, t[1] = $(VN.t[1])]")
       # r = SVector( (r0 + rand((N*(N-1))÷2))... )
-      rθ = rand_rθ(D, N)
-      dvN = @D VN(rθ)
-      vN = VN(rθ)
+      r = rand_rθ(D, N)
+      dvN = @D VN(r)
+      vN = VN(r)
       rv = Vector(r)
       errs = []
       println("      h   |    err")

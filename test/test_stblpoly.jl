@@ -13,10 +13,19 @@ Dbl = BondLengthDesc(TRANSFORM, CUTOFF3)
 Dba = BondAngleDesc(TRANSFORM, CUTOFF3)
 
 randri(N, D::BondLengthDesc) = SVector((rand(bo2edges(N)) + 3.0)...)
-randri(N, D::BondLengthDesc) = SVector((rand(N-1) + 3.0)...),
+randri(N, D::BondAngleDesc) = SVector((rand(N-1) + 3.0)...),
                                SVector((3*rand(bo2angles(N))-1.5)...)
 
+println("================")
+println(" StNBPoly Tests ")
+println("================")
+
 for D in [Dbl, Dba]
+   println("---------------------------------------------------")
+   println("Testing StaticPolynmials with D = ")
+   println("           $(typeof(D))")
+   println("---------------------------------------------------")
+
    # 3-body potential
    B3 = nbpolys(3, D, 10)
    c = rand(length(B3))
@@ -31,10 +40,6 @@ for D in [Dbl, Dba]
 
    ri3 = randri(3, D)
    ri4 = randri(4, D)
-
-   println("================")
-   println(" StNBPoly Tests ")
-   println("================")
 
    println("3-body test:")
    @show errV3 = V3(ri3) - V3sp(ri3)

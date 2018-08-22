@@ -3,7 +3,11 @@ module BA_5B
 using NBodyIPs.FastPolys
 using StaticArrays
 
-import NBodyIPs.BAInvariants: invariants, invariants_d, invariants_ed
+import NBodyIPs.BAInvariants: invariants, invariants_d, invariants_ed, tdegrees
+
+# TODO: THIS IS A HACK TO GET the `ninvariants` function right, but it cannot
+#       yet be used to actually produce basis functions
+tdegrees(::Val{5}) = ntuple(_->10, 10), ntuple(_->144, 10)
 
 const G_BA_5B = [
 [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
