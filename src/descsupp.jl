@@ -5,7 +5,8 @@ using JuLIP.Potentials: @analytic,
                         cutsw_d,
                         coscut,
                         coscut_d,
-                        AnalyticFunction
+                        AnalyticFunction,
+                        F64fun
 
 const cutsp = JuLIP.Potentials.fcut
 const cutsp_d = JuLIP.Potentials.fcut_d
@@ -41,7 +42,7 @@ function SpaceTransform(strans::String)
       end
    end
    ftrans = eval(parse(strans))
-   return SpaceTransform(strans0, ftrans.f, ftrans.f_d)
+   return SpaceTransform(strans0, F64fun(ftrans.f), F64fun(ftrans.f_d))
 end
 
 Dict(t::SpaceTransform) = Dict( "__id__" => "SpaceTransform",
@@ -72,7 +73,7 @@ Cutoff(args...) = Cutoff(args)
 
 function Cutoff(args::Tuple)
    f, f_d, rcut = fcut_analyse(args)
-   return Cutoff(args[1], [args[2:end]...], f, f_d, rcut)
+   return Cutoff(args[1], [args[2:end]...], F64fun(f), F64fun(f_d), rcut)
 end
 
 function fcut_analyse(args::Tuple)
@@ -125,8 +126,8 @@ Dict(fcut::Cutoff) = Dict( "__id__" => "Cutoff",
 Cutoff(D::Dict) = Cutoff(Symbol(D["sym"]), D["params"]...)
 
 
-fcut(C::Cutoff, r::Number) = C.f(r)
-fcut_d(C::Cutoff, r::Number) = C.f_d(r)
+@inline fcut(C::Cutoff, r::Number) = C.f(r)
+@inline fcut_d(C::Cutoff, r::Number) = C.f_d(r)
 
 
 # ---------------------------------------------------------------
@@ -134,7 +135,19 @@ fcut_d(C::Cutoff, r::Number) = C.f_d(r)
 #   TODO: combine fcut_d and monomial_d into a single function
 # ---------------------------------------------------------------
 
-fcut(C::Cutoff, r::SVector) = prod(C.f, r)
+@generated function fcut(C::Cutoff, r::SVector{N,T}) where {N, T}
+   code = Expr[]
+   push!(code, :( fc = one(T) ))
+   for n = 1:N
+      push!(code, :( fc *= fcut(C, r[$n]) ))
+   end
+   quote
+      $(Expr(:meta, :inline))
+      @inbounds $(Expr(:block, code...))
+      return fc
+   end
+end
+
 
 @generated function fcut_d(D::Cutoff, r::SVector{M, T}) where {M, T}
    exprs = Expr[]
