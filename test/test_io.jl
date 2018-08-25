@@ -1,7 +1,7 @@
 using Base.Test
 using NBodyIPs
 using NBodyIPs.Polys
-using NBodyIPs: BondLengthDesc, SpaceTransform
+using NBodyIPs: BondLengthDesc, SpaceTransform, OneBody
 
 ##
 println("Check (De-)Dictionisation of `BondLengthDesc`")
@@ -15,7 +15,7 @@ println("generate some basis functions")
 rcuts = [9.2, 6.2, 4.5]   # 9.2
 TRANSFORM = "r -> (2.9/r)^3"
 CUTOFF = ["(:cos, $(0.66*rcut), $(rcut))" for rcut in rcuts]
-B1 = [NBPoly(1.0)]
+B1 = [OneBody(1.0)]
 B2 = blpolys(2, TRANSFORM, CUTOFF[1], 12)
 B3 = blpolys(3, TRANSFORM, CUTOFF[2], 10)
 B4 = blpolys(4, TRANSFORM, CUTOFF[3], 6)
@@ -25,6 +25,7 @@ IP = NBodyIP(B, c)
 println("Check (De-)Dictionisation of `NBodyIP`")
 D_IP = Dict(IP)
 IP1 = NBodyIP(D_IP)
+println(@test Dict(IP1) == D_IP)
 println(@test IP1 == IP)
 
 ##
