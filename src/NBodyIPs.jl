@@ -4,7 +4,6 @@
 #   -> maybe define these for AbstractAtoms, then remove the
 #      conversion from ASE???
 # * poly_regularise
-# * Remove NBPoly{1} altogether and replace it with an OneBody?
 #   that is available for all sub-modules?
 
 __precompile__()
@@ -23,6 +22,9 @@ using Reexport
 
 # generic types and function prototypes
 include("common.jl")
+
+# definitions for the one and only 1-body function
+include("onebody.jl")
 
 # the machinery for evaluating the invariants as fast as possible
 include("fastpolys.jl")

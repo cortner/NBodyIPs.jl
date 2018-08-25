@@ -131,18 +131,6 @@ function virial(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
 end
 
 
-# ------ special treatment of 1-body functions
-
-site_energies(V::NBodyFunction{1}, at::Atoms) =
-      fill(V(), length(at))
-
-forces(V::NBodyFunction{1}, at::Atoms{T}) where {T} =
-      zeros(SVector{3, T}, length(at))
-
-virial(V::NBodyFunction{1}, at::Atoms{T}) where {T} =
-      zero(SMatrix{3, 3, T})
-
-
 
 # ========================= assembly support for LSQ system ====================
 
@@ -157,9 +145,6 @@ virial(V::NBodyFunction{1}, at::Atoms{T}) where {T} =
 # "interface" here.
 
 
-
-energy(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
-   [ energy(b, at) for b in B ]
 
 function energy(B::AbstractVector{TB}, at::Atoms{T}
                 ) where {TB <: NBodyFunction{N}, T} where {N}
@@ -207,9 +192,6 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
    return F
 end
 
-forces(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
-   [ forces(b, at) for b in B ]
-
 
 function virial(B::AbstractVector{TB}, at::Atoms{T}
                 ) where {TB <: NBodyFunction{N}, T} where {N}
@@ -236,7 +218,3 @@ function virial(B::AbstractVector{TB}, at::Atoms{T}
    end
    return S
 end
-
-
-virial(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
-   [ virial(b, at) for b in B ]

@@ -61,6 +61,11 @@ export NBPoly,
    c::Vector{T}               # coefficients
    D::TD                      # Descriptor
    valN::Val{N}               # encodes that this is an N-body function
+
+   NBPoly(t::VecTup{M}, c::Vector{T}, D::TD, valN::Val{N}) where {N, M, T, TD} = (
+      N <= 1 ? error("""NBPoly must have body-order 2 or larger;
+                        use `NBodyIPs.OneBody{T}` for 1-body.""")
+             : new{N, M, T, TD}(t, c, D, valN))
 end
 
 """
@@ -128,7 +133,6 @@ function degree(V::NBPoly)
    error("`degree` is only defined for `NBPoly` basis functions, length == 1")
 end
 
-degree(V::NBPoly{1}) = 0
 
 function Base.info(B::Vector{T}; indent = 2) where T <: NBPoly
    ind = repeat(" ", indent)
@@ -152,8 +156,6 @@ include("fast_monomials.jl")
 # this means, that gen_tuples must generate 7-tuples instead of 6-tuples
 # with the first 6 entries restricted by degree and the 7th tuple must
 # be in the range 0, …, 5
-
-evaluate_I(V::NBPoly{1}, args...) = sum(V.c)
 
 function evaluate_I(V::NBPoly, II)
    I1, I2 = II
@@ -240,7 +242,6 @@ cutoff(V::StNBPoly) = cutoff(V.D)
 
 fast(Vn::StNBPoly)  = Vn
 fast(Vn::NBPoly) =  StNBPoly(Vn)
-fast(Vn::NBPoly{1}) = Vn
 
 evaluate_I(V::StNBPoly, II) =
       StaticPolynomials.evaluate(V.P, vcat(II...))
