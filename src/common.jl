@@ -185,6 +185,11 @@ include("descsupp.jl")
 
 # ======= experimental ============
 
+import JuLIP.Potentials: evaluate, evaluate_d
+
+evaluate(V::NBodyFunction{2}, r::AbstractFloat) = evaluate(V, SVector(r))
+evaluate_d(V::NBodyFunction{2}, r::AbstractFloat) = evaluate_d(V, SVector(r))
+
 function evaluate(V::NBodyFunction{N}, r::SVector{M}) where {N, M}
    # this assumes that D is a BondLengthDesc
    D = descriptor(V)::BondLengthDesc
