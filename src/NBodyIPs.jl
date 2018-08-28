@@ -63,7 +63,7 @@ include("errors.jl")
 # include("io.jl")
 
 #visualisation module
-include("PIPplot.jl")
-@reexport using NBodyIPs.PIPplot
+# include("PIPplot.jl")
+# @reexport using NBodyIPs.PIPplot
 
 end # module

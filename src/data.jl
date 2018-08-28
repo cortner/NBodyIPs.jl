@@ -17,12 +17,12 @@ loaded information.
 """
 module Data
 
-using JuLIP, ASE, ProgressMeter, Base.Threads
+using JuLIP, ProgressMeter, Base.Threads
 import JuLIP: Atoms, energy, forces, virial
 import Base: length
 
-using PyCall
-@pyimport ase.io as ase_io
+# using PyCall
+# @pyimport ase.io as ase_io
 
 export Dat, config_type, weight
 
