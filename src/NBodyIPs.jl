@@ -37,6 +37,7 @@ include("bainvariants.jl")
 
 # generic and specific descriptors for BL and BA
 include("descriptors.jl")
+# exports BondAngleDesc and BondLengthDesc
 
 # evaluating Polynomials of an invariant coordinate system
 include("polys.jl")
