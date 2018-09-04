@@ -7,7 +7,7 @@ import JuLIP.Potentials: evaluate, cutoff, evaluate_d!
 
 # --------- MANY BODY CODE THAT IS SHARED ACROSS TESTS ------------
 
-@pot struct TestBL{N} <: NBodyFunction{N}
+@pot struct TestBL{N} <: NBodyFunction{N, NBodyIPs.NullDesc}
    r0::Float64
    rcut::Float64
    vN::Val{N}

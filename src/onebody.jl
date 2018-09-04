@@ -1,4 +1,9 @@
 import Base: convert, ==
+using JuLIP.Potentials: @pot
+
+@pot mutable struct OneBody{T} <: NBodyFunction{1, NullDesc}
+   E0::T
+end
 
 """
 `mutable struct OneBody{T}  <: NBodyFunction{1}`
@@ -6,9 +11,9 @@ import Base: convert, ==
 this should not normally constructed by a user, but instead E0 should be
 passed to the relevant lsq functions, which will construct it.
 """
-mutable struct OneBody{T} <: NBodyFunction{1}
-   E0::T
-end
+OneBody
+
+descriptor(::OneBody) = NullDesc()
 
 evaluate(V::OneBody) = V.E0
 site_energies(V::NBodyFunction{1}, at::Atoms) = fill(V(), length(at))
@@ -25,6 +30,7 @@ virial(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: NBodyFunction{1}, T} =
 combinebasis(Vs::AbstractVector{<: OneBody},
              Cs::AbstractVector{<: Real}) =
              OneBody( sum( V.E0 * c for (V, c) in zip(Vs, Cs) ) )
+fast(V::OneBody) = V
 
 Dict(V::OneBody) = Dict("__id__" => "OneBody", "E0" => V.E0)
 OneBody(D::Dict) = OneBody(D["E0"])

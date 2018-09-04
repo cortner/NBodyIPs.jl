@@ -108,7 +108,7 @@ concrete subtypes must implement
 * `evaluate`
 * `evaluate_d`
 """
-abstract type NBodyFunction{N} <: AbstractCalculator end
+abstract type NBodyFunction{N, DT} <: AbstractCalculator end
 
 bodyorder(V::NBodyFunction{N}) where {N} = N
 
@@ -117,6 +117,13 @@ bodyorder(V::NBodyFunction{N}) where {N} = N
 of N-body configurations.
 """
 abstract type AbstractDescriptor end
+
+"""
+`NullDesc` : a descriptor that contains no information => used for
+subtyping when an NBodyFunction subtype does not have a descriptor
+(traits would be nice right now)
+"""
+struct NullDesc <: AbstractDescriptor end
 
 """
 `NBSiteDescriptor`: abstract supertype for descriptors that start from

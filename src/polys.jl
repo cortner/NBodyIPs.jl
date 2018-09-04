@@ -56,7 +56,7 @@ export NBPoly,
 #           Polynomials of Invariants
 # ==================================================================
 
-@pot struct NBPoly{N, M, T, TD} <: NBodyFunction{N}
+@pot struct NBPoly{N, M, T, TD} <: NBodyFunction{N, TD}
    t::VecTup{M}               # tuples M = #edges + 1
    c::Vector{T}               # coefficients
    D::TD                      # Descriptor
@@ -207,7 +207,7 @@ Base.convert(::Val{:NBPoly}, D::Dict) = NBPoly(D)
 #    StNBPoly
 # ==================================================================
 
-@pot struct StNBPoly{N, TD, TP} <: NBodyFunction{N}
+@pot struct StNBPoly{N, TD, TP} <: NBodyFunction{N, TD}
    D::TD       # Descriptor
    P::TP       # a static polynomial
    valN::Val{N}
