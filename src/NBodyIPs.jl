@@ -20,6 +20,8 @@ module NBodyIPs
 
 using Reexport
 
+include("types.jl") 
+
 # generic types and function prototypes
 include("common.jl")
 

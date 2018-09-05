@@ -18,11 +18,6 @@ import JuLIP: cutoff
 
 # -------------- Space Tranformations ---------------
 
-struct SpaceTransform{FT, FDT}
-   id::String
-   f::FT
-   f_d::FDT
-end
 
 ==(T1::SpaceTransform, T2::SpaceTransform) = (T1.id == T2.id)
 
@@ -55,13 +50,6 @@ SpaceTransform(D::Dict) = SpaceTransform(D["defn"])
 
 # -------------- Cut-off Mechanisms ---------------
 
-struct Cutoff{FT, DFT}
-   sym::Symbol
-   params::Vector{Float64}
-   f::FT
-   f_d::DFT
-   rcut::Float64
-end
 
 cutoff(C::Cutoff) = C.rcut
 

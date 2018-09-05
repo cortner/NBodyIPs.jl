@@ -97,54 +97,8 @@ function evaluate_I end
 function evaluate_I_d end
 function evaluate_I_ed end
 
-
-# ----------- Abstract Supertype for pure NBodyFunctions --------------
-
-"""
-`NBodyFunction` : abstract supertype of all "pure" N-body functions.
-concrete subtypes must implement
-
-* `bodyorder`
-* `evaluate`
-* `evaluate_d`
-"""
-abstract type NBodyFunction{N, DT} <: AbstractCalculator end
-
 bodyorder(V::NBodyFunction{N}) where {N} = N
 
-"""
-`AbstractDescriptor`: abstract supertype for different descriptors
-of N-body configurations.
-"""
-abstract type AbstractDescriptor end
-
-"""
-`NullDesc` : a descriptor that contains no information => used for
-subtyping when an NBodyFunction subtype does not have a descriptor
-(traits would be nice right now)
-"""
-struct NullDesc <: AbstractDescriptor end
-
-"""
-`NBSiteDescriptor`: abstract supertype for descriptors that start from
-a site-based formulation.
-"""
-abstract type NBSiteDescriptor <: AbstractDescriptor end
-
-
-"""
-`NBodyIP` : wraps `NBodyFunction`s or similar into a JuLIP calculator, defining
-* `site_energies`
-* `energy`
-* `forces`
-* `virial`
-* `cutoff`
-
-Use `load_ip` to load from a file (normally `jld2` or `json`)
-"""
-mutable struct NBodyIP <: AbstractCalculator
-   components::Vector{AbstractCalculator}
-end
 
 ==(V1::NBodyIP, V2::NBodyIP) = V1.components == V2.components
 cutoff(V::NBodyIP) = maximum( cutoff.(V.components) )
@@ -194,8 +148,15 @@ include("descsupp.jl")
 
 import JuLIP.Potentials: evaluate, evaluate_d
 
-evaluate(V::NBodyFunction{2}, r::AbstractFloat) = evaluate(V, SVector(r))
-evaluate_d(V::NBodyFunction{2}, r::AbstractFloat) = evaluate_d(V, SVector(r))
+evaluate(V::NBodyFunction{2, <: BondLengthDesc}, r::AbstractFloat) =
+      evaluate(V, SVector(r))
+evaluate_d(V::NBodyFunction{2, <: BondLengthDesc}, r::AbstractFloat) =
+      evaluate_d(V, SVector(r))[1]
+
+evaluate(V::NBodyFunction{2, <: BondAngleDesc}, r::AbstractFloat) =
+      evaluate(V, (SVector(r), SVector()))
+evaluate_d(V::NBodyFunction{2, <: BondAngleDesc}, r::AbstractFloat) =
+      evaluate_d(V, (SVector(r), SVector()))[1]
 
 function evaluate(V::NBodyFunction{N}, r::SVector{M}) where {N, M}
    # this assumes that D is a BondLengthDesc

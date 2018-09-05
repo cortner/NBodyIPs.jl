@@ -86,7 +86,7 @@ where `I1, I2` are the 4-body invariants.
 
 * `c::Vector{T}`: vector of coefficients for the basis functions
 
-* `D`: a descriptor (cf `NBodyIPs.AbstractDescriptor`)
+* `D`: a descriptor (cf `NBodyIPs.NBodyDescriptor`)
 """
 NBPoly
 

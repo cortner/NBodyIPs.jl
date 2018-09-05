@@ -1,12 +1,6 @@
 
 const BLI = BLInvariants
 
-export BondLengthDesc
-
-struct BondLengthDesc{TT <: SpaceTransform, TC <: Cutoff} <: NBSiteDescriptor
-   transform::TT
-   cutoff::TC
-end
 
 BondLengthDesc(transform::String, cutoff::Union{String, Tuple}) =
          BondLengthDesc(SpaceTransform(transform), Cutoff(cutoff))

@@ -1,12 +1,12 @@
 
 # ============= General Utility functions ==================
 
-ninvariants(D::AbstractDescriptor, N::Integer) = ninvariants(D, Val(N))
-ninvariants(D::AbstractDescriptor, vN::Val{N}) where {N} = length.(tdegrees(D, vN))
+ninvariants(D::NBodyDescriptor, N::Integer) = ninvariants(D, Val(N))
+ninvariants(D::NBodyDescriptor, vN::Val{N}) where {N} = length.(tdegrees(D, vN))
 
-@inline transform(D::AbstractDescriptor, r::Number) = D.transform.f(r)
-@inline transform_d(D::AbstractDescriptor, r::Number) = D.transform.f_d(r)
-@inline cutoff(D::AbstractDescriptor) = D.cutoff.rcut
+@inline transform(D::NBodyDescriptor, r::Number) = D.transform.f(r)
+@inline transform_d(D::NBodyDescriptor, r::Number) = D.transform.f_d(r)
+@inline cutoff(D::NBodyDescriptor) = D.cutoff.rcut
 
 
 evaluate(V::NBodyFunction, Rs, J) =
@@ -87,13 +87,22 @@ function evaluate_many!(Es,
                         B::AbstractVector{TB},
                         desc::NBSiteDescriptor,
                         Rs, J)  where {TB <: NBodyFunction{N}} where {N}
-
    rθ = ricoords(desc, Rs, J)
    skip_simplex(desc, rθ) && return Es
+   return _evaluate_many_ricoords!(Es, B, desc, rθ)
+end
+
+evaluate_many_ricoords!(Es,
+               B::AbstractVector{TB},
+               rθ) where {TB <: NBodyFunction{N}} where {N} =
+   _evaluate_many_ricoords!(Es, B, descriptor(B[1]), rθ)
+
+function _evaluate_many_ricoords!(Es,
+               B::AbstractVector{TB}, desc,
+               rθ) where {TB <: NBodyFunction{N}} where {N}
    fc = fcut(desc, rθ)
    fc == 0 && return Es
    II = invariants(desc, rθ)
-
    # evaluate the inner potential function (e.g. polynomial)
    for n = 1:length(B)
       Es[n] += evaluate_I(B[n], II) * fc
