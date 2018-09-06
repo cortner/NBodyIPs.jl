@@ -112,21 +112,35 @@ by switching to a different representation.
 """
 fast(IP::NBodyIP) = NBodyIP( fast.(IP.components) )
 
+function unique_components(basis)
+   bods = [ (bodyorder(b), descriptor(b)) for b in basis ]
+   un = Int[]
+   I = Vector{Int}[]
+   for i = 1:length(bods)
+      found = false
+      for j = 1:length(un)
+         if bods[un[j]] == bods[i]
+            push!(I[j], i)
+            found = true
+            break
+         end
+      end
+      if !found
+         push!(un, i)
+         push!(I, Int[i])
+      end
+   end
+   return I
+end
+
 # construct an NBodyIP from a basis
 function NBodyIP(basis, coeffs)
-   components = AbstractCalculator[]
-   tps = typeof.(basis)
-   for tp in unique(tps)
-      # find all basis functions that have the same type, which in particular
-      # incorporated the body-order
-      Itp = find(tps .== tp)
-      # construct a new basis function by combining all of them in one
-      # (this assumes that we have NBody types)
-      V_N = combinebasis([basis[Itp]...], coeffs[Itp])
-      push!(components, V_N)
-   end
+   I = unique_components(basis)
+   components = AbstractCalculator[ combinebasis([basis[J]...], coeffs[J])
+                                    for J in I ]
    return NBodyIP(components)
 end
+
 
 # functionality for pure NBodyFunctions for computing
 #  * site_energies
