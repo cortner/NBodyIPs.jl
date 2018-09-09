@@ -10,7 +10,7 @@ using JuLIP:              AbstractCalculator
 using JuLIP.Potentials:   Shift,
                           @analytic,
                           @pot
-using NBodyIPs:           BondLengthDesc
+using NBodyIPs:           NBodyDescriptor
 using NBodyIPs.PolyBasis: nbpolys
 
 import Base:              Dict,
@@ -29,9 +29,9 @@ abstract type AbstractEnvIP{N} <: AbstractCalculator end
 
 @pot struct EnvIP{N, P, TVR, TVN} <: AbstractEnvIP{N}
    t::Int
-   Vr::TVR
-   Vn::TVN
-   str_Vn::String
+   Vr::TVR     # N-body potential
+   Vn::TVN     # neighbour counter
+   str_Vn::String  # string describing the neighbour counter
    valN::Val{N}
    valP::Val{P}
 end
@@ -81,7 +81,7 @@ bodyorder(V::AbstractEnvIP) = bodyorder(Vr(V))
 
 # ----------------- generate basis / IP / convert ----------------
 
-function envpolys(N::Integer, D::BondLengthDesc, deg_poly::Integer,
+function envpolys(N::Integer, D::NBodyDescriptor, deg_poly::Integer,
                   Vn_descr, deg_n::Integer; kwargs...)
    B_poly = nbpolys(N, D, deg_poly; kwargs...)
    B = EnvIP[]
