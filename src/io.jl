@@ -37,8 +37,12 @@ function _checkextension(fname)
    error("unknown extension for `$fname`")
 end
 
-save_ip(fname::AbstractString, IP) =
-   save_ip(_checkextension(fname), fname, IP)
+save_ip_args(IP) = IP, Dict{String, Any}()
+save_ip_args(IP, info) = IP, info
+
+
+save_ip(fname::AbstractString, args...) =
+   save_ip(_checkextension(fname), fname, save_ip_args(args...)...)
 
 load_ip(fname::AbstractString) =
    load_ip(_checkextension(fname), fname)
@@ -55,14 +59,28 @@ err_jld() =
            `FileIO.save`.""")
 
 
-function save_ip(::XJson, fname, IP)
+
+function save_ip(::XJson, fname, IP, info)
    f = open(fname, "w")
-   print(f, JSON.json(Dict(IP)))
+   print(f, JSON.json(Dict("IP" => Dict(IP), "info" => info)))
    close(f)
 end
 
 function load_ip(::XJson, fname)
    IPj = JSON.parsefile(fname)
-   @assert IPj["__id__"] == "NBodyIP"
-   return NBodyIP(IPj)
+   if haskey(IPj, "__id__")
+      info("`load_ip`: Old IP filetype")
+      @assert IPj["__id__"] == "NBodyIP"
+      return NBodyIP(IPj), IPj["info"], Dict{String, Any}()
+   end
+
+   # new filetype
+   @assert IPj["IP"]["__id__"] == "NBodyIP"
+   IP = NBodyIP(IPj["IP"])
+   if haskey(IPj, "info")
+      info = IPj["info"]
+   else
+      info = Dict{String,Any}()
+   end
+   return IP, info
 end
