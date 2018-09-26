@@ -63,7 +63,7 @@ EnvIP(t::Int, Vr, Vn, str_Vn::String) =
       EnvIP(t, Vr, Vn, str_Vn, Val(bodyorder(Vr)), Val(t))
 
 function analyse_Vn(str_Vn, cutoff_Vn)
-   Vn1 = eval(parse("@analytic r -> " * str_Vn))
+   Vn1 = eval(Meta.parse("@analytic r -> " * str_Vn))
    Vn = Shift(Val(1), Vn1, cutoff_Vn,
               Base.invokelatest(Vn1.f,   cutoff_Vn),
               Base.invokelatest(Vn1.f_d, cutoff_Vn),
@@ -178,7 +178,7 @@ function EnvPoly(Vr::AbstractVector, Vn, str_Vn::String)
    # for now we put the burden on the user to create a Vr vector where
    # the types match But we can still collect them here for convenience
    Vr_coll = [ v for v in Vr ]
-   if !isleaftype(typeof(Vr_coll))
+   if !isconcretetype(typeof(Vr_coll))
       error("""For now, `EnvPoly` can only be constructed from an array of
                potentials that all share the same concrete type.""")
    end

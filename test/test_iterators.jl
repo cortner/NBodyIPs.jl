@@ -1,7 +1,7 @@
 # This file contains some code that is chared across several tests
 
-using NeighbourLists, NBodyIPs, JuLIP, StaticArrays, Base.Test,
-      ForwardDiff, Base.Test
+using NeighbourLists, NBodyIPs, JuLIP, StaticArrays, Test,
+      ForwardDiff, Test
 using NBodyIPs: NBodyFunction
 import NBodyIPs: descriptor
 import JuLIP.Potentials: evaluate, cutoff, evaluate_d!
@@ -92,7 +92,7 @@ function naive_n_body(X::Vector{JVec{T}}, V::NBodyFunction{N}) where {T, N}
    fact_N = factorial(N)
    start = CartesianIndex(ntuple(_->1, N))
    stop = CartesianIndex(ntuple(_->nX, N))
-   for j in CartesianRange(start, stop)
+   for j in CartesianIndices(start, stop)
       s = zeros(T, (N*(N-1))÷2); n = 0
       for a = 1:N-1, b = a+1:N
          n += 1

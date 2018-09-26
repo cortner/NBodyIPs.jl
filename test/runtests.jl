@@ -1,5 +1,5 @@
 using NBodyIPs
-using JuLIP, Base.Test, StaticArrays
+using JuLIP, Test, StaticArrays
 
 # TODO: * monomials testset
 #       * fast_polys testset

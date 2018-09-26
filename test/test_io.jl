@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 using NBodyIPs
 using NBodyIPs.Polys
 using NBodyIPs: BondLengthDesc, SpaceTransform, OneBody

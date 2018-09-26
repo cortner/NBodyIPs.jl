@@ -20,7 +20,7 @@ dicts = Dictionary.(TRANSFORM, CUTOFFS)
 B = vcat(NBody(1.0), gen_basis.([2,3,4], dicts, degrees, purify=false)...)
 @show length(B)
 
-B3 = B[ find(bodyorder.(B) .< 4) ]
+B3 = B[ findall(bodyorder.(B) .< 4) ]
 # normalize_basis!(B3, data_sm)
 
 Φ, _, _ = NBodyIPs.assemble_lsq(B, data_sm; verbose=true, nforces=10)

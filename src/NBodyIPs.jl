@@ -6,8 +6,6 @@
 # * poly_regularise
 #   that is available for all sub-modules?
 
-__precompile__()
-
 """
 # `NBodyIPs.jl`
 

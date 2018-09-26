@@ -121,7 +121,7 @@ cutoff(V::NBPoly) = cutoff(V.D)
 function match_dictionary(V::NBPoly, V1::NBPoly)
    if V.D != V1.D
       if V.D.s != V1.D.s
-         warn("matching two non-matching dictionaries!")
+         @warn("matching two non-matching dictionaries!")
       end
    end
    return NBPoly(V.t, V.c, V1.D, V.valN)
@@ -136,8 +136,8 @@ function combinebasis(basis::AbstractVector{TV}, coeffs) where {TV <: NBPoly}
    # already via the `combiscriptor`
 
    # collect all tuples and coefficients into a long list
-   tt = Vector{eltype(basis[1].t)}(0)
-   cc = Vector{eltype(basis[1].c)}(0)
+   tt = Vector{eltype(basis[1].t)}()
+   cc = Vector{eltype(basis[1].c)}()
    for (b, c) in zip(basis, coeffs)
       append!(tt, b.t)
       append!(cc, c*b.c)

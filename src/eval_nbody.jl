@@ -23,7 +23,7 @@ function _get_loop_ex(N)
       str_loop *= ", i_$n = (i_$(n-1)+1):(nR-$(N-1-n))"
    end
    str_loop *= "\n end"
-   return parse(str_loop)
+   return Meta.parse(str_loop)
 end
 
 
@@ -34,7 +34,7 @@ function _get_Jvec_ex(N)
    for n = 2:N-1
       str *= ", i_$n"
    end
-   return parse(str * ")")
+   return Meta.parse(str * ")")
 end
 
 

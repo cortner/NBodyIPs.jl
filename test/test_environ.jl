@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 
 using JuLIP, NBodyIPs
 using NBodyIPs.Polys: NBPoly

@@ -1,5 +1,5 @@
 using NBodyIPs
-using JuLIP, Base.Test, StaticArrays, ForwardDiff, Combinatorics
+using JuLIP, Test, StaticArrays, ForwardDiff, Combinatorics
 using BenchmarkTools
 
 using JuLIP.Potentials: evaluate, evaluate_d

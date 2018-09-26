@@ -9,7 +9,7 @@ export fpoly,
 
 # two auxiliary functions to make for easier assembly of the code
 # TODO: move these somewhere else, or better get rid of them
-push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
+push_str!(ex::Vector{Expr}, s::String) = push!(ex, Meta.parse(s))
 append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
 
 # ACCUMULATOR FUNCTIONS

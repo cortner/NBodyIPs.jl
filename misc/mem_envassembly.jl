@@ -1,5 +1,5 @@
-info("loading libraries...")
-using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Base.Test
+@info("loading libraries...")
+using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Test
 
 # using JuLIP.Potentials: evaluate, evaluate_d
 # using NBodyIPs: BondLengthDesc, BondAngleDesc, invariants, invariants_d, descriptor,
@@ -31,10 +31,10 @@ end
 
 ##
 
-info("Generate random EnvIP...")
+@info("Generate random EnvIP...")
 IP, IPf = random_ip(BondLengthDesc)
 
-info("Generate faster EnvIP => EnvPoly ...")
+@info("Generate faster EnvIP => EnvPoly ...")
 V2 = IPf.components[1:4]
 V3 = IPf.components[5:7]
 V4 = IPf.components[8:9]

@@ -2,7 +2,7 @@
 
 using StaticArrays
 
-push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
+push_str!(ex::Vector{Expr}, s::String) = push!(ex, Meta.parse(s))
 append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
 
 

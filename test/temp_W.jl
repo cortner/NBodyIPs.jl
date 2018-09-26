@@ -1,12 +1,12 @@
 using NBodyIPs, JuLIP, BenchmarkTools, StaticArrays
-using Base.Test
+using Test
 
 using NBodyIPs: ClusterBLDesc, transform, transform_d, fcut, fcut_d,
                 invariants, invariants_d, invariants_ed
 using NBodyIPs.Polys: NBPoly
 
 
-info("Setting up the test systems ...")
+@info("Setting up the test systems ...")
 r0 = rnn(:W)
 # TRANSFORM = "r -> exp( - 3 * ((r/$r0) - 1))"
 TRANSFORM = "r -> 1/r"

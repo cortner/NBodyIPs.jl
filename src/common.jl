@@ -29,7 +29,7 @@ export NBodyIP,
 `push_str!(ex::Vector{Expr}, s::String)` : parse the string and
 append it to the expressions.
 """
-push_str!(ex::Vector{Expr}, s::String) = push!(ex, parse(s))
+push_str!(ex::Vector{Expr}, s::String) = push!(ex, Meta.parse(s))
 
 
 """

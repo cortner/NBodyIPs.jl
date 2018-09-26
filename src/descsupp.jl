@@ -24,9 +24,9 @@ import JuLIP: cutoff
 function SpaceTransform(strans::String)
    strans0 = strans
    # if @analytic is a substring then we don't do anything
-   if !ismatch(r"@analytic", strans)
+   if !occursin(r"@analytic", strans)
       # but if not, then we next look for ->
-      if !ismatch(r"->", strans)
+      if !occursin(r"->", strans)
          # if -> is not a substring then we assume that strans is of the form
          # "(r0/r)^4" or similar i.e. explicitly uses r as the variable.
          strans = "@analytic r -> " * strans
@@ -36,7 +36,7 @@ function SpaceTransform(strans::String)
          strans = "@analytic " * strans
       end
    end
-   ftrans = eval(parse(strans))
+   ftrans = eval(Meta.parse(strans))
    return SpaceTransform(strans0, F64fun(ftrans.f), F64fun(ftrans.f_d))
 end
 
@@ -55,7 +55,7 @@ cutoff(C::Cutoff) = C.rcut
 
 ==(C1::Cutoff, C2::Cutoff) = (C1.sym == C2.sym) && (C1.params == C2.params)
 
-Cutoff(descr::String) = Cutoff(eval(parse(descr)))
+Cutoff(descr::String) = Cutoff(eval(Meta.parse(descr)))
 
 Cutoff(args...) = Cutoff(args)
 

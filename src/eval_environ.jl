@@ -143,7 +143,7 @@ end
 function energy(B::Vector{TB}, at::Atoms{T}, typewarn=true
                 ) where {TB <: EnvIP{N}, T} where {N}
    if typewarn
-      !isleaftype(TB) && warn("TB is not a leaf type")
+      !isconcretetype(TB) && @warn("TB is not a leaf type")
    end
 
    Br = [Vr(b) for b in B]
@@ -179,7 +179,7 @@ end
 function forces(B::AbstractVector{TB}, at::Atoms{T}, typewarn=true
               )where {TB <: EnvIP{N}, T} where {N}
    if typewarn
-      !isleaftype(TB) && warn("TB is not a leaf type")
+      !isconcretetype(TB) && @warn("TB is not a leaf type")
    end
 
    Br = [Vr(b) for b in B]
@@ -229,7 +229,7 @@ end
 function virial(B::AbstractVector{TB}, at::Atoms{T}, typewarn=true
               )where {TB <: EnvIP{N}, T} where {N}
    if typewarn
-      !isleaftype(TB) && warn("TB is not a leaf type")
+      !isconcretetype(TB) && @warn("TB is not a leaf type")
    end
 
    Br = [Vr(b) for b in B]
