@@ -1,5 +1,5 @@
 using JuLIP: AbstractCalculator
-using JuLIP.Potentials: @pot 
+using JuLIP.Potentials: @pot
 
 # ----------- Abstract Supertype for pure NBodyFunctions --------------
 
@@ -32,11 +32,14 @@ a site-based formulation.
 """
 abstract type NBSiteDescriptor <: NBodyDescriptor end
 
-struct SpaceTransform{FT, FDT}
+struct SpaceTransform{FT, FDT, VT}
    id::String
    f::FT
    f_d::FDT
+   valid::VT
 end
+
+SpaceTransform(id, f, f_d) = SpaceTransform(id, f, f_d, Val(Symbol(id)))
 
 
 struct Cutoff{FT, DFT}
