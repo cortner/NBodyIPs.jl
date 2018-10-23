@@ -5,16 +5,14 @@ using JuLIP: neighbourlist,
 import JuLIP.Potentials: evaluate,
                          evaluate_d,
                          evaluate_dd,
-                         evaluate_d!,
-                         site_energy, site_energy_d
+                         evaluate_d!
 
 using NeighbourLists: nbodies,
                       maptosites!,
                       maptosites_d!,
                       virial!,
                       max_neigs,
-                      sites,
-                      site
+                      sites
 
 
 function _get_loop_ex(N)
@@ -72,54 +70,6 @@ end
       return out
    end
 end
-
-
-
-function site(nlist::PairList, i0)
-   n1, n2 = nlist.first[i0], nlist.first[i0+1]-1
-   return (@view nlist.j[n1:n2]), (@view nlist.r[n1:n2]), (@view nlist.R[n1:n2])
-end
-
-
-function site_energy(V::NBodyFunction{N}, at::Atoms{T}, i::Integer) where {N, T}
-   nlist = neighbourlist(at, cutoff(V))
-   _, _, Rs = site(nlist, i)
-   return eval_site_energy(V, Rs)
-end
-
-function eval_site_energy(V::NBodyFunction{N}, Rs::AbstractVector{JVec{T}}) where {N, T}
-   return eval_site_nbody!(Val(N), Rs, cutoff(V),
-                            ((out, R, J, temp) -> out + evaluate(V, R, J)),
-                            zero(T), nothing)
-end
-
-
-function site_energy_d(V::NBodyFunction{N}, at::Atoms{T}, i::Integer) where {N, T}
-   nlist = neighbourlist(at, cutoff(V))
-   J, _, Rs = site(nlist, i)   # Rs[j] = X[J[j]] - X[i]
-   dEs_dRs = eval_site_energy_d(V, Rs)
-   dEs = zeros(JVec{T}, length(at))
-   for j = 1:length(J)
-      dEs[J[j]] += dEs_dRs[j]    # DEs / DRs[j] = DEs / DX[J[j]]
-      dEs[i] -= dEs_dRs[j]
-   end
-   return dEs
-end
-
-
-
-function eval_site_energy_d(V::NBodyFunction{N}, Rs::AbstractVector{JVec{T}}) where {N,T}
-   # allocate
-   dVsite = zeros(JVec{T}, length(Rs))
-   # same
-   eval_site_nbody!(
-            Val(N), Rs, cutoff(V),
-            (out, R, J, temp) -> evaluate_d!(out, V, R, J),
-            dVsite, nothing )   # dVsite == out, nothing == temp
-   return dVsite
-end
-
-
 
 
 
