@@ -113,7 +113,7 @@ by switching to a different representation.
 fast(IP::NBodyIP) = NBodyIP( fast.(IP.components) )
 
 function unique_components(basis)
-   bods = [ (bodyorder(b), descriptor(b)) for b in basis ]
+   bods = [ (typeof(b), bodyorder(b), descriptor(b)) for b in basis ]
    un = Int[]
    I = Vector{Int}[]
    for i = 1:length(bods)

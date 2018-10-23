@@ -20,7 +20,8 @@ import NBodyIPs:          NBodyIP,
                           bodyorder,
                           fast,
                           combinebasis,
-                          _decode_dict
+                          _decode_dict,
+                          descriptor
 
 
 export envpolys
@@ -78,6 +79,7 @@ Vr(V::EnvIP) = V.Vr
 
 bodyorder(V::AbstractEnvIP) = bodyorder(Vr(V))
 
+descriptor(V::EnvIP) = descriptor(V.Vr)
 
 # ----------------- generate basis / IP / convert ----------------
 
