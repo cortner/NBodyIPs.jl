@@ -45,7 +45,7 @@ Dict(t::SpaceTransform) = Dict( "__id__" => "SpaceTransform",
 
 SpaceTransform(D::Dict) = SpaceTransform(D["defn"])
 
-
+combiscriptor(t::SpaceTransform) = t.id
 
 
 # -------------- Cut-off Mechanisms ---------------
@@ -116,6 +116,9 @@ Cutoff(D::Dict) = Cutoff(Symbol(D["sym"]), D["params"]...)
 
 @inline fcut(C::Cutoff, r::Number) = C.f(r)
 @inline fcut_d(C::Cutoff, r::Number) = C.f_d(r)
+
+
+combiscriptor(C::Cutoff) = (C.sym, C.params)
 
 
 # ---------------------------------------------------------------

@@ -21,7 +21,8 @@ import NBodyIPs:          NBodyIP,
                           fast,
                           combinebasis,
                           _decode_dict,
-                          descriptor
+                          descriptor,
+                          combiscriptor
 
 
 export envpolys
@@ -81,6 +82,12 @@ bodyorder(V::AbstractEnvIP) = bodyorder(Vr(V))
 
 descriptor(V::EnvIP) = descriptor(V.Vr)
 
+combiscriptor(V::EnvIP) = (EnvIP,
+                           combiscriptor(V.Vr),
+                           V.str_Vn,
+                           V.t)
+
+
 # ----------------- generate basis / IP / convert ----------------
 
 function envpolys(N::Integer, D::NBodyDescriptor, deg_poly::Integer,
@@ -95,9 +102,8 @@ function envpolys(N::Integer, D::NBodyDescriptor, deg_poly::Integer,
    return [b for b in B]
 end
 
-
 function combinebasis(basis::AbstractVector{TV}, coeffs) where {TV <: EnvIP}
-   @assert isleaftype(TV)
+   # @assert isleaftype(TV)
    @assert all( b.t == basis[1].t for b in basis )
    # combine the Vr components of the basis functions
    # (we get to do this because all t (=P) are the same

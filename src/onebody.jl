@@ -4,6 +4,8 @@ using JuLIP.Potentials: @pot
 
 descriptor(::OneBody) = NullDesc()
 
+combiscriptor(::OneBody) = (OneBody, )
+
 evaluate(V::OneBody) = V.E0
 site_energies(V::NBodyFunction{1}, at::Atoms) = fill(V(), length(at))
 forces(V::NBodyFunction{1}, at::Atoms{T}) where {T} =

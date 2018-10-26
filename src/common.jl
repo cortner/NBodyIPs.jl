@@ -93,6 +93,13 @@ function invariants_ed end
 # prototypes for obtaining the descriptor
 function descriptor end
 
+"""
+`combiscriptor(b) -> Any`: provides any description of the basis functio
+`b` such that, two basis functions `b1, b2` can be combined into one
+if and only if their "combiscriptors" match.
+"""
+function combiscriptor end
+
 function evaluate_I end
 function evaluate_I_d end
 function evaluate_I_ed end
@@ -113,7 +120,7 @@ by switching to a different representation.
 fast(IP::NBodyIP) = NBodyIP( fast.(IP.components) )
 
 function unique_components(basis)
-   bods = [ (typeof(b), bodyorder(b), descriptor(b)) for b in basis ]
+   bods = combiscriptor.(basis)
    un = Int[]
    I = Vector{Int}[]
    for i = 1:length(bods)
@@ -136,7 +143,7 @@ end
 # construct an NBodyIP from a basis
 function NBodyIP(basis, coeffs)
    I = unique_components(basis)
-   components = AbstractCalculator[ combinebasis([basis[J]...], coeffs[J])
+   components = AbstractCalculator[ combinebasis([basis[j] for j in J], coeffs[J])
                                     for J in I ]
    return NBodyIP(components)
 end

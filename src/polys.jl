@@ -38,6 +38,7 @@ import NBodyIPs:          fast,
                           degree,
                           combinebasis,
                           descriptor,
+                          combiscriptor,
                           evaluate_many!,
                           evaluate_many_d!,
                           evaluate_I,
@@ -92,6 +93,8 @@ NBPoly
 ==(V1::NBPoly, V2::NBPoly) = ( (V1.t == V2.t) && (V1.c == V2.c) && (V1.D == V2.D) )
 
 descriptor(V::NBPoly) = V.D
+
+combiscriptor(V::NBPoly) = (NBPoly, bodyorder(V), combiscriptor(V.D))
 
 # standard constructor (N can be inferred)
 NBPoly(t::VecTup{K}, c, D) where {K} = NBPoly(t, c, D, Val(edges2bo(K-1)))
