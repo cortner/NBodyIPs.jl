@@ -42,7 +42,8 @@ import NBodyIPs:          fast,
                           evaluate_many!,
                           evaluate_many_d!,
                           evaluate_I,
-                          evaluate_I_ed
+                          evaluate_I_ed,
+                          basisname
 
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
@@ -94,6 +95,8 @@ NBPoly
 
 descriptor(V::NBPoly) = V.D
 
+basisname(::NBPoly) = "NBPoly"
+
 combiscriptor(V::NBPoly) = (NBPoly, bodyorder(V), combiscriptor(V.D))
 
 # standard constructor (N can be inferred)
@@ -127,6 +130,8 @@ end
 
 combinebasis(basis::AbstractVector{TV}, coeffs) where {TV <: NBPoly} =
       NBPoly(basis, coeffs, basis[1].D)
+
+tdegree(t::Tuple) = sum(t)
 
 function degree(V::NBPoly)
    if length(V) == 1

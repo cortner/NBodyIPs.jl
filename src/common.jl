@@ -73,14 +73,14 @@ function degree end
 
 
 """
-`basisid`: returns an identifier (string) specifying which basis functions
-may be combined into a single function.
+`basisname(b) -> String`: returns a short string identifying the kind of
+basis function.
 """
-function basisid end
+function basisname end
 
 """
 `combinebasis`:  if `basis::Vector{AbstractCalculator}` with identical
-`basisid`, then `combinebasis(basis, coeffs)` should return a new calculator
+`combiscriptor`, then `combinebasis(basis, coeffs)` should return a new calculator
 that combines all basis function into a single IP.
 """
 function combinebasis end
