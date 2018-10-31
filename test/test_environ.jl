@@ -55,6 +55,6 @@ println("Check saving and loading of an EnvIP")
 IP = NBodyIP(B, rand(length(B)))
 fname = tempname() * ".json"
 save_ip(fname, IP)
-IP1 = load_ip(fname)
+IP1, _ = load_ip(fname)
 println(@test IP1 == IP)
 run(`rm $fname`)

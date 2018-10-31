@@ -32,6 +32,6 @@ println(@test IP1 == IP)
 # store it as a JSON file and load it again
 fname = tempname() * ".json"
 save_ip(fname, IP)
-IP2 = load_ip(fname)
+IP2, _ = load_ip(fname)
 println(@test IP2 == IP)
 run(`rm $fname`)
