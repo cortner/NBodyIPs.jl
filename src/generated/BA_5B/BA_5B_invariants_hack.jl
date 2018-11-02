@@ -7,7 +7,10 @@ import NBodyIPs.BAInvariants: invariants, invariants_d, invariants_ed, tdegrees
 
 # TODO: THIS IS A HACK TO GET the `ninvariants` function right, but it cannot
 #       yet be used to actually produce basis functions
-tdegrees(::Val{5}) = ntuple(_->10, 10), ntuple(_->144, 10)
+# tdegrees(::Val{5}) = ntuple(_->10, 10), ntuple(_->144, 10)
+
+tdegrees(::Val{5}) =
+   (1, 1, 2, 2, 2, 3, 3, 3, 4, 4), (0, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11, 11, 11, 11, 12, 12, 12, 12)
 
 const G_BA_5B = [
 [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
