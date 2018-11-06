@@ -23,7 +23,8 @@ import NBodyIPs:          NBodyIP,
                           _decode_dict,
                           descriptor,
                           combiscriptor,
-                          degree
+                          degree,
+                          basisname
 
 
 export envpolys
@@ -95,6 +96,7 @@ function degree(V::EnvIP)
    error("`degree` is only defined for `EnvIP` basis functions, length == 1")
 end
 
+basisname(::EnvIP) = "EnvIP"
 
 # ----------------- generate basis / IP / convert ----------------
 
