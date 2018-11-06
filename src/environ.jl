@@ -22,7 +22,8 @@ import NBodyIPs:          NBodyIP,
                           combinebasis,
                           _decode_dict,
                           descriptor,
-                          combiscriptor
+                          combiscriptor,
+                          degree
 
 
 export envpolys
@@ -86,6 +87,13 @@ combiscriptor(V::EnvIP) = (EnvIP,
                            combiscriptor(V.Vr),
                            V.str_Vn,
                            V.t)
+
+function degree(V::EnvIP)
+   if length(V.Vr) == 1
+      return ( degree(V.Vr), V.t )
+   end
+   error("`degree` is only defined for `EnvIP` basis functions, length == 1")
+end
 
 
 # ----------------- generate basis / IP / convert ----------------

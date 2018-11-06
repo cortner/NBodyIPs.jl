@@ -19,7 +19,7 @@ export blpolys,
 
 # hack to get the correct tdegrees function
 tdegrees(desc::BondLengthDesc, vN) = NBodyIPs.BLInvariants.tdegrees(vN)
-tdegrees(desc::BondAngleDesc, vN) = NBodyIPs.BLInvariants.tdegrees(vN)
+tdegrees(desc::BondAngleDesc, vN) = NBodyIPs.BAInvariants.tdegrees(vN)
 
 """
 compute the total degree of the polynomial represented by α.

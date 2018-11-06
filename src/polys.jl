@@ -16,7 +16,7 @@ The exported symbols are
 """
 module Polys
 
-import StaticPolynomials
+import StaticPolynomials, NBodyIPs
 
 using StaticArrays
 
@@ -49,8 +49,7 @@ const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
 export NBPoly,
-       StNBPoly,
-       blpolys
+       StNBPoly
 
 
 # ==================================================================
@@ -131,11 +130,10 @@ end
 combinebasis(basis::AbstractVector{TV}, coeffs) where {TV <: NBPoly} =
       NBPoly(basis, coeffs, basis[1].D)
 
-tdegree(t::Tuple) = sum(t)
 
 function degree(V::NBPoly)
    if length(V) == 1
-      return tdegree(V.t[1])
+      return NBodyIPs.PolyBasis.tdegree(descriptor(V), V.t[1])
    end
    error("`degree` is only defined for `NBPoly` basis functions, length == 1")
 end
