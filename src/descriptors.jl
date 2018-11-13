@@ -11,18 +11,18 @@ ninvariants(D::NBodyDescriptor, vN::Val{N}) where {N} = length.(tdegrees(D, vN))
 combiscriptor(D::NBodyDescriptor) =
       (combiscriptor(D.transform), combiscriptor(D.cutoff))
 
-evaluate(V::NBodyFunction, Rs, J) =
-      evaluate(V, descriptor(V), Rs, J)
+evaluate(V::NBodyFunction, Rs, i, J) =
+      evaluate(V, descriptor(V), Rs, i, J)
 
-evaluate_d!(dVsite, V::NBodyFunction, Rs, J) =
-      evaluate_d!(dVsite, V, descriptor(V), Rs, J)
+evaluate_d!(dVsite, V::NBodyFunction, Rs, i, J) =
+      evaluate_d!(dVsite, V, descriptor(V), Rs, i, J)
 
 
-evaluate_many!(out, B, Rs, J) =
-      evaluate_many!(out, B, descriptor(B[1]), Rs, J)
+evaluate_many!(out, B, Rs, i, J) =
+      evaluate_many!(out, B, descriptor(B[1]), Rs, i, J)
 
-evaluate_many_d!(out, B, Rs, J) =
-      evaluate_many_d!(out, B, descriptor(B[1]), Rs, J)
+evaluate_many_d!(out, B, Rs, i, J) =
+      evaluate_many_d!(out, B, descriptor(B[1]), Rs, i, J)
 
 
 """
@@ -43,11 +43,23 @@ end
 
 # ------------- main evaluation code -----------
 
+
+skip_unordered_simplex(desc::NBSiteDescriptor, i, J) = false
+
+function skip_unordered_simplex(desc::NBClusterDescriptor, i, J)
+   for j in J
+      i > j && return true
+   end
+   return false
+end
+
+
 function evaluate(V::NBodyFunction{N},
                   desc::NBSiteDescriptor,
                   Rs::AbstractVector{JVec{T}},
+                  i::Int,
                   J::SVector{K, Int}) where {N, T, K}
-
+   skip_unordered_simplex(desc, i, J) && return zero(T)
    # get the physical descriptor: bond-lengths (+ bond-angles)
    rθ = ricoords(desc, Rs, J)
    # check whether to skip this N-body term?
@@ -66,7 +78,9 @@ function evaluate_d!(dVsite,
                      V::NBodyFunction{N},
                      desc::NBSiteDescriptor,
                      Rs,
+                     i::Int,
                      J) where {N}
+   skip_unordered_simplex(desc, i, J)
    # get the physical descriptor: bond-lengths (+ bond-angles)
    rθ = ricoords(desc, Rs, J)
    # check whether to skip this N-body term?
@@ -88,7 +102,8 @@ end
 function evaluate_many!(Es,
                         B::AbstractVector{TB},
                         desc::NBSiteDescriptor,
-                        Rs, J)  where {TB <: NBodyFunction{N}} where {N}
+                        Rs, i, J)  where {TB <: NBodyFunction{N}} where {N}
+   skip_unordered_simplex(desc, i, J)
    rθ = ricoords(desc, Rs, J)
    skip_simplex(desc, rθ) && return Es
    return _evaluate_many_ricoords!(Es, B, desc, rθ)
@@ -117,7 +132,8 @@ function evaluate_many_d!(dVsite::AbstractVector,
                           B::AbstractVector{TB},
                           desc::NBSiteDescriptor,
                           Rs,
-                          J)  where {TB <: NBodyFunction{N}} where {N}
+                          i, J)  where {TB <: NBodyFunction{N}} where {N}
+   skip_unordered_simplex(desc, i, J)
    rθ = ricoords(desc, Rs, J)
    skip_simplex(desc, rθ) && return dVsite
    fc, fc_d = fcut_d(desc, rθ)

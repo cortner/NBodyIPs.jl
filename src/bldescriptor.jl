@@ -112,3 +112,50 @@ J : neighbour (sub-) indices
       return dVsite
    end
 end
+
+
+
+
+# =============== Experimental Code for Cluster-based summation!!!!!!
+
+
+ClusterBLDesc(transform::String, cutoff::Union{String, Tuple}) =
+         ClusterBLDesc(SpaceTransform(transform), Cutoff(cutoff))
+
+# -------------- IO -------------------
+Dict(D::ClusterBLDesc) = Dict( "__id__"    =>  "ClusterBLDesc",
+                                "transform" =>  Dict(D.transform),
+                                "cutoff"    =>  Dict(D.cutoff) )
+
+ClusterBLDesc(D::Dict) = ClusterBLDesc( SpaceTransform(D["transform"]),
+                                          Cutoff(D["cutoff"]) )
+
+==(D1::ClusterBLDesc, D2::ClusterBLDesc) =
+      ( (D1.transform == D2.transform) && (D1.cutoff == D2.cutoff) )
+
+Base.convert(::Val{:ClusterBLDesc}, D::Dict) = ClusterBLDesc(D)
+
+ClusterBLDesc(D::BondLengthDesc) = ClusterBLDesc(D.transform, D.cutoff)
+
+# ------------- Interface Code ---------------
+
+tdegrees(::ClusterBLDesc, vN::Val{N}) where {N} = BLI.tdegrees(vN)
+
+@inline ricoords(D::ClusterBLDesc, Rs, J) = edge_lengths(Rs, J)
+
+@inline gradri2gradR!(desc::ClusterBLDesc, dVsite, dV_dr, Rs, J, r) =
+   _grad_len2pos!(dVsite, dV_dr, Rs, J, r)
+
+@inline fcut(D::ClusterBLDesc, r) = fcut(D.cutoff, r)
+@inline fcut_d(D::ClusterBLDesc, r) = fcut_d(D.cutoff, r)
+
+@inline skip_simplex(D::ClusterBLDesc, r) = (maximum(r) > cutoff(D.cutoff))
+
+@inline invariants(D::ClusterBLDesc, r) = BLI.invariants(transform.(D, r))
+
+@inline function invariants_ed(D::ClusterBLDesc, r)
+   x = transform.(D, r)
+   I1, I2, DI1, DI2 = BLI.invariants_ed(x)
+   x_d = transform_d.(D, r)
+   return I1, I2, _sdot(x_d, DI1), _sdot(x_d, DI2)
+end

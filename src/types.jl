@@ -28,9 +28,22 @@ struct NullDesc <: NBodyDescriptor end
 
 """
 `NBSiteDescriptor`: abstract supertype for descriptors that start from
-a site-based formulation.
+a site-based formulation. I.e., the underlying symmetry is with the
+site fixed.
 """
 abstract type NBSiteDescriptor <: NBodyDescriptor end
+
+"""
+`NBClusterDescriptor`: abstract supertype for descriptors that start from
+a cluster-based formulation. I.e. the underlying symmetry allows
+permutation of arbitrary atoms within a cluster.
+
+WARNING: For now, the `NBClusterDescriptor` is treated as a special
+case of an `NBSiteDescriptor` with some suitable hacks to skip
+repeated simplices. For the future we need a "bespoke" neighbourlist
+loop for this case.
+"""
+abstract type NBClusterDescriptor <: NBSiteDescriptor end
 
 struct SpaceTransform{FT, FDT, VT}
    id::String
@@ -76,6 +89,14 @@ end
 export BondLengthDesc
 
 struct BondLengthDesc{TT <: SpaceTransform, TC <: Cutoff} <: NBSiteDescriptor
+   transform::TT
+   cutoff::TC
+end
+
+
+export ClusterBLDesc
+
+struct ClusterBLDesc{TT <: SpaceTransform, TC <: Cutoff} <: NBClusterDescriptor
    transform::TT
    cutoff::TC
 end

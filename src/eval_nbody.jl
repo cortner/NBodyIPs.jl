@@ -39,6 +39,7 @@ end
 
 
 @generated function eval_site_nbody!( ::Val{N},
+                                      ii::Int,
                                       Rs::AbstractVector{JVec{T}},
                                       rcut::T,
                                       reducefun,
@@ -57,7 +58,7 @@ end
    # collect the indices into a vector
    push!(code_inner,      _get_Jvec_ex(N) )
    # now call `V` with the simplex-corner vectors and "add" this to the site energy
-   push!(code_inner, :(   out = reducefun(out, Rs, J, temp) ))
+   push!(code_inner, :(   out = reducefun(out, Rs, ii, J, temp) ))
 
    # put code_inner into the loop expression
    ex_loop.args[2] = Expr(:block, code_inner...)
@@ -73,17 +74,17 @@ end
 
 
 
-function site_energies(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
+function site_energies(V::NBodyFunction{N, DT}, at::Atoms{T}
+                  ) where {N, T, DT <: NBSiteDescriptor}
    Es = zeros(T, length(at))
    for (i, j, r, R) in sites(at, cutoff(V))
       # out = reducefun(out, R, J, temp)
-      Es[i] = eval_site_nbody!(Val(N), R, cutoff(V),
-                               ((out, R, J, temp) -> out + evaluate(V, R, J)),
+      Es[i] = eval_site_nbody!(Val(N), i, R, cutoff(V),
+                               ((out, R, ii, J, temp) -> out + evaluate(V, R, ii, J)),
                                zero(T), nothing)
    end
    return Es
 end
-
 
 
 # this is probably already in JuLIP??? if not, it should be moved to JuLIP??
@@ -99,8 +100,8 @@ function forces(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    for (i, j, r, R) in sites(nlist)
       fill!(dVsite, zero(JVec{T}))
       eval_site_nbody!(
-            Val(N), R, cutoff(V),
-            (out, R, J, temp) -> evaluate_d!(out, V, R, J),
+            Val(N), i, R, cutoff(V),
+            (out, R, ii, J, temp) -> evaluate_d!(out, V, R, ii, J),
             dVsite, nothing )   # dVsite == out, nothing == temp
       # write site energy gradient into forces
       for n = 1:length(j)
@@ -112,7 +113,6 @@ function forces(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
 end
 
 
-
 function virial(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    nlist = neighbourlist(at, cutoff(V))
    maxneigs = max_neigs(nlist)
@@ -122,8 +122,8 @@ function virial(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
       dVsite .*= 0.0
       # eval_site_d!(dVsite, V, R)
       eval_site_nbody!(
-            Val(N), R, cutoff(V),
-            (out, R, J, temp) -> evaluate_d!(out, V, R, J),
+            Val(N), i, R, cutoff(V),
+            (out, R, ii, J, temp) -> evaluate_d!(out, V, R, ii, J),
             dVsite, nothing )
       S += JuLIP.Potentials.site_virial(dVsite, R)
    end

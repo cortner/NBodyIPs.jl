@@ -7,7 +7,8 @@ import NBodyIPs
 using NBodyIPs:        BondLengthDesc,
                        BondAngleDesc,
                        edges2bo,
-                       bo2edges
+                       bo2edges,
+                       tdegrees
 
 using NBodyIPs.Polys:  Tup,
                        VecTup,
@@ -17,9 +18,9 @@ export blpolys,
        bapolys,
        nbpolys
 
-# hack to get the correct tdegrees function
-tdegrees(desc::BondLengthDesc, vN) = NBodyIPs.BLInvariants.tdegrees(vN)
-tdegrees(desc::BondAngleDesc, vN) = NBodyIPs.BAInvariants.tdegrees(vN)
+# # hack to get the correct tdegrees function
+# tdegrees(desc::BondLengthDesc, vN) = NBodyIPs.BLInvariants.tdegrees(vN)
+# tdegrees(desc::BondAngleDesc, vN) = NBodyIPs.BAInvariants.tdegrees(vN)
 
 """
 compute the total degree of the polynomial represented by α.
