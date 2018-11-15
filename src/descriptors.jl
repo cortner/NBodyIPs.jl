@@ -44,14 +44,6 @@ end
 # ------------- main evaluation code -----------
 
 
-skip_unordered_simplex(desc::NBSiteDescriptor, i, J) = false
-
-function skip_unordered_simplex(desc::NBClusterDescriptor, i, J)
-   for j in J
-      i > j && return true
-   end
-   return false
-end
 
 
 function evaluate(V::NBodyFunction{N},
@@ -59,7 +51,6 @@ function evaluate(V::NBodyFunction{N},
                   Rs::AbstractVector{JVec{T}},
                   i::Int,
                   J::SVector{K, Int}) where {N, T, K}
-   skip_unordered_simplex(desc, i, J) && return zero(T)
    # get the physical descriptor: bond-lengths (+ bond-angles)
    rθ = ricoords(desc, Rs, J)
    # check whether to skip this N-body term?
@@ -80,7 +71,6 @@ function evaluate_d!(dVsite,
                      Rs,
                      i::Int,
                      J) where {N}
-   skip_unordered_simplex(desc, i, J)
    # get the physical descriptor: bond-lengths (+ bond-angles)
    rθ = ricoords(desc, Rs, J)
    # check whether to skip this N-body term?
@@ -103,7 +93,6 @@ function evaluate_many!(Es,
                         B::AbstractVector{TB},
                         desc::NBSiteDescriptor,
                         Rs, i, J)  where {TB <: NBodyFunction{N}} where {N}
-   skip_unordered_simplex(desc, i, J)
    rθ = ricoords(desc, Rs, J)
    skip_simplex(desc, rθ) && return Es
    return _evaluate_many_ricoords!(Es, B, desc, rθ)
@@ -133,7 +122,6 @@ function evaluate_many_d!(dVsite::AbstractVector,
                           desc::NBSiteDescriptor,
                           Rs,
                           i, J)  where {TB <: NBodyFunction{N}} where {N}
-   skip_unordered_simplex(desc, i, J)
    rθ = ricoords(desc, Rs, J)
    skip_simplex(desc, rθ) && return dVsite
    fc, fc_d = fcut_d(desc, rθ)

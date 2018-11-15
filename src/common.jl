@@ -174,6 +174,11 @@ evaluate(V::NBodyFunction{2, <: BondLengthDesc}, r::AbstractFloat) =
 evaluate_d(V::NBodyFunction{2, <: BondLengthDesc}, r::AbstractFloat) =
       evaluate_d(V, SVector(r))[1]
 
+evaluate(V::NBodyFunction{2, <: ClusterBLDesc}, r::AbstractFloat) =
+      evaluate(V, SVector(r))
+evaluate_d(V::NBodyFunction{2, <: ClusterBLDesc}, r::AbstractFloat) =
+      evaluate_d(V, SVector(r))[1]
+
 evaluate(V::NBodyFunction{2, <: BondAngleDesc}, r::AbstractFloat) =
       evaluate(V, (SVector(r), SVector()))
 evaluate_d(V::NBodyFunction{2, <: BondAngleDesc}, r::AbstractFloat) =
@@ -181,7 +186,7 @@ evaluate_d(V::NBodyFunction{2, <: BondAngleDesc}, r::AbstractFloat) =
 
 function evaluate(V::NBodyFunction{N}, r::SVector{M}) where {N, M}
    # this assumes that D is a BondLengthDesc
-   D = descriptor(V)::BondLengthDesc
+   D = descriptor(V)::Union{BondLengthDesc, ClusterBLDesc}
    return evaluate_I(V, invariants(D, r)) * fcut(D, r)
 end
 
