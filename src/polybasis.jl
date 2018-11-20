@@ -187,6 +187,7 @@ function gen_tuples_rt(desc::BondAngleDesc, vN::Val{N}, vK::Val{K}, degr, degt; 
    error("I shouldn't be here!")
 end
 
+
 gen_tuples_rt(desc::BondAngleDesc, N, degr, degt) =
    gen_tuples_rt(desc,
                  Val(N),  Val(bo2edges(Val(N))+1),
@@ -195,7 +196,5 @@ gen_tuples_rt(desc::BondAngleDesc, N, degr, degt) =
 
 nbpolys(N::Integer, desc, degr, degt; kwargs...) =
         nbpolys(gen_tuples_rt(desc, N, degr, degt; kwargs...), desc)
-
-
 
 end
