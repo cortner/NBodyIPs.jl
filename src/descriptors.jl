@@ -47,7 +47,6 @@ function evaluate(V::NBodyFunction{N},
                   desc::NBSiteDescriptor,
                   Rs::AbstractVector{JVec{T}},
                   J::SVector{K, Int}) where {N, T, K}
-
    # get the physical descriptor: bond-lengths (+ bond-angles)
    rθ = ricoords(desc, Rs, J)
    # check whether to skip this N-body term?

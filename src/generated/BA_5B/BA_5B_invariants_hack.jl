@@ -3,7 +3,7 @@ module BA_5B
 using NBodyIPs.FastPolys
 using StaticArrays
 
-import NBodyIPs.BAInvariants: invariants, invariants_d, invariants_ed, tdegrees
+import NBodyIPs.BAInvariants: invariants, invariants_d, invariants_ed, tdegrees, rtdegrees
 
 # TODO: THIS IS A HACK TO GET the `ninvariants` function right, but it cannot
 #       yet be used to actually produce basis functions

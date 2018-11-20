@@ -3,7 +3,7 @@ module BA_4B
 using NBodyIPs.FastPolys
 using StaticArrays
 
-import NBodyIPs.BAInvariants: invariants, invariants_d, invariants_ed, tdegrees
+import NBodyIPs.BAInvariants: invariants, invariants_d, invariants_ed, tdegrees, rtdegrees
 
 tdegrees(::Val{4}) =
    (1, 1, 2, 2, 3, 3), (0, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 6)
