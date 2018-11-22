@@ -278,3 +278,110 @@ function virial(B::AbstractVector{TB}, at::Atoms{T}, typewarn=true
    end
    return S
 end
+
+
+
+# ============================================================
+#     Re-Implement from Scratch for Faster `EnvPolys`
+# ============================================================
+
+
+
+function site_energies(V::EnvPoly{N}, at::Atoms{T}) where {N, T <: AbstractFloat}
+   Es = zeros(T, length(at))
+
+   # all the site energies => should be trivial in terms of cost
+   Ns = site_energies(V.Vn, at)
+
+   # storage
+   Etemp = zeros(T, length(V.Vr))
+
+   rcut = cutoff(V.Vr[1])
+   for (i, j, r, R) in sites(at, rcut)
+      fill!(Etemp, zero(T))
+      eval_site_nbody!(Val(N), i, j, R, rcut, false,
+                       (out, R, ii, J, temp) -> evaluate_many!(out, V.Vr, R, ii, J),
+                       Etemp, nothing)
+      for P = 1:length(V.Vr)
+         Es[i] += Ns[i]^(P-1) * Etemp[P]
+      end
+   end
+
+   return Es
+end
+
+
+# function forces(V::AbstractEnvIP{N}, at::Atoms{T}) where {N, T}
+#
+#    # compute the n values
+#    Ns, dNs = site_ns_ed(V, at)
+#    # compute the inner v values
+#    Vs = site_energies(Vr(V), at)
+#
+#    # now assemble site forces and use those to create
+#    # total forces by mixing N and V
+#    cutoff_n = cutoff(Vn(V))
+#    nlist = neighbourlist(at, cutoff(V))  # this checks that cutoff(Vn) <= cutoff(Vr)
+#    maxneigs = max_neigs(nlist)
+#    F = zeros(JVec{T}, length(at))
+#    dVsite = zeros(JVec{T}, maxneigs)
+#    dVn = zeros(JVec{T}, maxneigs)
+#
+#    for (i, j, r, R) in sites(nlist)
+#       # compute the site energy gradients
+#       fill!(dVsite, zero(JVec{T}))
+#       eval_site_nbody!(
+#             Val(N), R, cutoff(V),
+#             (out, R, J, temp) -> evaluate_d!(out, Vr(V), R, J),
+#             dVsite, nothing )   # dVsite == out, nothing == temp
+#       # compute the neighbour count gradients
+#       site_n_d!(dVn, V, r, R, Ns[i], dNs[i])
+#
+#       # write site energy gradient into forces
+#       for n = 1:length(j)
+#          f = Ns[i] * dVsite[n] + Vs[i] * dVn[n]
+#          F[j[n]] -= f
+#          F[i] += f
+#       end
+#    end
+#    return F
+# end
+#
+#
+#
+# function virial(V::AbstractEnvIP{N}, at::Atoms{T}) where {N, T}
+#    # compute the n values
+#    Ns, dNs = site_ns_ed(V, at)
+#    # compute the inner v values
+#    Vs = site_energies(Vr(V), at)
+#
+#    # now assemble site forces and use those to create
+#    # total forces by mixing N and V
+#    cutoff_n = cutoff(Vn(V))
+#    nlist = neighbourlist(at, cutoff(V))  # this checks that cutoff(Vn) <= cutoff(Vr)
+#    maxneigs = max_neigs(nlist)
+#    dVsite = zeros(JVec{T}, maxneigs)
+#    dVn = zeros(JVec{T}, maxneigs)
+#
+#    S = @SMatrix zeros(3,3)
+#
+#    for (i, j, r, R) in sites(nlist)
+#       # compute the site energy gradients
+#       fill!(dVsite, zero(JVec{T}))
+#       eval_site_nbody!(
+#             Val(N), R, cutoff(V),
+#             (out, R, J, temp) -> evaluate_d!(out, Vr(V), R, J),
+#             dVsite, nothing )   # dVsite == out, nothing == temp
+#       # compute the neighbour count gradients
+#       site_n_d!(dVn, V, r, R, Ns[i], dNs[i])
+#
+#       # convert the two into a single site energy gradient
+#       # so that we can call site_virial on it
+#       for n = 1:length(j)
+#          dVsite[n] = Ns[i] * dVsite[n] + Vs[i] * dVn[n]
+#       end
+#
+#       S += site_virial(dVsite, R)
+#    end
+#    return S
+# end

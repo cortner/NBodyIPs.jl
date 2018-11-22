@@ -1,42 +1,77 @@
-
+info("loading libraries...")
 using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Base.Test
 
 # using JuLIP.Potentials: evaluate, evaluate_d
 # using NBodyIPs: BondLengthDesc, BondAngleDesc, invariants, invariants_d, descriptor,
 #                bo2angles, bo2edges
 using NBodyIPs.Polys
+using NBodyIPs.EnvIPs
+using NBodyIPs.EnvIPs: EnvPoly
 
 TRANSFORM = "r -> (2.9/r)^3"
-DEGREES = [16, 12, 10]
+DEGREES = [14, 12, 10]
+ENVDEGS = [3, 2, 1]
 RCUT = [7.0, 5.80, 4.5]
+
 
 function random_ip(DT)
    DD = [ DT(TRANSFORM, (:cos, (0.66*rcut), rcut))  for rcut in RCUT ]
 
+   rn = 1.5 * rnn(:W)
+   Vn = ("1.0/(1.0 + exp(1.0 / ($rn - r + 1e-2)))", rn)
+
    # 2-body potential
-   B2 = nbpolys(2, DD[1], DEGREES[1])
-   c = rand(length(B2))
-   V2 = NBPoly(B2, c, DD[1])
-   V2sp = StNBPoly(V2)
+   BB = [ envpolys(n+1, DD[n], DEGREES[n], Vn, ENVDEGS[n]) for n = 1:3 ]
+   B = vcat(BB...)
+   c = rand(length(B))
+   IP = NBodyIP(B, c)
 
-   # 3-body potential
-   B3 = nbpolys(3, DD[2], DEGREES[2])
-   c = rand(length(B3))
-   V3 = NBPoly(B3, c, DD[2])
-   V3sp = StNBPoly(V3)
-
-   # 4-body potential
-   B4 = nbpolys(4, DD[3], DEGREES[3])
-   c = rand(length(B4))
-   V4 = NBPoly(B4, c, DD[3])
-   V4sp = StNBPoly(V4)
-
-   IP = NBodyIP([V2, V3, V4])
-   IPf = NBodyIP([V2sp, V3sp, V4sp])
-
-   return IP, IPf
+   return IP, fast(IP)
 end
 
+info("Generate random EnvIP...")
+IP, IPf = random_ip(BondLengthDesc)
+
+info("Generate faster EnvIP => EnvPoly ...")
+V2 = IPf.components[1:4]
+V3 = IPf.components[5:7]
+V4 = IPf.components[8:9]
+
+IPff = NBodyIP( [ EnvPoly([v.Vr for v in V2], V2[1].Vn, V2[1].str_Vn),
+                  EnvPoly([v.Vr for v in V3], V3[1].Vn, V3[1].str_Vn),
+                  EnvPoly([v.Vr for v in V4], V4[1].Vn, V4[1].str_Vn) ] )
+
+info("Test Correctness...")
+at = rattle!(bulk(:W, cubic=true) * 3, 0.02)
+@show energy(IP, at) - energy(IPf, at)
+@show energy(IPff, at) - energy(IPf, at)
+
+info("Test evaluation time...")
+at = rattle!(bulk(:W, cubic=true) * 8, 0.02)
+print("IP  : ")
+energy(IP, at); @time energy(IP, at);
+print("IPf : ")
+energy(IPf, at); @time energy(IPf, at);
+print("IPff: ")
+energy(IPff, at); @time energy(IPff, at);
+
+info("For comparison some simpler potentials:")
+IP0 = NBodyIP( [V2[1], V3[1], V4[1]] )
+IP1 = NBodyIP( [V2[1].Vr, V3[1].Vr, V4[1].Vr] )
+print("EnvIP deg = 0 : ")
+energy(IP0, at); @time energy(IP0, at);
+print(" 4B IP        : ")
+energy(IP1, at); @time energy(IP1, at);
+
+
+
+
+
+
+
+
+##
+quit()
 # test correctness first
 IP_bl, _ = random_ip(BondLengthDesc)
 IP_cl, _ = random_ip(ClusterBLDesc)
