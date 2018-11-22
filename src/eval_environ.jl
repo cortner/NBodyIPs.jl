@@ -20,8 +20,10 @@ import JuLIP: site_energies,
 
 import NBodyIPs: evaluate_many!,
                  evaluate_many_d!,
+                 evaluate_many_ed!,
                  eval_site_nbody!,
-                 _grad_len2pos!
+                 _grad_len2pos!,
+                 TempEdV
 
 function cutoff(V::AbstractEnvIP)
    @assert cutoff(Vn(V)) <= cutoff(Vr(V))
@@ -81,8 +83,8 @@ function forces(V::AbstractEnvIP{N}, at::Atoms{T}) where {N, T}
       # compute the site energy gradients
       fill!(dVsite, zero(JVec{T}))
       eval_site_nbody!(
-            Val(N), R, cutoff(V),
-            (out, R, J, temp) -> evaluate_d!(out, Vr(V), R, J),
+            Val(N), i, j, R, cutoff(V), false,
+            (out, R, i, J, temp) -> evaluate_d!(out, Vr(V), R, i, J),
             dVsite, nothing )   # dVsite == out, nothing == temp
       # compute the neighbour count gradients
       site_n_d!(dVn, V, r, R, Ns[i], dNs[i])
@@ -311,77 +313,50 @@ function site_energies(V::EnvPoly{N}, at::Atoms{T}) where {N, T <: AbstractFloat
 end
 
 
-# function forces(V::AbstractEnvIP{N}, at::Atoms{T}) where {N, T}
-#
-#    # compute the n values
-#    Ns, dNs = site_ns_ed(V, at)
-#    # compute the inner v values
-#    Vs = site_energies(Vr(V), at)
-#
-#    # now assemble site forces and use those to create
-#    # total forces by mixing N and V
-#    cutoff_n = cutoff(Vn(V))
-#    nlist = neighbourlist(at, cutoff(V))  # this checks that cutoff(Vn) <= cutoff(Vr)
-#    maxneigs = max_neigs(nlist)
-#    F = zeros(JVec{T}, length(at))
-#    dVsite = zeros(JVec{T}, maxneigs)
-#    dVn = zeros(JVec{T}, maxneigs)
-#
-#    for (i, j, r, R) in sites(nlist)
-#       # compute the site energy gradients
-#       fill!(dVsite, zero(JVec{T}))
-#       eval_site_nbody!(
-#             Val(N), R, cutoff(V),
-#             (out, R, J, temp) -> evaluate_d!(out, Vr(V), R, J),
-#             dVsite, nothing )   # dVsite == out, nothing == temp
-#       # compute the neighbour count gradients
-#       site_n_d!(dVn, V, r, R, Ns[i], dNs[i])
-#
-#       # write site energy gradient into forces
-#       for n = 1:length(j)
-#          f = Ns[i] * dVsite[n] + Vs[i] * dVn[n]
-#          F[j[n]] -= f
-#          F[i] += f
-#       end
-#    end
-#    return F
-# end
-#
-#
-#
-# function virial(V::AbstractEnvIP{N}, at::Atoms{T}) where {N, T}
-#    # compute the n values
-#    Ns, dNs = site_ns_ed(V, at)
-#    # compute the inner v values
-#    Vs = site_energies(Vr(V), at)
-#
-#    # now assemble site forces and use those to create
-#    # total forces by mixing N and V
-#    cutoff_n = cutoff(Vn(V))
-#    nlist = neighbourlist(at, cutoff(V))  # this checks that cutoff(Vn) <= cutoff(Vr)
-#    maxneigs = max_neigs(nlist)
-#    dVsite = zeros(JVec{T}, maxneigs)
-#    dVn = zeros(JVec{T}, maxneigs)
-#
-#    S = @SMatrix zeros(3,3)
-#
-#    for (i, j, r, R) in sites(nlist)
-#       # compute the site energy gradients
-#       fill!(dVsite, zero(JVec{T}))
-#       eval_site_nbody!(
-#             Val(N), R, cutoff(V),
-#             (out, R, J, temp) -> evaluate_d!(out, Vr(V), R, J),
-#             dVsite, nothing )   # dVsite == out, nothing == temp
-#       # compute the neighbour count gradients
-#       site_n_d!(dVn, V, r, R, Ns[i], dNs[i])
-#
-#       # convert the two into a single site energy gradient
-#       # so that we can call site_virial on it
-#       for n = 1:length(j)
-#          dVsite[n] = Ns[i] * dVsite[n] + Vs[i] * dVn[n]
-#       end
-#
-#       S += site_virial(dVsite, R)
-#    end
-#    return S
-# end
+function forces(V::EnvPoly{N}, at::Atoms{T}) where {N, T}
+   rcut = cutoff(V.Vr[1])
+   nlist = neighbourlist(at, rcut)
+   maxneigs = max_neigs(nlist)
+   nedges = (N*(N-1))÷2
+   nVr = length(V.Vr)
+
+   # forces
+   F = zeros(JVec{T}, length(at))
+   # site gradient
+   dVsite = [ zeros(JVec{T}, maxneigs) for _ = 1:nVr ]
+
+   # extras for Env
+   Etemp = zeros(T, nVr)
+   out = TempEdV(Etemp, dVsite)
+
+   # compute the N-components
+   Ns = site_energies(V.Vn, at)
+
+   for (i, j, r, R) in sites(nlist)
+      # clear dVsite and Etemp
+      for n = 1:nVr; fill!(dVsite[n], zero(JVec{T})); end
+      fill!(Etemp, zero(T))
+      # fill site energy and dVsite
+      eval_site_nbody!(Val(N), i, j, R, rcut, false,
+                       (out, R, ii, J, temp) -> evaluate_many_ed!(out, V.Vr, R, ii, J),
+                       out, nothing)
+
+      # write it into the force vectors
+      # first for P = 0
+      for n = 1:length(j)
+         F[j[n]] -= dVsite[1][n]
+         F[i] += dVsite[1][n]
+      end
+
+      for P = 2:nVr, n = 1:length(j)
+         # energy contribution:
+         #   Es[i] += Ns[i]^(P-1) * Etemp[P]
+         dVn = 0.5 * evaluate_d(V.Vn, r[n]) * R[n] / r[n]
+         f = (  Ns[i]^(P-1) * dVsite[P][n]
+              + (P-1) * Ns[i]^(P-2) * dVn * Etemp[P] )
+         F[j[n]] -= f
+         F[i] += f
+      end
+   end
+   return F
+end

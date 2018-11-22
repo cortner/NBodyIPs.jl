@@ -25,6 +25,16 @@ evaluate_many_d!(out, B, Rs, i, J) =
       evaluate_many_d!(out, B, descriptor(B[1]), Rs, i, J)
 
 
+# TODO: switch to tuples??
+struct TempEdV{T1, T2}
+   Etemp::T1
+   dVsite::T2
+end
+
+evaluate_many_ed!(out::TempEdV, B, Rs, i, J) =
+      evaluate_many_ed!(out, B, descriptor(B[1]), Rs, i, J)
+
+
 """
 `_sdot(a::T, B::SVector{N, T})`: efficiently compute `[ a .* b for b in B ]`
 """
@@ -42,8 +52,6 @@ end
 
 
 # ------------- main evaluation code -----------
-
-
 
 
 function evaluate(V::NBodyFunction{N},
@@ -135,6 +143,28 @@ function evaluate_many_d!(dVsite::AbstractVector,
       gradri2gradR!(desc, dVsite[n], dV_drθ, Rs, J, rθ)
    end
    return dVsite
+end
+
+
+function evaluate_many_ed!(out::TempEdV,
+                           B::AbstractVector{TB},
+                           desc::NBSiteDescriptor,
+                           Rs,
+                           i, J)  where {TB <: NBodyFunction{N}} where {N}
+   rθ = ricoords(desc, Rs, J)
+   skip_simplex(desc, rθ) && return out
+   fc, fc_d = fcut_d(desc, rθ)
+   fc == 0 && return out
+   II = invariants_ed(desc, rθ)
+
+   # evaluate the inner potential function (e.g. polynomial)
+   for n = 1:length(B)
+      V, dV_drθ = evaluate_I_ed(B[n], II)
+      out.Etemp[n] += V * fc
+      dV_drθ = dV_drθ * fc + V * fc_d
+      gradri2gradR!(desc, out.dVsite[n], dV_drθ, Rs, J, rθ)
+   end
+   return out
 end
 
 
