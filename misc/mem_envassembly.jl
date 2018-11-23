@@ -29,6 +29,8 @@ function random_ip(DT)
    return IP, fast(IP)
 end
 
+##
+
 info("Generate random EnvIP...")
 IP, IPf = random_ip(BondLengthDesc)
 
@@ -41,7 +43,12 @@ IPff = NBodyIP( [ EnvPoly([v.Vr for v in V2], V2[1].Vn, V2[1].str_Vn),
                   EnvPoly([v.Vr for v in V3], V3[1].Vn, V3[1].str_Vn),
                   EnvPoly([v.Vr for v in V4], V4[1].Vn, V4[1].str_Vn) ] )
 
-at = rattle!(bulk(:W, cubic=true) * 7, 0.02)
+##
+
+at = rattle!(bulk(:W, cubic=true) * 6, 0.02)
 forces(IPff, at);
-Profile.clear(); @profile forces(IPff, at);
-Profile.print()
+forces(IPff, at);
+# Profile.clear(); @profile forces(IPff, at);
+# Profile.print()
+
+# @code_warntype forces(IPff, at)
