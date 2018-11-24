@@ -121,8 +121,8 @@ function virial(V::AbstractEnvIP{N}, at::Atoms{T}) where {N, T}
       # compute the site energy gradients
       fill!(dVsite, zero(JVec{T}))
       eval_site_nbody!(
-            Val(N), R, cutoff(V),
-            (out, R, J, temp) -> evaluate_d!(out, Vr(V), R, J),
+            Val(N), i, j, R, cutoff(V), false,
+            (out, R, ii, J, temp) -> evaluate_d!(out, Vr(V), R, ii, J),
             dVsite, nothing )   # dVsite == out, nothing == temp
       # compute the neighbour count gradients
       site_n_d!(dVn, V, r, R, Ns[i], dNs[i])
@@ -163,8 +163,8 @@ function energy(B::Vector{TB}, at::Atoms{T}, typewarn=true
       # then add them to E, which is just passed through all the
       # various loops, so no need to update it here again
       fill!(Etemp, zero(T))
-      eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many!(out, Br, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, false,
+                       (out, R, ii, J, temp) -> evaluate_many!(out, Br, R, ii, J),
                        Etemp, nothing)
       #
       for nb = 1:length(B)
@@ -207,11 +207,11 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}, typewarn=true
       for n = 1:nB; fill!(dVsite[n], zero(JVec{T})); end
       fill!(Etemp, zero(T))
       # fill site energy and dVsite
-      eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many!(out, Br, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, false,
+                       (out, R, ii, J, temp) -> evaluate_many!(out, Br, R, ii, J),
                        Etemp, nothing)
-      eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many_d!(out, Br, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, false,
+                       (out, R, ii, J, temp) -> evaluate_many_d!(out, Br, R, ii, J),
                        dVsite, nothing)
 
       # write it into the force vectors
@@ -257,11 +257,11 @@ function virial(B::AbstractVector{TB}, at::Atoms{T}, typewarn=true
       for n = 1:nB; fill!(dVsite[n], zero(JVec{T})); end
       fill!(Etemp, zero(T))
       # fill site energy and dVsite
-      eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many!(out, Br, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, false,
+                       (out, R, ii, J, temp) -> evaluate_many!(out, Br, R, ii, J),
                        Etemp, nothing)
-      eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many_d!(out, Br, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, false,
+                       (out, R, ii, J, temp) -> evaluate_many_d!(out, Br, R, ii, J),
                        dVsite, nothing)
 
       # use Etemp (site energies), the Ns and dVn to convert dVsite in

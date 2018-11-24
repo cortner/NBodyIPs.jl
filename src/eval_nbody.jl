@@ -174,8 +174,8 @@ function energy(B::AbstractVector{TB}, at::Atoms{T}
       # for each simplex, write the nB energies into temp
       # then add them to E, which is just passed through all the
       # various loops, so no need to update it here again
-      eval_site_nbody!(Val(N), i, j, R, cutoff(V), skipunorderedsimplices(V),
-                       (out, R, J, temp) -> evaluate_many!(out, B, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, skipunorderedsimplices(B[1]),
+                       (out, R, ii, J, temp) -> evaluate_many!(out, B, R, ii, J),
                        E, nothing)
    end
    return E
@@ -197,8 +197,8 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
       # clear dVsite
       for n = 1:nB; fill!(dVsite[n], zero(JVec{T})); end
       # fill dVsite
-      eval_site_nbody!(Val(N), i, j, R, cutoff(V), skipunorderedsimplices(V),
-                       (out, R, J, temp) -> evaluate_many_d!(out, B, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, skipunorderedsimplices(B[1]),
+                       (out, R, ii, J, temp) -> evaluate_many_d!(out, B, R, ii, J),
                        dVsite, nothing)
       # write it into the force vectors
       for ib = 1:nB, n = 1:length(j)
@@ -225,8 +225,8 @@ function virial(B::AbstractVector{TB}, at::Atoms{T}
       # clear dVsite
       for n = 1:nB; dVsite[n] .*= 0.0; end
       # fill dVsite
-      eval_site_nbody!(Val(N), i, j, R, cutoff(V), skipunorderedsimplices(V),
-                       (out, R, J, temp) -> evaluate_many_d!(out, B, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, skipunorderedsimplices(B[1]),
+                       (out, R, ii, J, temp) -> evaluate_many_d!(out, B, R, ii, J),
                        dVsite, nothing)
       # update the virials
       for iB = 1:nB

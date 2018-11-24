@@ -33,6 +33,8 @@ site fixed.
 """
 abstract type NBSiteDescriptor <: NBodyDescriptor end
 
+struct NullSiteDesc <: NBSiteDescriptor end
+
 """
 `NBClusterDescriptor`: abstract supertype for descriptors that start from
 a cluster-based formulation. I.e. the underlying symmetry allows
