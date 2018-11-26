@@ -38,15 +38,32 @@ function _get_Jvec_ex(N)
 end
 
 
+skipunorderedsimplices(V::NBodyFunction) =
+      skipunorderedsimplices(descriptor(V))
+
+skipunorderedsimplices(D::NBSiteDescriptor) = false
+
+skipunorderedsimplices(D::NBClusterDescriptor) = true
+
+function unordered(i, j, J)
+   for jj in J
+      i > j[jj] && return true
+   end
+   return false
+end
+
 @generated function eval_site_nbody!( ::Val{N},
+                                      ii::Int, jj::AbstractVector{TI},
                                       Rs::AbstractVector{JVec{T}},
                                       rcut::T,
+                                      skipunordered::Bool,
                                       reducefun,
                                       out,
-                                      temp ) where {N, T}
+                                      temp ) where {N, T, TI <: Integer}
    code = Expr[]
    # initialise the output
    push!(code, :( nR = length(Rs)  ))
+   push!(code, :( skip = false ))
 
    # generate the multi-for-loop
    ex_loop = _get_loop_ex(N)
@@ -56,8 +73,9 @@ end
    code_inner = Expr[]
    # collect the indices into a vector
    push!(code_inner,      _get_Jvec_ex(N) )
+   push!(code_inner, :(   if skipunordered; skip = unordered(ii, jj, J); end   ))
    # now call `V` with the simplex-corner vectors and "add" this to the site energy
-   push!(code_inner, :(   out = reducefun(out, Rs, J, temp) ))
+   push!(code_inner, :(   if !skip; out = reducefun(out, Rs, ii, J, temp); end ))
 
    # put code_inner into the loop expression
    ex_loop.args[2] = Expr(:block, code_inner...)
@@ -73,17 +91,17 @@ end
 
 
 
-function site_energies(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
+function site_energies(V::NBodyFunction{N, DT}, at::Atoms{T}
+                  ) where {N, T, DT <: NBSiteDescriptor}
    Es = zeros(T, length(at))
    for (i, j, r, R) in sites(at, cutoff(V))
-      # out = reducefun(out, R, J, temp)
-      Es[i] = eval_site_nbody!(Val(N), R, cutoff(V),
-                               ((out, R, J, temp) -> out + evaluate(V, R, J)),
+      Es[i] = eval_site_nbody!(Val(N), i, j, R, cutoff(V),
+                               skipunorderedsimplices(V),
+                               ((out, R, ii, J, temp) -> out + evaluate(V, R, ii, J)),
                                zero(T), nothing)
    end
    return Es
 end
-
 
 
 # this is probably already in JuLIP??? if not, it should be moved to JuLIP??
@@ -99,8 +117,8 @@ function forces(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    for (i, j, r, R) in sites(nlist)
       fill!(dVsite, zero(JVec{T}))
       eval_site_nbody!(
-            Val(N), R, cutoff(V),
-            (out, R, J, temp) -> evaluate_d!(out, V, R, J),
+            Val(N), i, j, R, cutoff(V), skipunorderedsimplices(V),
+            (out, R, ii, J, temp) -> evaluate_d!(out, V, R, ii, J),
             dVsite, nothing )   # dVsite == out, nothing == temp
       # write site energy gradient into forces
       for n = 1:length(j)
@@ -112,7 +130,6 @@ function forces(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
 end
 
 
-
 function virial(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
    nlist = neighbourlist(at, cutoff(V))
    maxneigs = max_neigs(nlist)
@@ -122,8 +139,8 @@ function virial(V::NBodyFunction{N}, at::Atoms{T}) where {N, T}
       dVsite .*= 0.0
       # eval_site_d!(dVsite, V, R)
       eval_site_nbody!(
-            Val(N), R, cutoff(V),
-            (out, R, J, temp) -> evaluate_d!(out, V, R, J),
+            Val(N), i, j, R, cutoff(V), skipunorderedsimplices(V),
+            (out, R, ii, J, temp) -> evaluate_d!(out, V, R, ii, J),
             dVsite, nothing )
       S += JuLIP.Potentials.site_virial(dVsite, R)
    end
@@ -157,8 +174,8 @@ function energy(B::AbstractVector{TB}, at::Atoms{T}
       # for each simplex, write the nB energies into temp
       # then add them to E, which is just passed through all the
       # various loops, so no need to update it here again
-      eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many!(out, B, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, skipunorderedsimplices(B[1]),
+                       (out, R, ii, J, temp) -> evaluate_many!(out, B, R, ii, J),
                        E, nothing)
    end
    return E
@@ -180,8 +197,8 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}
       # clear dVsite
       for n = 1:nB; fill!(dVsite[n], zero(JVec{T})); end
       # fill dVsite
-      eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many_d!(out, B, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, skipunorderedsimplices(B[1]),
+                       (out, R, ii, J, temp) -> evaluate_many_d!(out, B, R, ii, J),
                        dVsite, nothing)
       # write it into the force vectors
       for ib = 1:nB, n = 1:length(j)
@@ -208,8 +225,8 @@ function virial(B::AbstractVector{TB}, at::Atoms{T}
       # clear dVsite
       for n = 1:nB; dVsite[n] .*= 0.0; end
       # fill dVsite
-      eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many_d!(out, B, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, skipunorderedsimplices(B[1]),
+                       (out, R, ii, J, temp) -> evaluate_many_d!(out, B, R, ii, J),
                        dVsite, nothing)
       # update the virials
       for iB = 1:nB

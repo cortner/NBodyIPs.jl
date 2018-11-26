@@ -20,8 +20,10 @@ import JuLIP: site_energies,
 
 import NBodyIPs: evaluate_many!,
                  evaluate_many_d!,
+                 evaluate_many_ed!,
                  eval_site_nbody!,
-                 _grad_len2pos!
+                 _grad_len2pos!,
+                 TempEdV
 
 function cutoff(V::AbstractEnvIP)
    @assert cutoff(Vn(V)) <= cutoff(Vr(V))
@@ -81,8 +83,8 @@ function forces(V::AbstractEnvIP{N}, at::Atoms{T}) where {N, T}
       # compute the site energy gradients
       fill!(dVsite, zero(JVec{T}))
       eval_site_nbody!(
-            Val(N), R, cutoff(V),
-            (out, R, J, temp) -> evaluate_d!(out, Vr(V), R, J),
+            Val(N), i, j, R, cutoff(V), false,
+            (out, R, i, J, temp) -> evaluate_d!(out, Vr(V), R, i, J),
             dVsite, nothing )   # dVsite == out, nothing == temp
       # compute the neighbour count gradients
       site_n_d!(dVn, V, r, R, Ns[i], dNs[i])
@@ -119,8 +121,8 @@ function virial(V::AbstractEnvIP{N}, at::Atoms{T}) where {N, T}
       # compute the site energy gradients
       fill!(dVsite, zero(JVec{T}))
       eval_site_nbody!(
-            Val(N), R, cutoff(V),
-            (out, R, J, temp) -> evaluate_d!(out, Vr(V), R, J),
+            Val(N), i, j, R, cutoff(V), false,
+            (out, R, ii, J, temp) -> evaluate_d!(out, Vr(V), R, ii, J),
             dVsite, nothing )   # dVsite == out, nothing == temp
       # compute the neighbour count gradients
       site_n_d!(dVn, V, r, R, Ns[i], dNs[i])
@@ -161,8 +163,8 @@ function energy(B::Vector{TB}, at::Atoms{T}, typewarn=true
       # then add them to E, which is just passed through all the
       # various loops, so no need to update it here again
       fill!(Etemp, zero(T))
-      eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many!(out, Br, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, false,
+                       (out, R, ii, J, temp) -> evaluate_many!(out, Br, R, ii, J),
                        Etemp, nothing)
       #
       for nb = 1:length(B)
@@ -205,11 +207,11 @@ function forces(B::AbstractVector{TB}, at::Atoms{T}, typewarn=true
       for n = 1:nB; fill!(dVsite[n], zero(JVec{T})); end
       fill!(Etemp, zero(T))
       # fill site energy and dVsite
-      eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many!(out, Br, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, false,
+                       (out, R, ii, J, temp) -> evaluate_many!(out, Br, R, ii, J),
                        Etemp, nothing)
-      eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many_d!(out, Br, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, false,
+                       (out, R, ii, J, temp) -> evaluate_many_d!(out, Br, R, ii, J),
                        dVsite, nothing)
 
       # write it into the force vectors
@@ -255,11 +257,11 @@ function virial(B::AbstractVector{TB}, at::Atoms{T}, typewarn=true
       for n = 1:nB; fill!(dVsite[n], zero(JVec{T})); end
       fill!(Etemp, zero(T))
       # fill site energy and dVsite
-      eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many!(out, Br, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, false,
+                       (out, R, ii, J, temp) -> evaluate_many!(out, Br, R, ii, J),
                        Etemp, nothing)
-      eval_site_nbody!(Val(N), R, rcut,
-                       (out, R, J, temp) -> evaluate_many_d!(out, Br, R, J),
+      eval_site_nbody!(Val(N), i, j, R, rcut, false,
+                       (out, R, ii, J, temp) -> evaluate_many_d!(out, Br, R, ii, J),
                        dVsite, nothing)
 
       # use Etemp (site energies), the Ns and dVn to convert dVsite in
@@ -277,4 +279,84 @@ function virial(B::AbstractVector{TB}, at::Atoms{T}, typewarn=true
       end
    end
    return S
+end
+
+
+
+# ============================================================
+#     Re-Implement from Scratch for Faster `EnvPolys`
+# ============================================================
+
+
+
+function site_energies(V::EnvPoly{N}, at::Atoms{T}) where {N, T <: AbstractFloat}
+   Es = zeros(T, length(at))
+
+   # all the site energies => should be trivial in terms of cost
+   Ns = site_energies(V.Vn, at)
+
+   # storage
+   Etemp = zeros(T, length(V.Vr))
+
+   rcut = cutoff(V.Vr[1])
+   for (i, j, r, R) in sites(at, rcut)
+      fill!(Etemp, zero(T))
+      eval_site_nbody!(Val(N), i, j, R, rcut, false,
+                       (out, R, ii, J, temp) -> evaluate_many!(out, V.Vr, R, ii, J),
+                       Etemp, nothing)
+      for P = 1:length(V.Vr)
+         Es[i] += Ns[i]^(P-1) * Etemp[P]
+      end
+   end
+
+   return Es
+end
+
+
+function forces(V::EnvPoly{N}, at::Atoms{T}) where {N, T}
+   rcut = cutoff(V.Vr[1])
+   nlist = neighbourlist(at, rcut)
+   maxneigs = max_neigs(nlist)
+   nedges = (N*(N-1))÷2
+   nVr = length(V.Vr)
+
+   # forces
+   F = zeros(JVec{T}, length(at))
+   # site gradient
+   dVsite = [ zeros(JVec{T}, maxneigs) for _ = 1:nVr ]
+
+   # extras for Env
+   Etemp = zeros(T, nVr)
+   out = TempEdV(Etemp, dVsite)
+
+   # compute the N-components
+   Ns = site_energies(V.Vn, at)
+
+   for (i, j, r, R) in sites(nlist)
+      # clear dVsite and Etemp
+      for n = 1:nVr; fill!(dVsite[n], zero(JVec{T})); end
+      fill!(Etemp, zero(T))
+      # fill site energy and dVsite
+      eval_site_nbody!(Val(N), i, j, R, rcut, false,
+                       (out, R, ii, J, temp) -> evaluate_many_ed!(out, V.Vr, R, ii, J),
+                       out, nothing)
+
+      # write it into the force vectors
+      # first for P = 0
+      for n = 1:length(j)
+         F[j[n]] -= dVsite[1][n]
+         F[i] += dVsite[1][n]
+      end
+
+      for P = 2:nVr, n = 1:length(j)
+         # energy contribution:
+         #   Es[i] += Ns[i]^(P-1) * Etemp[P]
+         dVn = 0.5 * evaluate_d(V.Vn, r[n]) * R[n] / r[n]
+         f = (  Ns[i]^(P-1) * dVsite[P][n]
+              + (P-1) * Ns[i]^(P-2) * dVn * Etemp[P] )
+         F[j[n]] -= f
+         F[i] += f
+      end
+   end
+   return F
 end

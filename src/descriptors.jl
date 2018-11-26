@@ -11,18 +11,28 @@ ninvariants(D::NBodyDescriptor, vN::Val{N}) where {N} = length.(tdegrees(D, vN))
 combiscriptor(D::NBodyDescriptor) =
       (combiscriptor(D.transform), combiscriptor(D.cutoff))
 
-evaluate(V::NBodyFunction, Rs, J) =
-      evaluate(V, descriptor(V), Rs, J)
+evaluate(V::NBodyFunction, Rs, i, J) =
+      evaluate(V, descriptor(V), Rs, i, J)
 
-evaluate_d!(dVsite, V::NBodyFunction, Rs, J) =
-      evaluate_d!(dVsite, V, descriptor(V), Rs, J)
+evaluate_d!(dVsite, V::NBodyFunction, Rs, i, J) =
+      evaluate_d!(dVsite, V, descriptor(V), Rs, i, J)
 
 
-evaluate_many!(out, B, Rs, J) =
-      evaluate_many!(out, B, descriptor(B[1]), Rs, J)
+evaluate_many!(out, B, Rs, i, J) =
+      evaluate_many!(out, B, descriptor(B[1]), Rs, i, J)
 
-evaluate_many_d!(out, B, Rs, J) =
-      evaluate_many_d!(out, B, descriptor(B[1]), Rs, J)
+evaluate_many_d!(out, B, Rs, i, J) =
+      evaluate_many_d!(out, B, descriptor(B[1]), Rs, i, J)
+
+
+# TODO: switch to tuples??
+struct TempEdV{T1, T2}
+   Etemp::T1
+   dVsite::T2
+end
+
+evaluate_many_ed!(out::TempEdV, B, Rs, i, J) =
+      evaluate_many_ed!(out, B, descriptor(B[1]), Rs, i, J)
 
 
 """
@@ -43,9 +53,11 @@ end
 
 # ------------- main evaluation code -----------
 
+
 function evaluate(V::NBodyFunction{N},
                   desc::NBSiteDescriptor,
                   Rs::AbstractVector{JVec{T}},
+                  i::Int,
                   J::SVector{K, Int}) where {N, T, K}
    # get the physical descriptor: bond-lengths (+ bond-angles)
    rθ = ricoords(desc, Rs, J)
@@ -65,6 +77,7 @@ function evaluate_d!(dVsite,
                      V::NBodyFunction{N},
                      desc::NBSiteDescriptor,
                      Rs,
+                     i::Int,
                      J) where {N}
    # get the physical descriptor: bond-lengths (+ bond-angles)
    rθ = ricoords(desc, Rs, J)
@@ -87,7 +100,7 @@ end
 function evaluate_many!(Es,
                         B::AbstractVector{TB},
                         desc::NBSiteDescriptor,
-                        Rs, J)  where {TB <: NBodyFunction{N}} where {N}
+                        Rs, i, J)  where {TB <: NBodyFunction{N}} where {N}
    rθ = ricoords(desc, Rs, J)
    skip_simplex(desc, rθ) && return Es
    return _evaluate_many_ricoords!(Es, B, desc, rθ)
@@ -116,7 +129,7 @@ function evaluate_many_d!(dVsite::AbstractVector,
                           B::AbstractVector{TB},
                           desc::NBSiteDescriptor,
                           Rs,
-                          J)  where {TB <: NBodyFunction{N}} where {N}
+                          i, J)  where {TB <: NBodyFunction{N}} where {N}
    rθ = ricoords(desc, Rs, J)
    skip_simplex(desc, rθ) && return dVsite
    fc, fc_d = fcut_d(desc, rθ)
@@ -130,6 +143,28 @@ function evaluate_many_d!(dVsite::AbstractVector,
       gradri2gradR!(desc, dVsite[n], dV_drθ, Rs, J, rθ)
    end
    return dVsite
+end
+
+
+function evaluate_many_ed!(out::TempEdV,
+                           B::AbstractVector{TB},
+                           desc::NBSiteDescriptor,
+                           Rs,
+                           i, J)  where {TB <: NBodyFunction{N}} where {N}
+   rθ = ricoords(desc, Rs, J)
+   skip_simplex(desc, rθ) && return out
+   fc, fc_d = fcut_d(desc, rθ)
+   fc == 0 && return out
+   II = invariants_ed(desc, rθ)
+
+   # evaluate the inner potential function (e.g. polynomial)
+   for n = 1:length(B)
+      V, dV_drθ = evaluate_I_ed(B[n], II)
+      out.Etemp[n] += V * fc
+      dV_drθ = dV_drθ * fc + V * fc_d
+      gradri2gradR!(desc, out.dVsite[n], dV_drθ, Rs, J, rθ)
+   end
+   return out
 end
 
 

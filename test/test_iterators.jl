@@ -3,11 +3,12 @@
 using NeighbourLists, NBodyIPs, JuLIP, StaticArrays, Base.Test,
       ForwardDiff, Base.Test
 using NBodyIPs: NBodyFunction
+import NBodyIPs: descriptor
 import JuLIP.Potentials: evaluate, cutoff, evaluate_d!
 
 # --------- MANY BODY CODE THAT IS SHARED ACROSS TESTS ------------
 
-@pot struct TestBL{N} <: NBodyFunction{N, NBodyIPs.NullDesc}
+@pot struct TestBL{N} <: NBodyFunction{N, NBodyIPs.NullSiteDesc}
    r0::Float64
    rcut::Float64
    vN::Val{N}
@@ -26,11 +27,12 @@ end
 # function edgelengths(Rs, J)
 #    r = NBodyIPs.edge_lengths(Rs, J)
 
+descriptor(::TestBL) = NBodyIPs.NullSiteDesc()
 
-evaluate(V::TestBL{N}, Rs, J) where {N} =
+evaluate(V::TestBL{N}, Rs, ii, J) where {N} =
       fnbody(edgelengths1(Rs, J)[1], V.r0, V.rcut) / N
 
-function evaluate_d!(dVsite, V::TestBL{N}, Rs, J) where {N}
+function evaluate_d!(dVsite, V::TestBL{N}, Rs, ii, J) where {N}
    r, S = edgelengths1(Rs, J)
    dV = (fnbody_d(r, V.r0, V.rcut) / N) .* S
    idx = 0

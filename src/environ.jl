@@ -80,7 +80,7 @@ end
 Vn(V::EnvIP) = V.Vn
 Vr(V::EnvIP) = V.Vr
 
-bodyorder(V::AbstractEnvIP) = bodyorder(Vr(V))
+bodyorder(V::AbstractEnvIP{N}) where {N} = Int(N)
 
 descriptor(V::EnvIP) = descriptor(V.Vr)
 
@@ -132,7 +132,74 @@ end
 
 fast(V::EnvIP) = EnvIP(V.t, fast(V.Vr), V.Vn, V.str_Vn)
 
+
+
+# ========================================================
+#    Re-Implement Fast Version of EnvIPs
+# ========================================================
+
+@pot struct EnvPoly{N, TVR, TVN} <: AbstractEnvIP{N}
+   Vr::Vector{TVR}    # N-body potentials multiplied by n^j, j = 0, 1, ...
+   Vn::TVN            # neighbour counter
+   str_Vn::String     # string describing the neighbour counter
+   valN::Val{N}
+end
+
+envdegree(V::EnvPoly) = length(V.P) - 1
+
+==(V1::EnvPoly, V2::EnvPoly) = ( (V1.Vr == V2.Vr) &&
+                                 (V1.str_Vn == V2.str_Vn) &&
+                                 (V1.valN == V2.valN) )
+
+# Dict(V::EnvPoly) = Dict( "__id__" => "EnvPoly",
+#                          "Vr" => Dict.(V.Vr),
+#                          "str_Vn" => V.str_Vn,
+#                          "cutoff_Vn" => cutoff(V.Vn)  )
+#
+# EnvPoly(D::Dict) = EnvPoly( _decode_dict.(D["Vr"]),
+#                             analyse_Vn(D["str_Vn"], D["cutoff_Vn"]),
+#                             D["str_Vn"] )
+
+convert(::Val{:EnvPoly}, D::Dict) = EnvPoly(D)
+
+EnvPoly(t, Vr, str_Vn::String, cutoff_Vn::AbstractFloat) =
+   EnvPoly(t, Vr, analyse_Vn(str_Vn, cutoff_Vn), str_Vn)
+
+descriptor(V::EnvPoly) = descriptor(V.Vr[1])
+
+combiscriptor(V::EnvPoly) = (EnvPoly,
+                             combiscriptor.(V.Vr),
+                             V.str_Vn)
+
+Vn(V::EnvPoly) = V.Vn
+Vr(V::EnvPoly) = V.Vr
+
+function EnvPoly(Vr::AbstractVector, Vn, str_Vn::String)
+   # for now we put the burden on the user to create a Vr vector where
+   # the types match But we can still collect them here for convenience
+   Vr_coll = [ v for v in Vr ]
+   if !isleaftype(typeof(Vr_coll))
+      error("""For now, `EnvPoly` can only be constructed from an array of
+               potentials that all share the same concrete type.""")
+   end
+   return EnvPoly(Vr_coll, Vn, str_Vn, Val(bodyorder(Vr[1])))
+end
+
+
+# function degree(V::EnvIP)
+#    if length(V.Vr) == 1
+#       return ( degree(V.Vr), V.t )
+#    end
+#    error("`degree` is only defined for `EnvIP` basis functions, length == 1")
+# end
+
+basisname(::EnvPoly) = "EnvPoly"
+
+
+
+
 # all evaluation and assembly in here:
 include("eval_environ.jl")
+
 
 end
