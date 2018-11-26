@@ -151,13 +151,19 @@ bapolys(N::Integer, trans::String, cutoff::String, deg; kwargs...) =
 # --------------------------
 
 
-function rt_tuplebound(α,degr,degt,desc::BondAngleDesc)
+function rt_tuplebound_tensor(α,degr,degt,desc::BondAngleDesc)
    dr,dt = rtdegree(desc, α)
    return (dr <= degr)&&(dt <= degt)
 end
 
+function rt_tuplebound_total(α,deg,rtF,desc::BondAngleDesc)
+   dr,dt = rtdegree(desc, α)
+   return dr + rtF * dt <= deg
+end
 
-function gen_tuples_rt(desc::BondAngleDesc, vN::Val{N}, vK::Val{K}, degr, degt;  tuplebound = (α -> rt_tuplebound(α,degr,degt,desc) )) where {N, K}
+
+function gen_tuples_rt(desc::BondAngleDesc, vN::Val{N}, vK::Val{K}, tuplebound
+                       ) where {N, K}
    A = Tup{K}[]
    degs1, degs2 = rtdegrees(desc, vN)
 
@@ -189,13 +195,21 @@ function gen_tuples_rt(desc::BondAngleDesc, vN::Val{N}, vK::Val{K}, degr, degt; 
 end
 
 
-gen_tuples_rt(desc::BondAngleDesc, N, degr, degt) =
+gen_tuples_rt(desc::BondAngleDesc, N, tuplebound) =
    gen_tuples_rt(desc,
                  Val(N),  Val(bo2edges(Val(N))+1),
-                 degr, degt)
+                 tuplebound)
 
+nbpolys(N::Integer, desc::BondAngleDesc, deg::Integer, rtF::AbstractFloat) =
+        nbpolys(gen_tuples_rt(desc, N,
+                            (α -> rt_tuplebound_total(α,deg,rtF,desc) )
+                              ), desc
+               )
 
-nbpolys(N::Integer, desc, degr, degt; kwargs...) =
-        nbpolys(gen_tuples_rt(desc, N, degr, degt; kwargs...), desc)
+nbpolys(N::Integer, desc::BondAngleDesc, degr::Integer, degt::Integer) =
+        nbpolys(gen_tuples_rt(desc, N,
+                            (α -> rt_tuplebound_tensor(α,degr,degt,desc) )
+                             ), desc
+                )
 
 end
