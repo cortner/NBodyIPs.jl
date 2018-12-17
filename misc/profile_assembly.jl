@@ -7,7 +7,7 @@ using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Base.Test
 using NBodyIPs.Polys
 
 TRANSFORM = "r -> (2.9/r)^3"
-DEGREES = [16, 12, 10]
+DEGREES = [18, 14, 12]
 RCUT = [7.0, 5.80, 4.5]
 
 function random_ip(DT)
@@ -36,6 +36,19 @@ function random_ip(DT)
 
    return IP, IPf
 end
+
+_, IPf = random_ip(BondLengthDesc)
+at = rattle!(bulk(:W, cubic=true) * 3, 0.01)
+energy(IPf, at)
+forces(IPf, at)
+at = rattle!(bulk(:W, cubic=true) * 10, 0.01)
+@time energy(IPf, at)
+@time energy(IPf, at)
+@time forces(IPf, at)
+@time forces(IPf, at)
+@profile forces(IPf, at)
+Profile.print()
+quit()
 
 # test correctness first
 IP_bl, _ = random_ip(BondLengthDesc)
