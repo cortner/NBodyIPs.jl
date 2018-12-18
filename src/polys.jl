@@ -136,11 +136,11 @@ function combinebasis(basis::AbstractVector{TV}, coeffs) where {TV <: NBPoly}
    # already via the `combiscriptor`
 
    # collect all tuples and coefficients into a long list
-   tt = Vector(eltype(basis[1].t), 0)
-   cc = Vector(eltype(basis[1].c), 0)
-   for b in basis
+   tt = Vector{eltype(basis[1].t)}(0)
+   cc = Vector{eltype(basis[1].c)}(0)
+   for (b, c) in zip(basis, coeffs)
       append!(tt, b.t)
-      append!(cc, b.c)
+      append!(cc, c*b.c)
    end
 
    # sort `tt` and remember the ordering
@@ -158,8 +158,7 @@ function combinebasis(basis::AbstractVector{TV}, coeffs) where {TV <: NBPoly}
          push!(c, cc[n])
       end
    end
-
-   return NBPoly(t, c, basis[1].D, basis[1].polytype)
+   return NBPoly(t, c, basis[1].D) # , basis[1].polytype)
 end
 
 function degree(V::NBPoly)
