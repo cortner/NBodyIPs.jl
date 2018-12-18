@@ -127,9 +127,40 @@ function match_dictionary(V::NBPoly, V1::NBPoly)
    return NBPoly(V.t, V.c, V1.D, V.valN)
 end
 
-combinebasis(basis::AbstractVector{TV}, coeffs) where {TV <: NBPoly} =
-      NBPoly(basis, coeffs, basis[1].D)
+# combinebasis(basis::AbstractVector{TV}, coeffs) where {TV <: NBPoly} =
+#       NBPoly(basis, coeffs, basis[1].D, basis[1].polytype)
 
+function combinebasis(basis::AbstractVector{TV}, coeffs) where {TV <: NBPoly}
+   # assume all basis functions have compatible descriptor
+   # as well as compatible polytype, this should have been checked
+   # already via the `combiscriptor`
+
+   # collect all tuples and coefficients into a long list
+   tt = Vector(eltype(basis[1].t), 0)
+   cc = Vector(eltype(basis[1].c), 0)
+   for b in basis
+      append!(tt, b.t)
+      append!(cc, b.c)
+   end
+
+   # sort `tt` and remember the ordering
+   p = sortperm(tt)
+   tt, cc = tt[p], cc[p]
+
+   # compress into unique tuples
+   t = [tt[1]]
+   c = [cc[1]]
+   for n = 2:length(tt)
+      if tt[n] == t[end]
+         c[end] += cc[n]
+      else
+         push!(t, tt[n])
+         push!(c, cc[n])
+      end
+   end
+
+   return NBPoly(t, c, basis[1].D, basis[1].polytype)
+end
 
 function degree(V::NBPoly)
    if length(V) == 1
