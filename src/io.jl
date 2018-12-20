@@ -40,10 +40,19 @@ end
 save_ip_args(IP) = IP, Dict{String, Any}()
 save_ip_args(IP, info) = IP, info
 
+"""
+`save_ip(fname, IP, info)`
 
+where `IP` must be an `NBodyIP` and `info` a `Dict`
+"""
 save_ip(fname::AbstractString, args...) =
    save_ip(_checkextension(fname), fname, save_ip_args(args...)...)
 
+"""
+`load_ip(fname) -> IP, info`
+
+where `IP`is an `NBodyIP` and `info` a `Dict`
+"""
 load_ip(fname::AbstractString) =
    load_ip(_checkextension(fname), fname)
 
