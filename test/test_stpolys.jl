@@ -5,6 +5,7 @@ using NBodyIPs: BondLengthDesc, BondAngleDesc, invariants, invariants_d, descrip
                bo2angles, bo2edges
 using NBodyIPs.Polys
 
+using LinearAlgebra
 
 rcut = 7.0
 TRANSFORM = "r -> (2.9/r)^3"

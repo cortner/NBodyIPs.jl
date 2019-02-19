@@ -1,7 +1,8 @@
 julia 0.7
-JuLIP
-NeighbourLists
+JuLIP 0.6
+NeighbourLists 0.3
 Reexport
 StaticArrays
 JSON
 StaticPolynomials
+KahanSummation

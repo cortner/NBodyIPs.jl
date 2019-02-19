@@ -2,6 +2,8 @@
 using JuLIP: JVec
 const BAI = BAInvariants
 
+using LinearAlgebra: dot, norm 
+
 # -------------- IO -------------------
 
 

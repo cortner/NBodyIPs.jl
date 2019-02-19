@@ -1,6 +1,6 @@
 
 
-using JuLIP, NBodyIPs
+using JuLIP, NBodyIPs, LinearAlgebra 
 
 path = homedir() * "/Dropbox/PIBmat/Ti_DFTB_Data/Ti_N54_vartemp.xyz"
 
@@ -30,7 +30,7 @@ A = R' * R
 
 
 
-@show vecnorm(A - Φ'*Φ, Inf)
+@show norm(A - Φ'*Φ, Inf)
 
 display(A[1:13,1:13])
 

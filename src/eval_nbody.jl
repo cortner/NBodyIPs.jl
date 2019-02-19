@@ -10,10 +10,10 @@ import JuLIP.Potentials: evaluate,
 using NeighbourLists: nbodies,
                       maptosites!,
                       maptosites_d!,
-                      virial!,
                       max_neigs,
                       sites
 
+using KahanSummation
 
 function _get_loop_ex(N)
    # generate the expression for the multiple for loops, e.g. for 4B:

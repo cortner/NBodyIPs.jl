@@ -6,6 +6,9 @@ using NBodyIPs: BondLengthDesc, BondAngleDesc,
                 invariants, invariants_d, invariants_ed
 using NBodyIPs.Polys: NBPoly
 
+using LinearAlgebra: norm
+using Printf
+
 profile = false
 
 if profile
@@ -59,38 +62,43 @@ for Desc in [BondLengthDesc, BondAngleDesc]
 
    random_nbody(N, ntup) = (
       (N <= 3) ? NBPoly( [tuple( [rand(1:4, ((N*(N-1))÷2)); 0]... ) for n = 1:ntup],
-                        (0.1+rand(ntup))/factorial(N), DD[N] )
+                        (0.1.+rand(ntup))/factorial(N), DD[N] )
               : NBPoly( [tuple( rand(0:N, ((N*(N-1))÷2+1))... ) for n = 1:ntup],
-                      (0.1+rand(ntup))/factorial(N), DD[N] ) )
+                      (0.1.+rand(ntup))/factorial(N), DD[N] ) )
 
-   rand_rθ(::BondLengthDesc, N) = SVector( (1.0 + rand((N*(N-1))÷2))... )
-   rand_rθ(::BondAngleDesc, N) = SVector((1.0+rand(N-1))...),
-                                  SVector( (-0.5+rand(((N-1)*(N-2))÷2))... )
+   rand_rθ(::BondLengthDesc, N) = SVector( (1.0 .+ rand((N*(N-1))÷2))... )
+   rand_rθ(::BondAngleDesc, N) = SVector((1.0.+rand(N-1))...),
+                                  SVector( (-0.5.+rand(((N-1)*(N-2))÷2))... )
 
+   # TODO: fix the broadcasting 
+   # ┌ Warning: broadcast will default to iterating over its arguments in the future. Wrap arguments of
+   # │ type `x::BondLengthDesc{NBodyIPs.SpaceTransform{FunctionWrappers.FunctionWrapper{Float64,Tuple{Float64}},FunctionWrappers.FunctionWrapper{Float64,Tuple{Float64}},Val{Symbol("r -> exp( - 3 * ((r/2.55266) - 1))")}},NBodyIPs.Cutoff{FunctionWrappers.FunctionWrapper{Float64,Tuple{Float64}},FunctionWrappers.FunctionWrapper{Float64,Tuple{Float64}}}}` with `Ref(x)` to ensure they broadcast as "scalar" elements.
+   # │   caller = ip:0x0
+   # └ @ Core :-1
 
    println("testing the transform")
    println("---------------------")
    D = D3
    rr = range(r0, stop=r0+1, length=10)
-   tdh = (transform.(D, rr + 1e-5) - transform.(D, rr - 1e-5)) / (2e-5)
+   tdh = (transform.(D, rr .+ 1e-5) - transform.(D, rr .- 1e-5)) ./ (2e-5)
    (@test norm(tdh - transform_d.(D, rr), Inf) < 1e-8) |> println
 
    println("testing the cutoff")
    println("------------------")
    D = D3
    rr = range(rcut3-0.9, stop=rcut3+0.1, length=100)
-   dfh = (fcut.(D.cutoff, rr + 1e-5) - fcut.(D.cutoff, rr - 1e-5)) / (2e-5)
+   dfh = (fcut.(D.cutoff, rr .+ 1e-5) - fcut.(D.cutoff, rr .- 1e-5)) ./ (2e-5)
    (@test norm(dfh - fcut_d.(D.cutoff, rr), Inf) < 1e-8) |> println
 
    println(" testing a transformed 4B invariant")
    println("------------------------------------")
-   r = SVector( (r0 + rand(6))... )
+   r = SVector( (r0 .+ rand(6))... )
    DI = jac_all_invs(D4, r)
    errs = []
    for p = 2:11
       h = 0.1^p
       DIh = fdjac(D4, r; h = h)
-      push!(errs, vecnorm(DIh - DI, Inf))
+      push!(errs, norm(DIh - DI, Inf))
       @printf(" %.2e | %.2e \n", h, errs[end])
    end
    (@test minimum(errs) <= 1e-3 * maximum(errs)) |> println
@@ -116,7 +124,7 @@ for Desc in [BondLengthDesc, BondAngleDesc]
                dvh[i] = (VN( SVector(rv...) ) - vN) / h
                rv[i] -=h
             end
-            push!(errs, vecnorm(dvN - dvh, Inf))
+            push!(errs, norm(dvN - dvh, Inf))
             @printf(" %.2e | %.2e \n", h, errs[end])
          end
          (@test minimum(errs) <= 1e-3 * maximum(errs)) |> println

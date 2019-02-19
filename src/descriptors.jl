@@ -44,7 +44,7 @@ evaluate_many_ed!(out::TempEdV, B, Rs, i, J) =
       code *= "a .* B[$n],"
    end
    code = code[1:end-1] * "]"
-   ex = parse(code)
+   ex = Meta.parse(code)
    quote
       $ex
    end

@@ -6,17 +6,22 @@ using NBodyIPs: NBodyFunction
 import NBodyIPs: descriptor
 import JuLIP.Potentials: evaluate, cutoff, evaluate_d!
 
+
+using LinearAlgebra, Printf
+
 # --------- MANY BODY CODE THAT IS SHARED ACROSS TESTS ------------
 
-@pot struct TestBL{N} <: NBodyFunction{N, NBodyIPs.NullSiteDesc}
+struct TestBL{N} <: NBodyFunction{N, NBodyIPs.NullSiteDesc}
    r0::Float64
    rcut::Float64
    vN::Val{N}
 end
 
+@pot TestBL
+
 function edgelengths1(Rs, J)
-   r = [ norm(Rs[j])         for j in J ]
-   S = [ Rs[j] / norm(Rs[j]) for j in J ]
+   r = [ norm(Rs[j])         for j in J ] |> collect
+   S = [ Rs[j] / norm(Rs[j]) for j in J ] |> collect
    for i = 1:length(J)-1, j = i+1:length(J)
       push!(r, norm(Rs[J[j]]-Rs[J[i]]))
       push!(S, (Rs[J[i]]-Rs[J[j]]) / norm(Rs[J[i]]-Rs[J[j]]))
@@ -57,15 +62,15 @@ sqrt1p_d(x) = 0.5 / sqrt(1+x)
 
 function fnbody(r, r0, rcut)
    E = sum( exp.(1.0 .- r./r0) )
-   F = prod( (r./rcut - 1.0) .* (r .< rcut) )
+   F = prod( (r./rcut .- 1.0) .* (r .< rcut) )
    return sqrt1p(E) * F^2
 end
 
 function fnbody_d(r, r0, rcut)
    E = sum( exp.(1.0 .- r./r0) )
-   F = prod( (r./rcut - 1.0) .* (r .< rcut) )
+   F = prod( (r./rcut .- 1.0) .* (r .< rcut) )
    ∇f = (- sqrt1p_d(E) * F^2 / r0) .* (exp.(1.0 .- r./r0))
-   ∇f += (sqrt1p(E) * 2.0 / rcut * F^2) .* (r./rcut .- 1.0 - 1e-14).^(-1)
+   ∇f += (sqrt1p(E) * 2.0 / rcut * F^2) .* (r./rcut .- 1.0 .- 1e-14).^(-1)
    return ∇f
 end
 
@@ -90,9 +95,7 @@ function naive_n_body(X::Vector{JVec{T}}, V::NBodyFunction{N}) where {T, N}
    E = 0.0
    cnt = 0
    fact_N = factorial(N)
-   start = CartesianIndex(ntuple(_->1, N))
-   stop = CartesianIndex(ntuple(_->nX, N))
-   for j in CartesianIndices(start, stop)
+   for j in CartesianIndices(ntuple(_->1:nX, N))
       s = zeros(T, (N*(N-1))÷2); n = 0
       for a = 1:N-1, b = a+1:N
          n += 1
@@ -156,7 +159,7 @@ end
 
 println("----------------------------------------------")
 println("Finite-difference tests for forces and stress")
-MM = [2,3,4,5] # [2,3,4,5]  # body orders
+MM = [2,3,4] # [2,3,4,5]  # body orders  # TODO: rever to MM = [2,3,4,5] (performance issue?!?)
 for N in MM
    # create N-body
    VN = gen_fnbody(N; r0 = rnn(:Cu))
@@ -167,7 +170,7 @@ for N in MM
    set_calculator!(at, VN)
 
    nat = length(positions(at))
-   dE = gradient(at)
+   dE = JuLIP.gradient(at)
    dEh = nothing
    E = energy(at)
    println("[N = $N]")
@@ -184,7 +187,7 @@ for N in MM
          dEh[n] = (energy(at) - E) / h
          x[n] -= h
       end
-      push!(errors, vecnorm(dE - dEh, Inf))
+      push!(errors, norm(dE - dEh, Inf))
       @printf(" %1.1e | %4.2e  \n", h, errors[end])
    end
    (@test minimum(errors) <= 1e-3 * maximum(errors)) |> println

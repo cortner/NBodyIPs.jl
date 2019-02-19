@@ -36,7 +36,7 @@ push_str!(ex::Vector{Expr}, s::String) = push!(ex, Meta.parse(s))
 `append_str!(ex::Vector{Expr}, s::Vector{String})` : parse the strings and
 append them to the expressions.
 """
-append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
+append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, Meta.parse.(s))
 
 """
 `bo2edges(N)` : bodyorder-to-edges

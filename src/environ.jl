@@ -31,7 +31,7 @@ export envpolys
 
 abstract type AbstractEnvIP{N} <: AbstractCalculator end
 
-@pot struct EnvIP{N, P, TVR, TVN} <: AbstractEnvIP{N}
+struct EnvIP{N, P, TVR, TVN} <: AbstractEnvIP{N}
    t::Int
    Vr::TVR     # N-body potential
    Vn::TVN     # neighbour counter
@@ -39,6 +39,8 @@ abstract type AbstractEnvIP{N} <: AbstractCalculator end
    valN::Val{N}
    valP::Val{P}
 end
+
+@pot EnvIP
 
 ==(V1::EnvIP, V2::EnvIP) = ( (V1.t == V2.t) &&
                              (V1.Vr == V2.Vr) &&
@@ -138,12 +140,14 @@ fast(V::EnvIP) = EnvIP(V.t, fast(V.Vr), V.Vn, V.str_Vn)
 #    Re-Implement Fast Version of EnvIPs
 # ========================================================
 
-@pot struct EnvPoly{N, TVR, TVN} <: AbstractEnvIP{N}
+struct EnvPoly{N, TVR, TVN} <: AbstractEnvIP{N}
    Vr::Vector{TVR}    # N-body potentials multiplied by n^j, j = 0, 1, ...
    Vn::TVN            # neighbour counter
    str_Vn::String     # string describing the neighbour counter
    valN::Val{N}
 end
+
+@pot EnvPoly
 
 envdegree(V::EnvPoly) = length(V.P) - 1
 

@@ -104,14 +104,14 @@ struct ClusterBLDesc{TT <: SpaceTransform, TC <: Cutoff} <: NBClusterDescriptor
 end
 
 
-@pot mutable struct OneBody{T} <: NBodyFunction{1, NullDesc}
-   E0::T
-end
-
 """
 `mutable struct OneBody{T}  <: NBodyFunction{1}`
 
 this should not normally be constructed by a user, but instead E0 should be
 passed to the relevant lsq functions, which will construct it.
 """
-OneBody
+mutable struct OneBody{T} <: NBodyFunction{1, NullDesc}
+   E0::T
+end
+
+@pot OneBody

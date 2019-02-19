@@ -10,7 +10,7 @@ export fpoly,
 # two auxiliary functions to make for easier assembly of the code
 # TODO: move these somewhere else, or better get rid of them
 push_str!(ex::Vector{Expr}, s::String) = push!(ex, Meta.parse(s))
-append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, parse.(s))
+append_str!(ex::Vector{Expr}, s::Vector{String}) = append!(ex, Meta.parse.(s))
 
 # ACCUMULATOR FUNCTIONS
 # ----------------------
@@ -187,7 +187,7 @@ TODO: write documentation
    quote
       $(Expr(:meta, :inline))
       @inbounds $(Expr(:block, exprs...))
-      $(parse(coll))
+      $(Meta.parse(coll))
    end
 end
 
@@ -226,7 +226,7 @@ end
    quote
       $(Expr(:meta, :inline))
       @inbounds $(Expr(:block, exprs...))
-      return m, $(parse(coll))
+      return m, $(Meta.parse(coll))
    end
 end
 

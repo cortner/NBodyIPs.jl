@@ -1,3 +1,4 @@
+using LinearAlgebra: norm
 
 const BLI = BLInvariants
 

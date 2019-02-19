@@ -20,6 +20,8 @@ import StaticPolynomials, NBodyIPs
 
 using StaticArrays
 
+using LinearAlgebra: dot
+
 using NBodyIPs: NBodyFunction,
                 bodyorder,
                 _decode_dict,
@@ -56,18 +58,6 @@ export NBPoly,
 #           Polynomials of Invariants
 # ==================================================================
 
-@pot struct NBPoly{N, M, T, TD} <: NBodyFunction{N, TD}
-   t::VecTup{M}               # tuples M = #edges + 1
-   c::Vector{T}               # coefficients
-   D::TD                      # Descriptor
-   valN::Val{N}               # encodes that this is an N-body function
-
-   NBPoly(t::VecTup{M}, c::Vector{T}, D::TD, valN::Val{N}) where {N, M, T, TD} = (
-      N <= 1 ? error("""NBPoly must have body-order 2 or larger;
-                        use `NBodyIPs.OneBody{T}` for 1-body.""")
-             : new{N, M, T, TD}(t, c, D, valN))
-end
-
 """
 `struct NBPoly`  (N-Body Polynomial, slow implementation)
 
@@ -88,7 +78,20 @@ where `I1, I2` are the 4-body invariants.
 
 * `D`: a descriptor (cf `NBodyIPs.NBodyDescriptor`)
 """
-NBPoly
+struct NBPoly{N, M, T, TD} <: NBodyFunction{N, TD}
+   t::VecTup{M}               # tuples M = #edges + 1
+   c::Vector{T}               # coefficients
+   D::TD                      # Descriptor
+   valN::Val{N}               # encodes that this is an N-body function
+
+   NBPoly(t::VecTup{M}, c::Vector{T}, D::TD, valN::Val{N}) where {N, M, T, TD} = (
+      N <= 1 ? error("""NBPoly must have body-order 2 or larger;
+                        use `NBodyIPs.OneBody{T}` for 1-body.""")
+             : new{N, M, T, TD}(t, c, D, valN))
+end
+
+@pot NBPoly
+
 
 ==(V1::NBPoly, V2::NBPoly) = ( (V1.t == V2.t) && (V1.c == V2.c) && (V1.D == V2.D) )
 
@@ -242,18 +245,19 @@ Base.convert(::Val{:NBPoly}, D::Dict) = NBPoly(D)
 #    StNBPoly
 # ==================================================================
 
-@pot struct StNBPoly{N, TD, TP} <: NBodyFunction{N, TD}
-   D::TD       # Descriptor
-   P::TP       # a static polynomial
-   valN::Val{N}
-end
 
 """
 `struct StNBPoly`  (N-Body Bond-length Polynomial)
 
 fast evaluation of the outer polynomial using `StaticPolynomials`
 """
-StNBPoly
+struct StNBPoly{N, TD, TP} <: NBodyFunction{N, TD}
+   D::TD       # Descriptor
+   P::TP       # a static polynomial
+   valN::Val{N}
+end
+
+@pot StNBPoly
 
 descriptor(V::StNBPoly) = V.D
 

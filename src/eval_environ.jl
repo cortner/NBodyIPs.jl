@@ -12,6 +12,8 @@ using JuLIP.Potentials: site_virial,
 
 using NeighbourLists: max_neigs
 
+using KahanSummation
+
 import JuLIP: site_energies,
               energy,
               forces,

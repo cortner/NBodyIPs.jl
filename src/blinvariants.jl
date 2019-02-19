@@ -17,6 +17,8 @@ using StaticArrays
 
 using NBodyIPs.FastPolys
 
+using LinearAlgebra: dot 
+
 
 """
 need documentation here

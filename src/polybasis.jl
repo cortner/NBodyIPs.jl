@@ -98,7 +98,7 @@ function gen_tuples(desc, vN::Val{N}, vK::Val{K}, deg, tuplebound) where {N, K}
          if lastinc == K
             return A
          end
-         α[1:lastinc] = 0
+         α[1:lastinc] .= 0
          α[lastinc+1] += 1
          lastinc += 1
       end

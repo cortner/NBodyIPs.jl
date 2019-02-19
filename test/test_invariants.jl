@@ -4,6 +4,9 @@ using BenchmarkTools
 
 using JuLIP.Potentials: evaluate, evaluate_d
 
+using LinearAlgebra: norm
+using Printf
+
 const blinvariants = NBodyIPs.BLInvariants.invariants
 const blinvariants_d = NBodyIPs.BLInvariants.invariants_d
 const blinvariants_ed = NBodyIPs.BLInvariants.invariants_ed
@@ -42,7 +45,7 @@ for dim in [3, 6, 10]
          dIh[:, j] = (Ih - I) / h
          r0[j] -= h
       end
-      push!(errs, vecnorm(dIh - dI, Inf))
+      push!(errs, norm(dIh - dI, Inf))
       @printf(" %d | %.2e \n", p, errs[end])
    end
    println("---------------")
@@ -116,7 +119,7 @@ for dim in [3, 6, 10]
          dIh[:, j] = (Ih - I) / h
          r0[j] -= h
       end
-      push!(errs, vecnorm(dIh - dI, Inf))
+      push!(errs, norm(dIh - dI, Inf))
       @printf(" %d | %.2e \n", p, errs[end])
    end
    println("---------------")
