@@ -1,4 +1,4 @@
-using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Base.Test
+using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Test
 
 using JuLIP.Potentials: evaluate, evaluate_d
 using NBodyIPs: BondLengthDesc, BondAngleDesc, invariants, invariants_d, descriptor,

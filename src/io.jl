@@ -20,9 +20,9 @@ Base.convert(::Val{:NBodyIP}, D::Dict) = NBodyIP(D)
 
 # ------------ writing and reading nothing ------------
 
-Dict(::Void) = Dict("__id__" => "Void")
+Dict(::Nothing) = Dict("__id__" => "Void")
 
-Base.convert(::Val{:Void}, D::Dict) = nothing
+Base.convert(::Val{:Nothing}, D::Dict) = nothing
 
 # ------------ FileIO -------------------
 
@@ -60,7 +60,7 @@ save_ip(::Union{XJld2, XJld}, args...) = err_jld()
 load_ip(::Union{XJld2, XJld}, args...) = err_jld()
 
 err_jld() =
-   warn("""`load_ip` and `save_ip` do not directly support jld and jld2. In order
+   @warn("""`load_ip` and `save_ip` do not directly support jld and jld2. In order
            to load an `NBodyIP` stored in one of those formats, please use `FileIO`,
            load the IP as a `ipdict::Dict` and then decode it using
            `NBodyIP(ipdict)`. To save an `ip::NBodyIP` as a jld or jld2 file,

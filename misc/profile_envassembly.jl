@@ -1,5 +1,5 @@
-info("loading libraries...")
-using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Base.Test
+@info("loading libraries...")
+using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Test
 
 # using JuLIP.Potentials: evaluate, evaluate_d
 # using NBodyIPs: BondLengthDesc, BondAngleDesc, invariants, invariants_d, descriptor,
@@ -29,10 +29,10 @@ function random_ip(DT)
    return IP, fast(IP)
 end
 
-info("Generate random EnvIP...")
+@info("Generate random EnvIP...")
 IP, IPf = random_ip(BondLengthDesc)
 
-info("Generate faster EnvIP => EnvPoly ...")
+@info("Generate faster EnvIP => EnvPoly ...")
 V2 = IPf.components[1:4]
 V3 = IPf.components[5:7]
 V4 = IPf.components[8:9]
@@ -41,12 +41,12 @@ IPff = NBodyIP( [ EnvPoly([v.Vr for v in V2], V2[1].Vn, V2[1].str_Vn),
                   EnvPoly([v.Vr for v in V3], V3[1].Vn, V3[1].str_Vn),
                   EnvPoly([v.Vr for v in V4], V4[1].Vn, V4[1].str_Vn) ] )
 
-info("Test Correctness...")
+@info("Test Correctness...")
 at = rattle!(bulk(:W, cubic=true) * 3, 0.02)
 @show energy(IP, at) - energy(IPf, at)
 @show energy(IPff, at) - energy(IPf, at)
 
-info("Test evaluation time...")
+@info("Test evaluation time...")
 at = rattle!(bulk(:W, cubic=true) * 8, 0.02)
 print("IP  : ")
 energy(IP, at); @time energy(IP, at);
@@ -55,7 +55,7 @@ energy(IPf, at); @time energy(IPf, at);
 print("IPff: ")
 energy(IPff, at); @time energy(IPff, at);
 
-info("For comparison some simpler potentials:")
+@info("For comparison some simpler potentials:")
 IP0 = NBodyIP( [V2[1], V3[1], V4[1]] )
 IP1 = NBodyIP( [V2[1].Vr, V3[1].Vr, V4[1].Vr] )
 print("EnvIP deg = 0 : ")
@@ -63,11 +63,11 @@ energy(IP0, at); @time energy(IP0, at);
 print(" 4B IP        : ")
 energy(IP1, at); @time energy(IP1, at);
 
-info("Test Error in Forces")
+@info("Test Error in Forces")
 @show maximum(norm.(forces(IP, at) - forces(IPf, at)))
 @show maximum(norm.(forces(IPff, at) - forces(IPf, at)))
 
-info("Test evaluation time for forces...")
+@info("Test evaluation time for forces...")
 at = rattle!(bulk(:W, cubic=true) * 8, 0.02)
 print("IP  : ")
 forces(IP, at); @time forces(IP, at);

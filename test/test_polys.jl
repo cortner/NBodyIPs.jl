@@ -1,5 +1,5 @@
 using NBodyIPs, JuLIP, BenchmarkTools, StaticArrays
-using Base.Test
+using Test
 
 using NBodyIPs: BondLengthDesc, BondAngleDesc,
                 transform, transform_d, fcut, fcut_d,
@@ -71,14 +71,14 @@ for Desc in [BondLengthDesc, BondAngleDesc]
    println("testing the transform")
    println("---------------------")
    D = D3
-   rr = linspace(r0, r0+1, 10)
+   rr = range(r0, stop=r0+1, length=10)
    tdh = (transform.(D, rr + 1e-5) - transform.(D, rr - 1e-5)) / (2e-5)
    (@test norm(tdh - transform_d.(D, rr), Inf) < 1e-8) |> println
 
    println("testing the cutoff")
    println("------------------")
    D = D3
-   rr = linspace(rcut3-0.9, rcut3+0.1, 100)
+   rr = range(rcut3-0.9, stop=rcut3+0.1, length=100)
    dfh = (fcut.(D.cutoff, rr + 1e-5) - fcut.(D.cutoff, rr - 1e-5)) / (2e-5)
    (@test norm(dfh - fcut_d.(D.cutoff, rr), Inf) < 1e-8) |> println
 

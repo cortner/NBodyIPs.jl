@@ -1,5 +1,5 @@
 using NBodyIPs, JuLIP, BenchmarkTools, StaticArrays
-using Base.Test
+using Test
 
 using NBodyIPs: BondLengthDesc, transform, transform_d, fcut, fcut_d,
                 invariants, invariants_d, invariants_ed
