@@ -159,7 +159,7 @@ end
 
 println("----------------------------------------------")
 println("Finite-difference tests for forces and stress")
-MM = [2,3,4] # [2,3,4,5]  # body orders  # TODO: rever to MM = [2,3,4,5] (performance issue?!?)
+MM = [2,3,4,5] # [2,3,4,5]  # body orders 
 for N in MM
    # create N-body
    VN = gen_fnbody(N; r0 = rnn(:Cu))

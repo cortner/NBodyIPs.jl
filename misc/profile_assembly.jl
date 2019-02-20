@@ -7,8 +7,8 @@ using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Test, Profile
 using NBodyIPs.Polys
 
 TRANSFORM = "r -> (2.9/r)^3"
-DEGREES = [18, 14, 12]
-RCUT = [7.0, 5.80, 4.5]
+DEGREES = [18, 14, 12, 10]
+RCUT = [7.0, 5.80, 4.5, 4.1]
 
 function random_ip(DT)
    DD = [ DT(TRANSFORM, (:cos, (0.66*rcut), rcut))  for rcut in RCUT ]
@@ -31,8 +31,14 @@ function random_ip(DT)
    V4 = NBPoly(B4, c, DD[3])
    V4sp = StNBPoly(V4)
 
-   IP = NBodyIP([V2, V3, V4])
-   IPf = NBodyIP([V2sp, V3sp, V4sp])
+   # 5-body potential
+   B5 = nbpolys(5, DD[4], DEGREES[4])
+   c = rand(length(B5))
+   V5 = NBPoly(B5, c, DD[4])
+   V5sp = StNBPoly(V5)
+
+   IP = NBodyIP([V2, V3, V4, V5])
+   IPf = NBodyIP([V2sp, V3sp, V4sp, V5sp])
 
    return IP, IPf
 end
@@ -47,8 +53,8 @@ at = rattle!(bulk(:W, cubic=true) * 10, 0.01)
 @time forces(IPf, at)
 @time forces(IPf, at)
 
-# @profile energy(IPf, at)
-# Profile.print()
+@profile forces(IPf, at)
+Profile.print()
 exit()
 
 

@@ -79,20 +79,20 @@ function evaluate_d!(dVsite,
                      i::Int,
                      J) where {N}
    # get the physical descriptor: bond-lengths (+ bond-angles)
-   rθ = ricoords(desc, Rs, J)
+   rθ = ricoords(desc, Rs, J)  # 115 / 145
    # check whether to skip this N-body term?
-   skip_simplex(desc, rθ) && return dVsite
+   skip_simplex(desc, rθ) && return dVsite   # 12 / 122
    # compute the cutoff (and skip this site if the cutoff is zero)
-   fc, fc_d = fcut_d(desc, rθ)
+   fc, fc_d = fcut_d(desc, rθ)   # 111 / 134
    fc == 0 && return dVsite
    # get the invariants
-   II = invariants_ed(desc, rθ)
+   II = invariants_ed(desc, rθ)   # 47 / 39
    # evaluate the inner potential function (e.g. polynomial)
-   V, dV_drθ = evaluate_I_ed(V, II)
+   V, dV_drθ = evaluate_I_ed(V, II)  # 258 / 268
    # convert to gradient w.r.t. rθ
-   dV_drθ = dV_drθ * fc + V * fc_d
+   dV_drθ = dV_drθ * fc + V * fc_d     # 4
    # convert to gradient w.r.t. dR
-   return gradri2gradR!(desc, dVsite, dV_drθ, Rs, J, rθ)
+   return gradri2gradR!(desc, dVsite, dV_drθ, Rs, J, rθ)  # 18 / 15
 end
 
 
