@@ -1,5 +1,5 @@
 
-using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Test
+using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Test, Profile 
 
 # using JuLIP.Potentials: evaluate, evaluate_d
 # using NBodyIPs: BondLengthDesc, BondAngleDesc, invariants, invariants_d, descriptor,
@@ -46,9 +46,10 @@ at = rattle!(bulk(:W, cubic=true) * 10, 0.01)
 @time energy(IPf, at)
 @time forces(IPf, at)
 @time forces(IPf, at)
+
 @profile forces(IPf, at)
 Profile.print()
-quit()
+exit()
 
 # test correctness first
 IP_bl, _ = random_ip(BondLengthDesc)

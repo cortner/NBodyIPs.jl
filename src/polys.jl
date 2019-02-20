@@ -51,7 +51,8 @@ const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
 
 export NBPoly,
-       StNBPoly
+       StNBPoly,
+       info   # TODO: move info to NBodyIPs and export from there? elsewhere?
 
 
 # ==================================================================
@@ -172,7 +173,7 @@ function degree(V::NBPoly)
 end
 
 
-function Base.info(B::Vector{T}; indent = 2) where T <: NBPoly
+function info(B::Vector{T}; indent = 2) where T <: NBPoly
    ind = repeat(" ", indent)
    println(ind * "body-order = $(bodyorder(B[1]))")
    println(ind * "    length = $(length(B))")
@@ -287,12 +288,22 @@ evaluate_I(V::StNBPoly, II) =
 
 function evaluate_I_ed(V::StNBPoly, II)
    V, dV_dI = StaticPolynomials.evaluate_and_gradient(V.P, vcat(II[1], II[2]))
+
    if length(dV_dI) != length(II[3]) + length(II[4])
       @show size.(II)
       @show size(dV_dI)
       @show size(vcat(II[1], II[2]))
    end
-   return V, dot(vcat(II[3], II[4]), dV_dI)  # (dI' * dV_dI)
+
+   # TODO: check a few variants how to compute dV
+   #       and test performance
+   II34 = vcat(II[3], II[4])
+   dV = II34[1]*dV_dI[1]
+   for i = 2:length(II34)
+      dV += II34[i] * dV_dI[i]
+   end
+
+   return V, dV # sum(i * dV_di for (i, dVdi) in zip( .* dV_dI)  # (dI' * dV_dI)
 end
 
 

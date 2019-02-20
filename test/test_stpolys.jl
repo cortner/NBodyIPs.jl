@@ -13,9 +13,9 @@ CUTOFF3 = (:cos, 0.66*rcut, rcut)
 Dbl = BondLengthDesc(TRANSFORM, CUTOFF3)
 Dba = BondAngleDesc(TRANSFORM, CUTOFF3)
 
-randri(N, D::BondLengthDesc) = SVector((rand(bo2edges(N)) + 3.0)...)
-randri(N, D::BondAngleDesc) = SVector((rand(N-1) + 3.0)...),
-                               SVector((3*rand(bo2angles(N))-1.5)...)
+randri(N, D::BondLengthDesc) = SVector((rand(bo2edges(N)) .+ 3.0)...)
+randri(N, D::BondAngleDesc) = SVector((rand(N-1) .+ 3.0)...),
+                               SVector((3*rand(bo2angles(N)).-1.5)...)
 
 println("================")
 println(" StNBPoly Tests ")

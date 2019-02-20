@@ -27,7 +27,7 @@ import NBodyIPs:          NBodyIP,
                           basisname
 
 
-export envpolys
+export envpolys, info
 
 abstract type AbstractEnvIP{N} <: AbstractCalculator end
 
@@ -124,7 +124,7 @@ function combinebasis(basis::AbstractVector{TV}, coeffs) where {TV <: EnvIP}
 end
 
 
-function Base.info(B::Vector{T}; indent = 2) where T <: EnvIP
+function info(B::Vector{T}; indent = 2) where T <: EnvIP
    ind = repeat(" ", indent)
    println(ind * "EnvIP with P = $(B[1].t)")
    println(ind * "           Vn : $(B[1].str_Vn)")

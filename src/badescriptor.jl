@@ -2,7 +2,7 @@
 using JuLIP: JVec
 const BAI = BAInvariants
 
-using LinearAlgebra: dot, norm 
+using LinearAlgebra: dot, norm
 
 # -------------- IO -------------------
 
@@ -41,9 +41,9 @@ end
 
 @inline skip_simplex(D::BondAngleDesc, rθ) = (maximum(rθ[1]) > cutoff(D.cutoff))
 
-@inline _rθ2x(D, r, θ) = vcat(transform.(D, r), θ)
+@inline _rθ2x(D, r, θ) = vcat(transform.(Ref(D), r), θ)
 @inline _rθ2x_d(D, r, θ::SVector{K}) where {K} =
-   vcat(transform_d.(D, r), @SVector ones(K))
+   vcat(transform_d.(Ref(D), r), @SVector ones(K))
 
 @inline invariants(D::BondAngleDesc, rθ) = BAI.invariants(_rθ2x(D, rθ...))
 
@@ -67,18 +67,18 @@ and convert into an ordered vector of bondlengths and bondangle
 [ r1, r2, r3, r4], [θ12, θ13, θ14, θ23, θ24, θ34 ]
 ```
 """
-@generated function lengths_and_angles(Rs, J::SVector{K}) where {K}
+@generated function lengths_and_angles(Rs::AbstractVector{JVec{T}}, J::SVector{K}) where {T,K}
    # note K = N-1; eltype(Rs) == JVec{T}
    code = Expr[]
    idx = 0
    # bond lengths
-   str_r = "r = @SVector [ "
+   str_r = "r = @SVector T[ "
    for n = 1:K
       str_r *= "norm(Rs[J[$n]]), "
    end
    push_str!(code, str_r * "]")
    # bond angles
-   str_θ = "θ = @SVector [ "
+   str_θ = "θ = @SVector T[ "
    for n = 1:K-1, m = (n+1):K
       idx += 1
       str_θ *= "dot(Rs[J[$n]], Rs[J[$m]]), "

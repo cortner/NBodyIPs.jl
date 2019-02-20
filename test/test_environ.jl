@@ -16,7 +16,7 @@ D3 = BondLengthDesc("exp( - 3 * ((r/$r0) - 1))",
                     "(:cos, $(0.66*rcut3), $rcut3)" )
 
 random_3body(ntup=1) = NBPoly( [tuple( [rand(1:4, 3); 0]... ) for n = 1:ntup],
-                                 (0.1+rand(ntup))/factorial(3), D3 )
+                                 (0.1.+rand(ntup))/factorial(3), D3 )
 
 Vn = ("exp(- 3 * ((r/$r0)-1))", 1.8*r0)
 

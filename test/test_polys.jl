@@ -70,7 +70,7 @@ for Desc in [BondLengthDesc, BondAngleDesc]
    rand_rθ(::BondAngleDesc, N) = SVector((1.0.+rand(N-1))...),
                                   SVector( (-0.5.+rand(((N-1)*(N-2))÷2))... )
 
-   # TODO: fix the broadcasting 
+   # TODO: fix the broadcasting
    # ┌ Warning: broadcast will default to iterating over its arguments in the future. Wrap arguments of
    # │ type `x::BondLengthDesc{NBodyIPs.SpaceTransform{FunctionWrappers.FunctionWrapper{Float64,Tuple{Float64}},FunctionWrappers.FunctionWrapper{Float64,Tuple{Float64}},Val{Symbol("r -> exp( - 3 * ((r/2.55266) - 1))")}},NBodyIPs.Cutoff{FunctionWrappers.FunctionWrapper{Float64,Tuple{Float64}},FunctionWrappers.FunctionWrapper{Float64,Tuple{Float64}}}}` with `Ref(x)` to ensure they broadcast as "scalar" elements.
    # │   caller = ip:0x0
@@ -80,15 +80,15 @@ for Desc in [BondLengthDesc, BondAngleDesc]
    println("---------------------")
    D = D3
    rr = range(r0, stop=r0+1, length=10)
-   tdh = (transform.(D, rr .+ 1e-5) - transform.(D, rr .- 1e-5)) ./ (2e-5)
-   (@test norm(tdh - transform_d.(D, rr), Inf) < 1e-8) |> println
+   tdh = (transform.(Ref(D), rr .+ 1e-5) - transform.(Ref(D), rr .- 1e-5)) ./ (2e-5)
+   (@test norm(tdh - transform_d.(Ref(D), rr), Inf) < 1e-8) |> println
 
    println("testing the cutoff")
    println("------------------")
    D = D3
    rr = range(rcut3-0.9, stop=rcut3+0.1, length=100)
-   dfh = (fcut.(D.cutoff, rr .+ 1e-5) - fcut.(D.cutoff, rr .- 1e-5)) ./ (2e-5)
-   (@test norm(dfh - fcut_d.(D.cutoff, rr), Inf) < 1e-8) |> println
+   dfh = (fcut.(Ref(D.cutoff), rr .+ 1e-5) - fcut.(Ref(D.cutoff), rr .- 1e-5)) ./ (2e-5)
+   (@test norm(dfh - fcut_d.(Ref(D.cutoff), rr), Inf) < 1e-8) |> println
 
    println(" testing a transformed 4B invariant")
    println("------------------------------------")

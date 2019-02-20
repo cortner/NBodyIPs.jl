@@ -44,11 +44,11 @@ function n_fun_d(V::EnvIP, n)
    end
 end
 
-site_ns(V::EnvIP, at) = n_fun.(V, site_energies(Vn(V), at))
+site_ns(V::EnvIP, at) = n_fun.(Ref(V), site_energies(Vn(V), at))
 
 function site_ns_ed(V::EnvIP, at)
    Vns = site_energies(Vn(V), at)
-   return n_fun.(V, Vns), n_fun_d.(V, Vns)
+   return n_fun.(Ref(V), Vns), n_fun_d.(Ref(V), Vns)
 end
 
 function site_n_d!(dVn, V::EnvIP, r, R, Ni, dNi)

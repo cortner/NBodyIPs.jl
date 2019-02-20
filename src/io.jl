@@ -78,7 +78,7 @@ end
 function load_ip(::XJson, fname)
    IPj = JSON.parsefile(fname)
    if haskey(IPj, "__id__")
-      info("`load_ip`: Old IP filetype")
+      @info("`load_ip`: Old IP filetype")
       @assert IPj["__id__"] == "NBodyIP"
       return NBodyIP(IPj), IPj["info"], Dict{String, Any}()
    end

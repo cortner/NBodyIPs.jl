@@ -33,12 +33,12 @@ tdegrees(::BondLengthDesc, vN::Val{N}) where {N} = BLI.tdegrees(vN)
 
 @inline skip_simplex(D::BondLengthDesc, r) = (maximum(r) > cutoff(D.cutoff))
 
-@inline invariants(D::BondLengthDesc, r) = BLI.invariants(transform.(D, r))
+@inline invariants(D::BondLengthDesc, r) = BLI.invariants(transform.(Ref(D), r))
 
 @inline function invariants_ed(D::BondLengthDesc, r)
-   x = transform.(D, r)
+   x = transform.(Ref(D), r)
    I1, I2, DI1, DI2 = BLI.invariants_ed(x)
-   x_d = transform_d.(D, r)
+   x_d = transform_d.(Ref(D), r)
    return I1, I2, _sdot(x_d, DI1), _sdot(x_d, DI2)
 end
 
@@ -152,11 +152,11 @@ tdegrees(::ClusterBLDesc, vN::Val{N}) where {N} = BLI.tdegrees(vN)
 
 @inline skip_simplex(D::ClusterBLDesc, r) = (maximum(r) > cutoff(D.cutoff))
 
-@inline invariants(D::ClusterBLDesc, r) = BLI.invariants(transform.(D, r))
+@inline invariants(D::ClusterBLDesc, r) = BLI.invariants(transform.(Ref(D), r))
 
 @inline function invariants_ed(D::ClusterBLDesc, r)
-   x = transform.(D, r)
+   x = transform.(Ref(D), r)
    I1, I2, DI1, DI2 = BLI.invariants_ed(x)
-   x_d = transform_d.(D, r)
+   x_d = transform_d.(Ref(D), r)
    return I1, I2, _sdot(x_d, DI1), _sdot(x_d, DI2)
 end
