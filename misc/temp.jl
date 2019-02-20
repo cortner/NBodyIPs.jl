@@ -2,9 +2,11 @@
 
 # fc = fcut($desc, $rθ)
 
-using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Test, Profile
+using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Test, Profile,
+      LinearAlgebra
 using NBodyIPs.Polys: NBPoly, StNBPoly
 using NBodyIPs: evaluate
+
 
 TRANSFORM = "r -> (2.9/r)^3"
 rcut = 7.5
@@ -50,6 +52,14 @@ x = 4 .+ (@SVector rand(6)) .* 2
 @btime NBodyIPs.fcut_d($cutoff1, $x)
 @btime NBodyIPs.fcut_d_new($cutoff1, $x)
 @btime NBodyIPs.fcut_d_new2($cutoff1, $x)
+
+for n = 1:100
+   x = 4 .+ (@SVector rand(6)) .* 2
+   println(NBodyIPs.fcut(cutoff1, x), " : ",
+          norm(NBodyIPs.fcut_d(cutoff1, x)[2] .-
+               NBodyIPs.fcut_d_old(cutoff1, x)[2]))
+end
+
 
 ##
 # # 3-body potential

@@ -151,42 +151,18 @@ combiscriptor(C::Cutoff) = (C.sym, C.params)
 
 fcut(C::Cutoff, r::SVector) = prod(C.f.(r))
 
-function fcut_d_new(C::Cutoff, r::SVector{N}) where {N}
+function fcut_d(C::Cutoff, r::AbstractVector)
    fc = C.f.(r)
    fctot = prod(fc)
-   if fctot == 0.0
-      return 0.0, 0*fc
+   if fctot == 0
+      return fctot, zero(typeof(r))
    end
    fc_d = C.f_d.(r)
-   return fctot, fctot * (fc_d ./ fc)
+   return fctot, (fctot * fc_d) ./ fc
 end
 
-@generated function fcut_d_new2(C::Cutoff, r::SVector{M, T}) where {M, T}
-   exprs = Expr[]
-   push_str!(exprs, "fctot = one(T)")
-   for i = 1:M
-      push_str!(exprs, "f_$(i) = fcut(C, r[$i])")
-      push_str!(exprs, "fctot *= f_$i")
-   end
-   push!(exprs, :(if fctot == 0.0; return zero(T), zero(SVector{M,T}); end))
-   for i = 1:M
-      push_str!(exprs, "f_d_$i = fcut_d(C, r[$i])")
-   end
-   ex_dm = "fc_d = SVector{M,T}("
-   for i = 1:M
-      ex_dm *= "fctot * f_d_$i / f_$i, "
-   end
-   ex_dm = ex_dm[1:end-2] * ")"
-   push_str!(exprs, ex_dm)
-
-   quote
-      $(Expr(:meta, :inline))
-      @inbounds $(Expr(:block, exprs...))
-      return fctot, fc_d
-   end
-end
-
-@generated function fcut_d(D::Cutoff, r::SVector{M, T}) where {M, T}
+# keep this one around for a bit to carefully test the numerical stability?
+@generated function fcut_d_old(D::Cutoff, r::SVector{M, T}) where {M, T}
    exprs = Expr[]
    # evaluate the cutoff function
    for i = 1:M
