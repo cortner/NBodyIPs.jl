@@ -52,7 +52,6 @@ end
 
 
 # ------------- main evaluation code -----------
-# using BenchmarkTools
 
 function evaluate(V::NBodyFunction{N},
                   desc::NBSiteDescriptor,
@@ -65,14 +64,9 @@ function evaluate(V::NBodyFunction{N},
    skip_simplex(desc, rθ) && return zero(T)
    # compute the cutoff (and skip this site if the cutoff is zero)
    fc = fcut(desc, rθ)
-   # @btime fcut($desc, $rθ)
-   # @show typeof(fc), fc
    fc == 0 && return zero(T)
    # compute the invariants (this also applies the transform)
    II = invariants(desc, rθ)
-   # @btime invariants($desc, $rθ)
-   # @show typeof(II), II
-   # exit()
    # evaluate the inner potential function (e.g. polynomial)
    return evaluate_I(V, II) * fc
 end

@@ -2,4 +2,5 @@
 *.jl.*.cov
 *.jl.mem
 *.pyc
+*.mem
 src/plottools.pyc

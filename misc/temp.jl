@@ -45,21 +45,17 @@ cutoff1 = NBodyIPs.Cutoff(desc.cutoff.sym,
 @btime $(cutoff1.f)(4+rand())
 @btime NBodyIPs.fcut($cutoff1, 4+rand())
 @btime NBodyIPs.fcut($(desc.cutoff), 4+rand())
+@btime NBodyIPs.fcut($desc, 4+rand())
 @btime $(desc.cutoff.f.obj.x)(4+rand())
 @btime $(JuLIP.Potentials.F64fun(desc.cutoff.f.obj.x))(4+rand())
 
 x = 4 .+ (@SVector rand(6)) .* 2
 @btime NBodyIPs.fcut_d($cutoff1, $x)
-@btime NBodyIPs.fcut_d_new($cutoff1, $x)
-@btime NBodyIPs.fcut_d_new2($cutoff1, $x)
+@btime NBodyIPs.fcut($cutoff1, $x)
+@btime NBodyIPs.fcut($desc, $x)
+@btime NBodyIPs.fcut_d($desc, $x)
 
-for n = 1:100
-   x = 4 .+ (@SVector rand(6)) .* 2
-   println(NBodyIPs.fcut(cutoff1, x), " : ",
-          norm(NBodyIPs.fcut_d(cutoff1, x)[2] .-
-               NBodyIPs.fcut_d_old(cutoff1, x)[2]))
-end
-
+@btime NBodyIPs.transform($desc, 4+rand())
 
 ##
 # # 3-body potential

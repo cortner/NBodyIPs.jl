@@ -21,7 +21,7 @@ import JuLIP: cutoff
 
 ==(T1::SpaceTransform, T2::SpaceTransform) = (T1.id == T2.id)
 
-function SpaceTransform(strans::String)
+function SpaceTransform(strans::String; fwrap = false)
    strans0 = strans
    # if @analytic is a substring then we don't do anything
    if !occursin(r"@analytic", strans)
@@ -37,7 +37,10 @@ function SpaceTransform(strans::String)
       end
    end
    ftrans = eval(Meta.parse(strans))
-   return SpaceTransform(strans0, F64fun(ftrans.f), F64fun(ftrans.f_d))
+   if fwrap
+      return SpaceTransform(strans0, F64fun(ftrans.f), F64fun(ftrans.f_d))
+   end
+   return SpaceTransform(strans0, ftrans.f, ftrans.f_d)
 end
 
 Dict(t::SpaceTransform) = Dict( "__id__" => "SpaceTransform",
@@ -59,9 +62,12 @@ Cutoff(descr::String) = Cutoff(eval(Meta.parse(descr)))
 
 Cutoff(args...) = Cutoff(args)
 
-function Cutoff(args::Tuple)
+function Cutoff(args::Tuple; fwrap = false)
    f, f_d, rcut = fcut_analyse(args)
-   return Cutoff(args[1], [args[2:end]...], F64fun(f), F64fun(f_d), rcut)
+   if fwrap
+      return Cutoff(args[1], [args[2:end]...], F64fun(f), F64fun(f_d), rcut)
+   end
+    return Cutoff(args[1], [args[2:end]...], f, f_d, rcut)
 end
 
 function fcut_analyse(args::Tuple)
@@ -123,77 +129,17 @@ combiscriptor(C::Cutoff) = (C.sym, C.params)
 
 # ---------------------------------------------------------------
 # NOT TECHNICALLY MONOMIALS, BUT VERY SIMILAR OBJECT:
-#   TODO: combine fcut_d and monomial_d into a single function
+#   TODO: possibly combine fcut_d and monomial_d into a single function
 # ---------------------------------------------------------------
 
-# @generated function fcut(C::Cutoff, r::SVector{N,T}) where {N, T}
-#    code = Expr[]
-#    push!(code, :( fc = one(T) ))
-#    for n = 1:N
-#       push!(code, :( fc *= fcut(C, r[$n]) ))
-#    end
-#    quote
-#       $(Expr(:meta, :inline))
-#       @inbounds $(Expr(:block, code...))
-#       return fc
-#    end
-# end
-#
-# function fcut(C::Cutoff, r::SVector{N,T}) where {N, T}
-#    fc = one(T)
-#    for n = 1:N
-#       fc *= fcut(C, r[n])
-#    end
-#    return fc
-# end
-#
-# fcut(C::Cutoff, r::SVector{N}) where {N} = prod( fcut(C, r[n]) for n = 1:N )
-
-fcut(C::Cutoff, r::SVector) = prod(C.f.(r))
+fcut(C::Cutoff, r::SVector) = prod(fcut.(Ref(C), r))
 
 function fcut_d(C::Cutoff, r::AbstractVector)
-   fc = C.f.(r)
+   fc = fcut.(Ref(C), r)
    fctot = prod(fc)
    if fctot == 0
       return fctot, zero(typeof(r))
    end
-   fc_d = C.f_d.(r)
+   fc_d = fcut_d.(Ref(C), r)
    return fctot, (fctot * fc_d) ./ fc
-end
-
-# keep this one around for a bit to carefully test the numerical stability?
-@generated function fcut_d_old(D::Cutoff, r::SVector{M, T}) where {M, T}
-   exprs = Expr[]
-   # evaluate the cutoff function
-   for i = 1:M
-      push_str!(exprs, " f_$(i) = fcut(D, r[$i]) ")
-      push_str!(exprs, " fc_d_$(i) = fcut_d(D, r[$i]) ")
-   end
-   # Forward pass
-   push_str!(exprs, " a = one($T) ")
-   for i = 1:M-1
-      push_str!(exprs, " a *= f_$(i) ")
-      push_str!(exprs, " fc_d_$(i+1) *= a ")
-   end
-   # finish the cutoff itself
-   push_str!(exprs, " fc = a * f_$(M) ")
-   # Backward pass
-   push_str!(exprs, "a = one($T)")
-   for i = M:-1:2
-      push_str!(exprs, " a *= f_$(i) ")
-      push_str!(exprs, " fc_d_$(i-1) *= a ")
-   end
-   # put derivative into an SVector
-   ex_dm = "fc_d = SVector{M,T}("
-   for i = 1:M
-      ex_dm *= "fc_d_$i, "
-   end
-   ex_dm = ex_dm[1:end-2] * ")"
-   push_str!(exprs, ex_dm)
-
-   quote
-      $(Expr(:meta, :inline))
-      @inbounds $(Expr(:block, exprs...))
-      return fc, fc_d
-   end
 end

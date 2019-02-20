@@ -289,11 +289,11 @@ evaluate_I(V::StNBPoly, II) =
 function evaluate_I_ed(V::StNBPoly, II)
    V, dV_dI = StaticPolynomials.evaluate_and_gradient(V.P, vcat(II[1], II[2]))
 
-   if length(dV_dI) != length(II[3]) + length(II[4])
-      @show size.(II)
-      @show size(dV_dI)
-      @show size(vcat(II[1], II[2]))
-   end
+   # if length(dV_dI) != length(II[3]) + length(II[4])
+   #    @show size.(II)
+   #    @show size(dV_dI)
+   #    @show size(vcat(II[1], II[2]))
+   # end
 
    # TODO: check a few variants how to compute dV
    #       and test performance

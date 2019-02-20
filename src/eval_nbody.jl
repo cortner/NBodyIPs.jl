@@ -89,8 +89,6 @@ end
    end
 end
 
-using BenchmarkTools, InteractiveUtils
-
 function site_energies(V::NBodyFunction{N, DT}, at::Atoms{T}
                   ) where {N, T, DT <: NBSiteDescriptor}
    Es = zeros(T, length(at))
@@ -99,21 +97,6 @@ function site_energies(V::NBodyFunction{N, DT}, at::Atoms{T}
                                skipunorderedsimplices(V),
                                ((out, R, ii, J, temp) -> out + evaluate(V, R, ii, J)),
                                zero(T), nothing)
-      if N >= 3
-         @info "timing eval_site_nbody!"
-         # fff = let V=V
-         #    (out, R, ii, J, temp) -> out + evaluate(V, R, ii, J)
-         # end
-         fff = (out, R, ii, J, temp) -> (@show V, R, ii, J; out)
-         R1 = collect(R)
-         j1 = collect(j)
-         rcut = (cutoff(V))
-         valN = Val(N)
-
-         @btime eval_site_nbody!($valN, $i, $j1, $R1, $rcut, false, $fff, 0.0, nothing)
-         # @code_warntype eval_site_nbody!(Val(N), i, j, R, cutoff(V), false, fff, 0.0, nothing)
-         exit()
-      end
    end
    return Es
 end
