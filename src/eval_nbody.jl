@@ -30,11 +30,11 @@ end
 function _get_Jvec_ex(N)
    # inside these N-1 loops we collect the loop indices into an SVector, e.g.
    # J = @SVector [i_1, i_2, i_3]
-   str = "J = SVector(i_1"
+   str = "J = @SVector Int[i_1"
    for n = 2:N-1
       str *= ", i_$n"
    end
-   return Meta.parse(str * ")")
+   return Meta.parse(str * "]")
 end
 
 
@@ -89,7 +89,7 @@ end
    end
 end
 
-
+using BenchmarkTools, InteractiveUtils
 
 function site_energies(V::NBodyFunction{N, DT}, at::Atoms{T}
                   ) where {N, T, DT <: NBSiteDescriptor}
@@ -99,6 +99,21 @@ function site_energies(V::NBodyFunction{N, DT}, at::Atoms{T}
                                skipunorderedsimplices(V),
                                ((out, R, ii, J, temp) -> out + evaluate(V, R, ii, J)),
                                zero(T), nothing)
+      if N >= 3
+         @info "timing eval_site_nbody!"
+         # fff = let V=V
+         #    (out, R, ii, J, temp) -> out + evaluate(V, R, ii, J)
+         # end
+         fff = (out, R, ii, J, temp) -> (@show V, R, ii, J; out)
+         R1 = collect(R)
+         j1 = collect(j)
+         rcut = (cutoff(V))
+         valN = Val(N)
+
+         @btime eval_site_nbody!($valN, $i, $j1, $R1, $rcut, false, $fff, 0.0, nothing)
+         # @code_warntype eval_site_nbody!(Val(N), i, j, R, cutoff(V), false, fff, 0.0, nothing)
+         exit()
+      end
    end
    return Es
 end

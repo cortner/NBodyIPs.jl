@@ -126,19 +126,65 @@ combiscriptor(C::Cutoff) = (C.sym, C.params)
 #   TODO: combine fcut_d and monomial_d into a single function
 # ---------------------------------------------------------------
 
-@generated function fcut(C::Cutoff, r::SVector{N,T}) where {N, T}
-   code = Expr[]
-   push!(code, :( fc = one(T) ))
-   for n = 1:N
-      push!(code, :( fc *= fcut(C, r[$n]) ))
+# @generated function fcut(C::Cutoff, r::SVector{N,T}) where {N, T}
+#    code = Expr[]
+#    push!(code, :( fc = one(T) ))
+#    for n = 1:N
+#       push!(code, :( fc *= fcut(C, r[$n]) ))
+#    end
+#    quote
+#       $(Expr(:meta, :inline))
+#       @inbounds $(Expr(:block, code...))
+#       return fc
+#    end
+# end
+#
+# function fcut(C::Cutoff, r::SVector{N,T}) where {N, T}
+#    fc = one(T)
+#    for n = 1:N
+#       fc *= fcut(C, r[n])
+#    end
+#    return fc
+# end
+#
+# fcut(C::Cutoff, r::SVector{N}) where {N} = prod( fcut(C, r[n]) for n = 1:N )
+
+fcut(C::Cutoff, r::SVector) = prod(C.f.(r))
+
+function fcut_d_new(C::Cutoff, r::SVector{N}) where {N}
+   fc = C.f.(r)
+   fctot = prod(fc)
+   if fctot == 0.0
+      return 0.0, 0*fc
    end
-   quote
-      $(Expr(:meta, :inline))
-      @inbounds $(Expr(:block, code...))
-      return fc
-   end
+   fc_d = C.f_d.(r)
+   return fctot, fctot * (fc_d ./ fc)
 end
 
+@generated function fcut_d_new2(C::Cutoff, r::SVector{M, T}) where {M, T}
+   exprs = Expr[]
+   push_str!(exprs, "fctot = one(T)")
+   for i = 1:M
+      push_str!(exprs, "f_$(i) = fcut(C, r[$i])")
+      push_str!(exprs, "fctot *= f_$i")
+   end
+   push!(exprs, :(if fctot == 0.0; return zero(T), zero(SVector{M,T}); end))
+   for i = 1:M
+      push_str!(exprs, "f_d_$i = fcut_d(C, r[$i])")
+   end
+   ex_dm = "fc_d = SVector{M,T}("
+   for i = 1:M
+      ex_dm *= "fctot * f_d_$i / f_$i, "
+   end
+   ex_dm = ex_dm[1:end-2] * ")"
+   push_str!(exprs, ex_dm)
+
+   quote
+      $(Expr(:meta, :inline))
+      @inbounds $(Expr(:block, exprs...))
+      return fctot, fc_d
+   end
+end
 
 @generated function fcut_d(D::Cutoff, r::SVector{M, T}) where {M, T}
    exprs = Expr[]
