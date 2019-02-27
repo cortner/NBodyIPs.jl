@@ -1,5 +1,5 @@
 @info("loading libraries...")
-using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Test
+using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Test, LinearAlgebra
 
 # using JuLIP.Potentials: evaluate, evaluate_d
 # using NBodyIPs: BondLengthDesc, BondAngleDesc, invariants, invariants_d, descriptor,
@@ -80,10 +80,10 @@ forces(IP0, at); @time forces(IP0, at);
 print("IP1  : ")
 forces(IP1, at); @time forces(IP1, at);
 
-at = rattle!(bulk(:W, cubic=true) * 7, 0.02)
-Profile.clear(); @profile forces(IPff, at);
-Profile.print()
-
-at = rattle!(bulk(:W, cubic=true) * 3, 0.02)
-V4 = IPff.components[end]
-@code_warntype forces(V4, at);
+# at = rattle!(bulk(:W, cubic=true) * 7, 0.02)
+# Profile.clear(); @profile forces(IPff, at);
+# Profile.print()
+#
+# at = rattle!(bulk(:W, cubic=true) * 3, 0.02)
+# V4 = IPff.components[end]
+# @code_warntype forces(V4, at);
