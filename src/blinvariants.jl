@@ -245,10 +245,13 @@ tdegrees(::Val{5}) =
                11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
                11, 11, 11, 11, 11, 11, 11, 11, ])
 
-include("generated/NB_5_deg_10/NB_5_deg_10_invariants.jl")
+include("generated/NB_5_deg_12/NB_5_deg_12_invariants.jl")
 @inline invariants(x::SVector{10}) = NB5I.invariants_gen(x)
 @inline invariants_d(x::SVector{10}) = NB5I.invariants_d_gen(x)
 @inline invariants_ed(x::SVector{10}) = NB5I.invariants_ed_gen(x)
-
+function invariants_ed(x::SVector{10})
+   I = invariants(x)
+   dI = invariants_d(x)
+   return
 
 end
