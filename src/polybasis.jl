@@ -142,8 +142,9 @@ For more flexibility the kwargs `tuplebound` can be used, use with care.
 bapolys(N::Integer, trans::String, cutoff::String, deg; kwargs...) =
    nbpolys(N, BondAngleDesc(trans, cutoff), deg; kwargs...)
 
-# bapolys(N::Integer, trans::String, cutoff::String, (degr,degt); kwargs...) =
-#    nbpolys(gen_tuples(desc, N, tdeg; tuplebound = rt_tuplebound), desc)
+bapolys(N::Integer, trans::String, cutoff::String,
+        degarg1, degarg2; kwargs...) =
+   nbpolys(N, BondAngleDesc(trans, cutoff), degarg1, degarg2; kwargs...)
 
 
 # --------------------------
@@ -186,7 +187,7 @@ function gen_tuples_rt(desc::BondAngleDesc, vN::Val{N}, vK::Val{K}, tuplebound
          if lastinc == K
             return A
          end
-         α[1:lastinc] = 0
+         α[1:lastinc] .= 0
          α[lastinc+1] += 1
          lastinc += 1
       end
@@ -211,5 +212,6 @@ nbpolys(N::Integer, desc::BondAngleDesc, degr::Integer, degt::Integer) =
                             (α -> rt_tuplebound_tensor(α,degr,degt,desc) )
                              ), desc
                 )
+
 
 end
