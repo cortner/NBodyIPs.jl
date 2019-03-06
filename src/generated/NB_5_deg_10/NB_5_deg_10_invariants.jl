@@ -2,7 +2,7 @@ module NB5I
 
 using NBodyIPs.FastPolys
 using StaticArrays
-using BenchmarkTools: @btime
+# using BenchmarkTools: @btime
 
 # include("fastpolys.jl")
 # using FastPolys
