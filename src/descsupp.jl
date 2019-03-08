@@ -107,6 +107,23 @@ function fcut_analyse(args::Tuple)
                   + (1-coscut(r, ri1, ri2)) * coscut_d(r, ro1, ro2)),
             ro2 )
          end
+
+         # (:penv, p, rnn, rc)
+   elseif Symbol(sym) == :penv
+      return let p = args[1], rnn = args[2], rc = args[3]
+         f = @analytic r -> ((r-rc)/rnn)^p
+         r -> f.f(r) * (r < rc), r -> f.f_d(r) * (r < rc), rc
+      end 
+
+   elseif Symbol(sym) == :penv2s
+      return let p = args[1], r0 = args[2], rnn = args[3], rc = args[4]
+         ξ = @analytic r -> (r - rnn)/(r0-rc)* ((r-r0)/(rc-rnn) + (r-rnn)/(r0-rnn))
+         env = @analytic x -> (x-1)^2 * (x+1)^2
+         f = r -> env(ξ(r)) * (r0 < r < rc)
+         df = r -> env.f_d(ξ(r)) * ξ.f_d(r) * (r0 < r < rc)
+         f, df, rc
+      end
+
    else
       error("Dictionary: unknown symbol $(sym) for fcut.")
    end
