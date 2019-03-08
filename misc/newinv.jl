@@ -772,6 +772,7 @@ const STP10 = StaticPolynomials.Polynomial(INVPOLYS[10])
 
 
 function invman(x1::SVector{10})
+   x = x1
    x2 = x1.*x1
    x3 = x2.*x1
    x4 = x3.*x1
@@ -784,84 +785,76 @@ function invman(x1::SVector{10})
    P1 = sum(x1)
    P3 = sum(x2)
    P5 = sum(x3)
-   P2 = (0.5*P1*P1 - P3 - x1[1]*(x1[8]+x1[9]+x1[10])
-                        - x1[2]*(x1[6]+x1[7]+x1[10])
-                        - x1[3]*(x1[5]+x1[7]+x1[9])
-                        - x1[4]*(x1[6]+x1[8])
-                        - x1[5]*x1[10] - x1[6]*x1[9] - x1[7]*x1[8] )
+   P7 = sum(x4)
+   P9 = sum(x5)
+   P10 = sum(x6)
+
+# ------
+   P2 = 0.5*P1*P1 - 0.5*P3
+   P2 = muladd(-x1[1], x1[9]+x1[10], P2)
+   P2 = muladd(-x1[2], x1[7]+x1[10], P2)
+   P2 = muladd(-x1[3], x1[7]+x1[9], P2)
+   P2 = muladd(-x1[4], x1[6]+x1[8], P2)
+   P2 = muladd(-x1[5], x1[10]+x1[3], P2)
+   P2 = muladd(-x1[6], x1[9]+x1[2], P2)
+   P2 = muladd(-x1[8], x1[7]+x1[1], P2)
+
 # P2
-# 12 13 14 15 16 17
-#    23 24 25       28 29
-#       34    36    38    310
-#                47    49 410
-#             56 57 58 59
-#                67 68    610
-#                      79 710
-#                      89 810
-#                         910
-#
-
-   x123 = x[1]*x[2]*x[3]
-   x156 = x[1]*x[5]*x[6]
-   x258 =  x[2]*x[5]*x[8]
-# P4
-   x[1]*x[2]*x[3] + x[1]*x[5]*x[6] +
-x[2]*x[5]*x[8] + x[3]*x[6]*x[8] +
-x[1]*x[2]*x[4] + x[1]*x[3]*x[4] +
-x[2]*x[3]*x[4] + x[1]*x[5]*x[7] +
-x[1]*x[6]*x[7] + x[5]*x[6]*x[7] +
-x[2]*x[5]*x[9] + x[2]*x[8]*x[9] +
-x[5]*x[8]*x[9] + x[4]*x[7]*x[9] +
-x[3]*x[6]*x[10] + x[3]*x[8]*x[10] +
-x[6]*x[8]*x[10] + x[4]*x[7]*x[10] +
-x[4]*x[9]*x[10] + x[7]*x[9]*x[10],
-
-# P6
-   x[1]*x[2]*x[3]*x[4] +
-x[1]*x[5]*x[6]*x[7] + x[2]*x[5]*x[8]*x[9] +
-x[3]*x[6]*x[8]*x[10] + x[4]*x[7]*x[9]*x[10],
-# P7
-   x[1]^4 + x[2]^4 + x[5]^4 + x[3]^4 + x[6]^4 +
-x[8]^4 + x[4]^4 + x[7]^4 + x[9]^4 + x[10]^4,
-# P8
-   x[1]*x[2]*x[5]*x[3]*x[4] +
-x[1]*x[2]*x[3]*x[6]*x[4] +
-x[1]*x[2]*x[3]*x[8]*x[4] +
-x[1]*x[2]*x[5]*x[6]*x[7] +
-x[1]*x[5]*x[3]*x[6]*x[7] +
-x[1]*x[5]*x[6]*x[8]*x[7] +
-x[1]*x[2]*x[3]*x[4]*x[7] +
-x[1]*x[5]*x[6]*x[4]*x[7] +
-x[1]*x[2]*x[5]*x[8]*x[9] +
-x[2]*x[5]*x[3]*x[8]*x[9] +
-x[2]*x[5]*x[6]*x[8]*x[9] +
-x[1]*x[2]*x[3]*x[4]*x[9] +
-x[2]*x[5]*x[8]*x[4]*x[9] +
-x[1]*x[5]*x[6]*x[7]*x[9] +
-x[2]*x[5]*x[8]*x[7]*x[9] +
-x[1]*x[3]*x[6]*x[8]*x[10] +
-x[2]*x[3]*x[6]*x[8]*x[10] +
-x[5]*x[3]*x[6]*x[8]*x[10] +
-x[1]*x[2]*x[3]*x[4]*x[10] +
-x[3]*x[6]*x[8]*x[4]*x[10] +
-x[1]*x[5]*x[6]*x[7]*x[10] +
-x[3]*x[6]*x[8]*x[7]*x[10] +
-x[2]*x[5]*x[8]*x[9]*x[10] +
-x[3]*x[6]*x[8]*x[9]*x[10] +
-x[1]*x[4]*x[7]*x[9]*x[10] +
-x[2]*x[4]*x[7]*x[9]*x[10] +
-x[5]*x[4]*x[7]*x[9]*x[10] +
-x[3]*x[4]*x[7]*x[9]*x[10] +
-x[6]*x[4]*x[7]*x[9]*x[10] +
-x[8]*x[4]*x[7]*x[9]*x[10],
-# P9
-   x[1]^5 + x[2]^5 + x[5]^5 + x[3]^5 + x[6]^5 +
-x[8]^5 + x[4]^5 + x[7]^5 + x[9]^5 + x[10]^5,
-# P10
-   x[1]^6 + x[2]^6 + x[5]^6 + x[3]^6 + x[6]^6 +
-x[8]^6 + x[4]^6 + x[7]^6 + x[9]^6 + x[10]^6
+# 12 13 14 15 16 17           | 8, 9, 10
+#    23 24 25       28 29     | 6, 7, 10
+#       34    36    38    310 | 5, 7, 9
+#                47    49 410 | 6, 8
+#             56 57 58 59     | 10
+#                67 68    610 | 9
+#                      79 710 | 8
+#                      89 810 |
+#                         910 |
 
 
+# ------ P4
+   x12 = x[1]*x[2]
+   x123 = x12*x[3]
+   x15 = x[1]*x[5]
+   x156 = x15*x[6]
+   x36 = x[3]*x[6]
+   x368 = x36*x[8]
+   x29 = x[2]*x[9]
+   x259 = x29 * x[5]
+   x30 = x[3]*x[10]
+   x360 = x30*x[6]
+   x90 = x[9]*x[10]
+   x490 = x[4]*x90
+
+   P4 = x123 + x156 + x259 + x360 + x490
+   P4 = muladd(x12, x[4], P4)
+   P4 = muladd(x[3]*x[4], x[1]+x[2], P4)
+   P4 = muladd(x15, x[7], P4)
+   P4 = muladd(x[6]*x[7], x[1]+x[5], P4)
+   P4 = muladd(x36, x[8], P4)
+   P4 = muladd(x[3]*x[4], x[1]+x[2], P4)
+   P4 = muladd(x29, x[8], P4)
+   P4 = muladd(x30, x[8], P4)
+   P4 = muladd(x90, x[7], P4)
+   P4 = muladd(x[5]*x[8], x[2]+x[9], P4)
+   P4 = muladd(x[4]*x[7], x[9]+x[10], P4)
+   P4 = muladd(x[6]*x[8], x[10], P4)
+
+# --------- P6
+   x1234 = x123*x[4]
+   x1567 = x156*x[7]
+   x2589 = x259*x[8]
+   x3680 = x360*x[8]
+   x4790 = x490*x[7]
+   P6 = x1234 + x1567 + x2589 + x3680 + x4790
+
+# --------- P8
+   P8 = x1234*(x[5]+x[6]+x[7]+x[8]+x[9]+x[10])
+   P8 = muladd(x1567, x[2]+x[3]+x[4]+x[8]+x[9]+x[10], P8)
+   P8 = muladd(x2589, x[1]+x[3]+x[4]+x[6]+x[7]+x[10], P8)
+   P8 = muladd(x3680, x[1]+x[2]+x[4]+x[5]+x[7]+x[9], P8)
+   P8 = muladd(x4790, x[1]+x[2]+x[3]+x[5]+x[6]+x[8], P8)
+
+   return (@SVector [P1, P2, P3, P4, P5, P6, P7, P8, P9, P10])
 end
 
 end
@@ -873,7 +866,7 @@ const A10 = [ @SVector rand(10) for n = 1:10 ]
 const X = [ @SVector rand(10) for n = 1:10 ]
 function runN(f)
    s = 0.0
-   for n = 1:length(A)
+   for n = 1:length(A10)
       s += dot(A10[n], f(X[n]))
    end
    return s
@@ -890,17 +883,29 @@ Main.NB5I.invnew(x) ≈ Main.NB5I.invold(x)
 @btime runN($(Main.NB5I.invnew))
 @btime runN($(Main.NB5I.invnew))
 
-J = @MVector zeros(56)
-Main.NB5I.invnew!(J, x) ≈ Main.NB5I.invold(x)
-invnewin = let J=@MVector zeros(20)
-   x -> Main.NB5I.invnew!(J, x)
-end
+Main.NB5I.invman(x) - Main.NB5I.invold(x)
+@info("Manual Invariants Code")
+@btime runN($(Main.NB5I.invman))
+@btime runN($(Main.NB5I.invman))
 
-@btime runN($invnewin, $x, 10)
 
-@info("New Invariants Inline")
-@btime Main.NB5I.invnew!($J, $x)
-@btime Main.NB5I.invnew!($J, $x)
+Im = Main.NB5I.invman(x)
+Io = Main.NB5I.invold(x)
+
+
+##
+
+# J = @MVector zeros(56)
+# Main.NB5I.invnew!(J, x) ≈ Main.NB5I.invold(x)
+# invnewin = let J=@MVector zeros(20)
+#    x -> Main.NB5I.invnew!(J, x)
+# end
+#
+# @btime runN($invnewin, $x, 10)
+#
+# @info("New Invariants Inline")
+# @btime Main.NB5I.invnew!($J, $x)
+# @btime Main.NB5I.invnew!($J, $x)
 
 
 # Main.NB5I.invstp(x) ≈ Main.NB5I.invold(x)
