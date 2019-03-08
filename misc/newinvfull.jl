@@ -678,6 +678,7 @@ end
 @btime runN($(Main.NB5I.invold), $A56)
 @btime runN($(Main.NB5I.invold), $A56)
 
+x = @SVector rand(10)
 Main.NB5I.invnew(x) ≈ Main.NB5I.invold(x)
 
 @info("New Invariants Code")
