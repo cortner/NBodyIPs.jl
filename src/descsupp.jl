@@ -8,7 +8,7 @@ using JuLIP.Potentials: @analytic,
                         AnalyticFunction,
                         F64fun
 
-using Roots 
+using Roots
 
 const cutsp = JuLIP.Potentials.fcut
 const cutsp_d = JuLIP.Potentials.fcut_d
@@ -110,7 +110,6 @@ function fcut_analyse(args::Tuple)
             ro2 )
          end
 
-         # (:penv, p, rnn, rc)
    elseif Symbol(sym) == :penv
       @assert length(args) == 2
       return let p = args[1], rc = args[2]
