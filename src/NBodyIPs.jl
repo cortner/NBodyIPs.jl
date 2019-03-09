@@ -35,6 +35,9 @@ include("blinvariants.jl")
 # bond-angle invariants
 include("bainvariants.jl")
 
+
+include("cutoffs.jl")
+
 # generic and specific descriptors for BL and BA
 include("descriptors.jl")
 # exports BondAngleDesc and BondLengthDesc
