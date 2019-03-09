@@ -8,6 +8,8 @@ using JuLIP.Potentials: @analytic,
                         AnalyticFunction,
                         F64fun
 
+using Roots 
+
 const cutsp = JuLIP.Potentials.fcut
 const cutsp_d = JuLIP.Potentials.fcut_d
 
@@ -110,17 +112,22 @@ function fcut_analyse(args::Tuple)
 
          # (:penv, p, rnn, rc)
    elseif Symbol(sym) == :penv
-      return let p = args[1], rnn = args[2], rc = args[3]
-         f = @analytic r -> ((r-rc)/rnn)^p
+      @assert length(args) == 2
+      return let p = args[1], rc = args[2]
+         f = @analytic r -> ((1-r/rc) * (1+r/rc))^p
          r -> f.f(r) * (r < rc), r -> f.f_d(r) * (r < rc), rc
-      end 
+      end
 
    elseif Symbol(sym) == :penv2s
+      @assert length(args) == 4
       return let p = args[1], r0 = args[2], rnn = args[3], rc = args[4]
-         ξ = @analytic r -> (r - rnn)/(r0-rc)* ((r-r0)/(rc-rnn) + (r-rnn)/(r0-rnn))
-         env = @analytic x -> (x-1)^2 * (x+1)^2
-         f = r -> env(ξ(r)) * (r0 < r < rc)
-         df = r -> env.f_d(ξ(r)) * ξ.f_d(r) * (r0 < r < rc)
+         gg = λ -> exp( λ*(rc/rnn - 1) ) + exp( λ*(r0/rnn - 1) ) - 2
+         @show λopt = find_zero(gg, -2.5)
+         C = 1 / (exp( λopt*(rc/rnn - 1) ) - 1)
+         ξ  = @analytic r -> C * (exp( λopt*(r/rnn - 1) ) - 1)
+         χ = @analytic x -> (x+1)^2 * (x-1)^2
+         f = r -> χ.f(ξ.f(r)) * (r0 < r < rc)
+         df = r -> χ.f_d(ξ(r)) * ξ.f_d(r) * (r0 < r < rc)
          f, df, rc
       end
 
