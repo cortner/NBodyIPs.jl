@@ -118,12 +118,16 @@ function fcut_analyse(args::Tuple)
       end
 
    elseif Symbol(sym) == :penv2s
+      p = args[1]
+      r0 = args[2]
+      rnn = args[3]
+      rc = args[4]
       @assert length(args) == 4
-      return let p = args[1], r0 = args[2], rnn = args[3], rc = args[4]
-         gg = λ -> exp( λ*(rc/rnn - 1) ) + exp( λ*(r0/rnn - 1) ) - 2
-         @show λopt = find_zero(gg, -2.5)
-         C = 1 / (exp( λopt*(rc/rnn - 1) ) - 1)
-         ξ  = @analytic r -> C * (exp( λopt*(r/rnn - 1) ) - 1)
+      gg = λ -> exp( λ*(rc/rnn - 1) ) + exp( λ*(r0/rnn - 1) ) - 2
+      @show λopt = find_zero(gg, -2.5)
+      C = 1 / (exp( λopt*(rc/rnn - 1) ) - 1)
+      return let p=p, r0=r0, rnn=rnn, rc=rc, C=C, λ=λopt
+         ξ  = @analytic r -> C * (exp( λ*(r/rnn - 1) ) - 1)
          χ = @analytic x -> (x+1)^2 * (x-1)^2
          f = r -> χ.f(ξ.f(r)) * (r0 < r < rc)
          df = r -> χ.f_d(ξ(r)) * ξ.f_d(r) * (r0 < r < rc)

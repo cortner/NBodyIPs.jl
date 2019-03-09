@@ -1,5 +1,6 @@
 using Plots, NBodyIPs, JuLIP
 using NBodyIPs: Cutoff
+using BenchmarkTools
 
 ##
 r0, rnn, rc = 0.0, 1.0, 2+√2
@@ -92,7 +93,7 @@ plot!(xx, cosenv.(xx).^2, label = "cosenv^2")
 
 plot(P1, P2)
 
-x = 0.456
+x = 1.456
 
 function runN(f, x, N)
    s = 0.0
@@ -102,6 +103,14 @@ function runN(f, x, N)
    end
    return s
 end
+
+penv = Cutoff((:penv2s, 2, 0.7, 1.0, 2.5))
+cos2s = Cutoff((:cos2s, 0.7, 0.9, 1.7, 2.5))
+
+@btime(runN($(penv.f), $x, 1_000))
+@btime(runN($(cos2s.f), $x, 1_000))
+
+
 
 @btime runN($cosenv, $x, 1_000)
 @btime runN($p2env, $x, 1_000)
