@@ -38,6 +38,8 @@ A = 2/(-r0 + rc) + 3/(4*(-r0 + rnn)) + (7*(rc - rnn)) / (
 ξ4 = r -> (r-rnn)/(rc-rnn) * (1 + A*(r-rc) + B*(r-rc)^2)
 χ = x -> (x+1)^2 * (x-1)^2
 
+# another polynomial attempt...
+
 
 plot(xx, ξ1.(xx))
 plot!(xx, ξ2.(xx))
@@ -93,6 +95,36 @@ plot!(xx, cosenv.(xx).^2, label = "cosenv^2")
 
 plot(P1, P2)
 
+
+##
+using Roots
+
+struct PEnv2s{T}
+   C::T
+   λ::T
+   rnn::T
+end
+
+struct PEnv2sB{T}
+   C::T
+   λ::T
+   rnn::T
+end
+
+function PEnv2s(r0, rnn, rc)
+   gg = λ -> exp( λ*(rc/rnn - 1) ) + exp( λ*(r0/rnn - 1) ) - 2
+   @show λopt = find_zero(gg, -2.5)
+   C = 1 / (exp( λopt*(rc/rnn - 1) ) - 1)
+   return PEnv2s(C, λopt)
+end
+
+Base.@pure function (p::PEnv2s)(r)
+   rnn = 1.0
+   x = @fastmath(p.C * (exp( p.λ*(r - 1) ) - 1))
+   a = x*x-1
+   return a*a
+end
+
 x = 1.456
 
 function runN(f, x, N)
@@ -105,10 +137,12 @@ function runN(f, x, N)
 end
 
 penv = Cutoff((:penv2s, 2, 0.7, 1.0, 2.5))
+penv2 = PEnv2s(0.7, 1.0, 2.5)
 cos2s = Cutoff((:cos2s, 0.7, 0.9, 1.7, 2.5))
 
-@btime(runN($(penv.f), $x, 1_000))
-@btime(runN($(cos2s.f), $x, 1_000))
+@btime(runN($(penv.f), $x, 1_000_000))
+@btime(runN($(cos2s.f), $x, 1_000_000))
+@btime(runN($(penv2), $x, 1_000_000))
 
 
 
@@ -117,3 +151,20 @@ cos2s = Cutoff((:cos2s, 0.7, 0.9, 1.7, 2.5))
 @btime runN($p2envsym, $x, 1_000)
 @btime runN($p3env, $x, 1_000)
 @btime runN($p3envsym, $x, 1_000)
+
+
+macro horner(x, p...)
+    ex = esc(p[end])
+    for i = length(p)-1:-1:1
+        ex = :( $(esc(p[i])) + t * $ex )
+    end
+    Expr(:block, :(t = $(esc(x))), ex)
+end
+
+
+f1(r) = 2.345 * (exp( 2.345*r - 1.234) - 1.213)
+f2(r) = (@horner(r, 1.234, 3.234, 4.234, 4.234, 4.234, 3.2314, 4.234))
+@btime runN($f1, $x, 1_000)
+@btime runN($f2, $x, 1_000)
+@btime runN($exp, $x, 1_000)
+@btime runN($cos, $x, 1_000)
