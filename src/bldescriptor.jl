@@ -3,7 +3,7 @@ using LinearAlgebra: norm
 const BLI = BLInvariants
 using JuLIP:decode_dict
 
-BondLengthDesc(transform::String, cutoff::Union{String, Tuple}) =
+BondLengthDesc(transform::String, cutoff) =
          BondLengthDesc(SpaceTransform(transform), fcut_analyse(cutoff))
 
 # -------------- IO -------------------
@@ -120,7 +120,7 @@ end
 # =============== Experimental Code for Cluster-based summation!!!!!!
 
 
-ClusterBLDesc(transform::String, cutoff::Union{String, Tuple}) =
+ClusterBLDesc(transform::String, cutoff) =
          ClusterBLDesc(SpaceTransform(transform), fcut_analyse(cutoff))
 
 # -------------- IO -------------------
