@@ -20,6 +20,9 @@ using Reexport
 
 include("types.jl")
 
+include("cutoffs.jl")
+@reexport using NBodyIPs.Cutoffs
+
 # generic types and function prototypes
 include("common.jl")
 
@@ -34,9 +37,6 @@ include("blinvariants.jl")
 
 # bond-angle invariants
 include("bainvariants.jl")
-
-
-include("cutoffs.jl")
 
 # generic and specific descriptors for BL and BA
 include("descriptors.jl")

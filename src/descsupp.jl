@@ -1,22 +1,13 @@
 import JuLIP
 
 using JuLIP.Potentials: @analytic,
-                        cutsw,
-                        cutsw_d,
-                        coscut,
-                        coscut_d,
                         AnalyticFunction,
                         F64fun
 
 using Roots
 
-const cutsp = JuLIP.Potentials.fcut
-const cutsp_d = JuLIP.Potentials.fcut_d
-
 import Base: Dict,
              ==
-
-import JuLIP: cutoff
 
 # -------------- Space Tranformations ---------------
 
@@ -55,118 +46,39 @@ combiscriptor(t::SpaceTransform) = t.id
 
 # -------------- Cut-off Mechanisms ---------------
 
-
-cutoff(C::Cutoff) = C.rcut
-
-==(C1::Cutoff, C2::Cutoff) = (C1.sym == C2.sym) && (C1.params == C2.params)
-
-Cutoff(descr::String) = Cutoff(eval(Meta.parse(descr)))
-
-Cutoff(args...) = Cutoff(args)
-
-function Cutoff(args::Tuple; fwrap = false)
-   f, f_d, rcut = fcut_analyse(args)
-   if fwrap
-      return Cutoff(args[1], [args[2:end]...], F64fun(f), F64fun(f_d), rcut)
-   end
-    return Cutoff(args[1], [args[2:end]...], f, f_d, rcut)
-end
+fcut_analyse(descr::String) = fcut_analyse(eval(Meta.parse(descr)))
+fcut_analyse(args...) = fcut_analyse(args)
+fcut_analyse(C::NBodyIPs.Cutoffs.NBCutoff) = C
 
 function fcut_analyse(args::Tuple)
    sym = args[1]::Symbol
    args = args[2:end]
    if Symbol(sym) == :cos
-      return let rc1=args[1], rc2=args[2]
-         r -> coscut(r, rc1, rc2), r -> coscut_d(r, rc1, rc2), rc2
-      end
-
-   elseif Symbol(sym) == :sw
-      return let L=args[1], rcut=args[2]
-         r -> cutsw(r, rcut, L), r -> cutsw_d(r, rcut, L), rcut
-      end
-
-   elseif Symbol(sym) == :spline
-      return let rc1=args[1], rc2=args[2]
-         r -> cutsp(r, rc1, rc2), r -> cutsp_d(r, rc1, rc2), rc2
-      end
-
+      return CosCut(args...)
    elseif Symbol(sym) == :square
-      return let rcut=args[1]
-         F = (@analytic r -> (r - rcut)^2)
-         F.f, F.f_d, rcut
-      end
-
-   elseif Symbol(sym) == :s2rat
-      return let rnn=args[1], rin = args[2], rcut = args[3], p = args[4]
-         f = @analytic r -> ( ((rnn/r)^p - (rnn/rcut)^p)^2 * ((rnn/r)^p - (rnn/rin)^p)^2 )
-         r -> f.f(r) * (rin < r < rcut), r -> f.f_d(r) * (rin < r < rcut), rcut
-      end
-
+      return PolyCut(2, args[1])
    elseif Symbol(sym) == :cos2s
-      return let ri1 = args[1], ri2 = args[2], ro1 = args[3], ro2 = args[4]
-         (  r -> (1-coscut(r, ri1, ri2)) * coscut(r, ro1, ro2),
-            r -> (- coscut_d(r, ri1, ri2) * coscut(r, ro1, ro2)
-                  + (1-coscut(r, ri1, ri2)) * coscut_d(r, ro1, ro2)),
-            ro2 )
-         end
-
+      return CosCut2s(args...)
    elseif Symbol(sym) == :penv
-      @assert length(args) == 2
-      return let p = args[1], rc = args[2]
-         f = @analytic r -> ((1-r/rc) * (1+r/rc))^p
-         r -> f.f(r) * (r < rc), r -> f.f_d(r) * (r < rc), rc
-      end
-
+      return PolyCutSym(args...)
    elseif Symbol(sym) == :penv2s
-      p = args[1]
-      r0 = args[2]
-      rnn = args[3]
-      rc = args[4]
-      @assert length(args) == 4
-      gg = λ -> exp( λ*(rc/rnn - 1) ) + exp( λ*(r0/rnn - 1) ) - 2
-      @show λopt = find_zero(gg, -2.5)
-      C = 1 / (exp( λopt*(rc/rnn - 1) ) - 1)
-      return let p=p, r0=r0, rnn=rnn, rc=rc, C=C, λ=λopt
-         ξ  = @analytic r -> C * (exp( λ*(r/rnn - 1) ) - 1)
-         χ = @analytic x -> (x+1)^2 * (x-1)^2
-         f = r -> χ.f(ξ.f(r)) * (r0 < r < rc)
-         df = r -> χ.f_d(ξ(r)) * ξ.f_d(r) * (r0 < r < rc)
-         f, df, rc
-      end
+      return PolyCut2s(args...)
+
+   # elseif Symbol(sym) == :sw
+   #    return let L=args[1], rcut=args[2]
+   #       r -> cutsw(r, rcut, L), r -> cutsw_d(r, rcut, L), rcut
+   #    end
+   # elseif Symbol(sym) == :spline
+   #    return let rc1=args[1], rc2=args[2]
+   #       r -> cutsp(r, rc1, rc2), r -> cutsp_d(r, rc1, rc2), rc2
+   #    end
+   # elseif Symbol(sym) == :s2rat
+   #    return let rnn=args[1], rin = args[2], rcut = args[3], p = args[4]
+   #       f = @analytic r -> ( ((rnn/r)^p - (rnn/rcut)^p)^2 * ((rnn/r)^p - (rnn/rin)^p)^2 )
+   #       r -> f.f(r) * (rin < r < rcut), r -> f.f_d(r) * (rin < r < rcut), rcut
+   #    end
 
    else
-      error("Dictionary: unknown symbol $(sym) for fcut.")
+      error("fcut_analyse: unknown symbol $(sym) for fcut.")
    end
-end
-
-
-Dict(fcut::Cutoff) = Dict( "__id__" => "Cutoff",
-                           "sym" => String(fcut.sym),
-                           "params" => fcut.params )
-
-Cutoff(D::Dict) = Cutoff(Symbol(D["sym"]), D["params"]...)
-
-
-@inline fcut(C::Cutoff, r::Number) = C.f(r)
-@inline fcut_d(C::Cutoff, r::Number) = C.f_d(r)
-
-
-combiscriptor(C::Cutoff) = (C.sym, C.params)
-
-
-# ---------------------------------------------------------------
-# NOT TECHNICALLY MONOMIALS, BUT VERY SIMILAR OBJECT:
-#   TODO: possibly combine fcut_d and monomial_d into a single function
-# ---------------------------------------------------------------
-
-fcut(C::Cutoff, r::SVector) = prod(fcut.(Ref(C), r))
-
-function fcut_d(C::Cutoff, r::AbstractVector)
-   fc = fcut.(Ref(C), r)
-   fctot = prod(fc)
-   if fctot == 0
-      return fctot, zero(typeof(r))
-   end
-   fc_d = fcut_d.(Ref(C), r)
-   return fctot, (fctot * fc_d) ./ fc
 end

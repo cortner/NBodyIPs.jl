@@ -1,10 +1,10 @@
 using LinearAlgebra: norm
 
 const BLI = BLInvariants
-
+using JuLIP:decode_dict
 
 BondLengthDesc(transform::String, cutoff::Union{String, Tuple}) =
-         BondLengthDesc(SpaceTransform(transform), Cutoff(cutoff))
+         BondLengthDesc(SpaceTransform(transform), fcut_analyse(cutoff))
 
 # -------------- IO -------------------
 Dict(D::BondLengthDesc) = Dict( "__id__"    =>  "BondLengthDesc",
@@ -12,7 +12,7 @@ Dict(D::BondLengthDesc) = Dict( "__id__"    =>  "BondLengthDesc",
                                 "cutoff"    =>  Dict(D.cutoff) )
 
 BondLengthDesc(D::Dict) = BondLengthDesc( SpaceTransform(D["transform"]),
-                                          Cutoff(D["cutoff"]) )
+                                          decode_dict(D["cutoff"]) )
 
 ==(D1::BondLengthDesc, D2::BondLengthDesc) =
       ( (D1.transform == D2.transform) && (D1.cutoff == D2.cutoff) )
@@ -121,7 +121,7 @@ end
 
 
 ClusterBLDesc(transform::String, cutoff::Union{String, Tuple}) =
-         ClusterBLDesc(SpaceTransform(transform), Cutoff(cutoff))
+         ClusterBLDesc(SpaceTransform(transform), fcut_analyse(cutoff))
 
 # -------------- IO -------------------
 Dict(D::ClusterBLDesc) = Dict( "__id__"    =>  "ClusterBLDesc",
@@ -129,7 +129,7 @@ Dict(D::ClusterBLDesc) = Dict( "__id__"    =>  "ClusterBLDesc",
                                 "cutoff"    =>  Dict(D.cutoff) )
 
 ClusterBLDesc(D::Dict) = ClusterBLDesc( SpaceTransform(D["transform"]),
-                                          Cutoff(D["cutoff"]) )
+                                           decode_dict(D["cutoff"]) )
 
 ==(D1::ClusterBLDesc, D2::ClusterBLDesc) =
       ( (D1.transform == D2.transform) && (D1.cutoff == D2.cutoff) )

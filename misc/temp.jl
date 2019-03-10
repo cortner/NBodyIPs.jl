@@ -41,7 +41,7 @@ cutoff1 = NBodyIPs.Cutoff(desc.cutoff.sym,
                  desc.cutoff.params,
                  JuLIP.Potentials.F64fun(f1),
                  JuLIP.Potentials.F64fun(df1),
-                 desc.cutoff.rcut)
+                 cutoff(desc))
 @btime $(cutoff1.f)(4+rand())
 @btime NBodyIPs.fcut($cutoff1, 4+rand())
 @btime NBodyIPs.fcut($(desc.cutoff), 4+rand())

@@ -56,15 +56,13 @@ end
 
 SpaceTransform(id, f, f_d) = SpaceTransform(id, f, f_d, Val(Symbol(id)))
 
+abstract type NBCutoff end
 
-struct Cutoff{FT, DFT}
-   sym::Symbol
-   params::Vector{Float64}
-   f::FT
-   f_d::DFT
-   rcut::Float64
-end
+# prototypes for cutoffs
+function fcut end
+function fcut_d end
 
+combiscriptor(C::NBCutoff) = C
 
 """
 `NBodyIP` : wraps `NBodyFunction`s or similar into a JuLIP calculator, defining
@@ -82,7 +80,7 @@ end
 
 export BondAngleDesc
 
-struct BondAngleDesc{TT <: SpaceTransform, TC <: Cutoff} <: NBSiteDescriptor
+struct BondAngleDesc{TT <: SpaceTransform, TC <: NBCutoff} <: NBSiteDescriptor
    transform::TT
    cutoff::TC
 end
@@ -90,7 +88,7 @@ end
 
 export BondLengthDesc
 
-struct BondLengthDesc{TT <: SpaceTransform, TC <: Cutoff} <: NBSiteDescriptor
+struct BondLengthDesc{TT <: SpaceTransform, TC <: NBCutoff} <: NBSiteDescriptor
    transform::TT
    cutoff::TC
 end
@@ -98,7 +96,7 @@ end
 
 export ClusterBLDesc
 
-struct ClusterBLDesc{TT <: SpaceTransform, TC <: Cutoff} <: NBClusterDescriptor
+struct ClusterBLDesc{TT <: SpaceTransform, TC <: NBCutoff} <: NBClusterDescriptor
    transform::TT
    cutoff::TC
 end

@@ -6,7 +6,7 @@ ninvariants(D::NBodyDescriptor, vN::Val{N}) where {N} = length.(tdegrees(D, vN))
 
 @inline transform(D::NBodyDescriptor, r::Number) = D.transform.f(r)
 @inline transform_d(D::NBodyDescriptor, r::Number) = D.transform.f_d(r)
-@inline cutoff(D::NBodyDescriptor) = D.cutoff.rcut
+@inline cutoff(D::NBodyDescriptor) = cutoff(D.cutoff)
 
 combiscriptor(D::NBodyDescriptor) =
       (combiscriptor(D.transform), combiscriptor(D.cutoff))

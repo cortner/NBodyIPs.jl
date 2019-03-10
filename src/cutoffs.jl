@@ -1,23 +1,23 @@
 
 module Cutoffs
 
-using JuLIP.Potentials: coscut, coscut_d
+using JuLIP.Potentials: cutsw,
+                        cutsw_d,
+                        coscut,
+                        coscut_d
 
-using Roots
+import JuLIP
+using Roots, StaticArrays
+
+const cutsp = JuLIP.Potentials.fcut
+const cutsp_d = JuLIP.Potentials.fcut_d
 
 import JuLIP: decode_dict
 import JuLIP.Potentials: cutoff
-import NBodyIPs: fcut, fcut_d, combiscriptor
-import Base: Dict
+import NBodyIPs: fcut, fcut_d, combiscriptor, NBCutoff
+import Base: Dict, convert
 
 export CosCut, CosCut2s, PolyCut, PolyCutSym, PolyCut2sA
-
-
-abstract type NBCutoff end
-
-# most of the time the type itself can server a descriptor for
-# combining basis functions
-combiscriptor(C::NBCutoff) = C
 
 
 """
@@ -39,12 +39,12 @@ struct CosCut{T} <: NBCutoff
    rc2::T
 end
 cutoff(C::CosCut) = C.rc2
-fcut(C::CosCut, r) = coscut(r, C.rc1, C.rc2)
-fcut_d(C::CosCut, r) = coscut_d(r, C.rc1, C.rc2)
+fcut(C::CosCut, r::Number) = coscut(r, C.rc1, C.rc2)
+fcut_d(C::CosCut, r::Number) = coscut_d(r, C.rc1, C.rc2)
 Dict(C::CosCut) = Dict("__id__" => "NBodyIPs_CosCut",
                        "rc1" => C.rc1, "rc2" => C.rc2)
 CosCut(D::Dict) = CosCut(D["rc1"], D["rc2"])
-decode_dict(::Val{:NBodyIPs_CosCut}, D::Dict) = CosCut(D)
+convert(::Val{:NBodyIPs_CosCut}, D::Dict) = CosCut(D)
 
 
 """
@@ -67,14 +67,14 @@ struct CosCut2s{T} <: NBCutoff
    ro2::T
 end
 cutoff(C::CosCut2s) = C.ro2
-fcut(C::CosCut2s, r) = (1-coscut(r, C.ri1, C.ri2)) * coscut(r, C.ro1, C.ro2)
-fcut_d(C::CosCut2s, r) = (- coscut_d(r, C.ri1, C.ri2) * coscut(r, C.ro1, C.ro2)
+fcut(C::CosCut2s, r::Number) = (1-coscut(r, C.ri1, C.ri2)) * coscut(r, C.ro1, C.ro2)
+fcut_d(C::CosCut2s, r::Number) = (- coscut_d(r, C.ri1, C.ri2) * coscut(r, C.ro1, C.ro2)
                        + (1-coscut(r, C.ri1, C.ri2)) * coscut_d(r, C.ro1, C.ro2))
-Dict(C::CosCut) = Dict( "__id__" => "NBodyIPs_CosCut2s",
+Dict(C::CosCut2s) = Dict( "__id__" => "NBodyIPs_CosCut2s",
                         "ri1" => C.ri1, "ri2" => C.ri2,
                         "ro1" => C.ro1, "ro2" => C.ro2 )
 CosCut2s(D::Dict) = CosCut2s(D["ri1"], D["ri2"], D["ro1"], D["ro2"])
-decode_dict(::Val{:NBodyIPs_CosCut2s}, D::Dict) = CosCut2s(D)
+convert(::Val{:NBodyIPs_CosCut2s}, D::Dict) = CosCut2s(D)
 
 
 """
@@ -95,12 +95,12 @@ struct PolyCut{TI, T} <: NBCutoff
    rc::T
 end
 cutoff(C::PolyCut) = C.rc
-fcut(C::PolyCut, r) = @fastmath((r/C.rc - 1)^C.p * (r < C.rc))
-fcut_d(C::PolyCut, r) = @fastmath(C.p/C.rc * (r/C.rc - 1)^(C.p-1) * (r<C.rc))
+fcut(C::PolyCut, r::Number) = @fastmath((r/C.rc - 1)^C.p * (r < C.rc))
+fcut_d(C::PolyCut, r::Number) = @fastmath(C.p/C.rc * (r/C.rc - 1)^(C.p-1) * (r<C.rc))
 Dict(C::PolyCut) = Dict( "__id__" => "NBodyIPs_PolyCut",
                         "p" => C.p, "rc" => C.rc)
 PolyCut(D::Dict) = PolyCut(D["p"], D["rc"])
-decode_dict(::Val{:NBodyIPs_PolyCut}, D::Dict) = PolyCut(D)
+convert(::Val{:NBodyIPs_PolyCut}, D::Dict) = PolyCut(D)
 
 
 """
@@ -121,12 +121,12 @@ struct PolyCutSym{TI, T} <: NBCutoff
    rc::T
 end
 cutoff(C::PolyCutSym) = C.rc
-fcut(C::PolyCutSym, r) = @fastmath(((r/C.rc)^2 - 1)^C.p * (r<C.rc))
-fcut_d(C::PolyCutSym, r) = @fastmath(2*C.p*r/C.rc^2 * ((r/C.rc)^2 - 1)^(C.p-1) * (r<C.rc))
+fcut(C::PolyCutSym, r::Number) = @fastmath(((r/C.rc)^2 - 1)^C.p * (r<C.rc))
+fcut_d(C::PolyCutSym, r::Number) = @fastmath(2*C.p*r/C.rc^2 * ((r/C.rc)^2 - 1)^(C.p-1) * (r<C.rc))
 Dict(C::PolyCutSym) = Dict( "__id__" => "NBodyIPs_PolyCutSym",
                         "p" => C.p, "rc" => C.rc)
 PolyCutSym(D::Dict) = PolyCutSym(D["p"], D["rc"])
-decode_dict(::Val{:NBodyIPs_PolyCutSym}, D::Dict) = PolyCutSym(D)
+convert(::Val{:NBodyIPs_PolyCutSym}, D::Dict) = PolyCutSym(D)
 
 
 """
@@ -154,12 +154,12 @@ function PolyCut2sA(r0, rnn, rc)
    return PolyCut2sA(r0, rnn, rc, C, λopt)
 end
 
-function fcut(C::PolyCut2sA, r)
+function fcut(C::PolyCut2sA, r::Number)
    x = @fastmath(C.C * (exp( C.λ*(r/C.rnn - 1) ) - 1))
    return (x^2-1)^2 * (C.r0 < r < C.rc)
 end
 
-function fcut_d(C::PolyCut2sA, r)
+function fcut_d(C::PolyCut2sA, r::Number)
    e =  @fastmath(exp( C.λ*(r/C.rnn - 1) ))
    x = C.C * (e - 1)
    dx = C.C * e * C.λ / C.rnn
@@ -172,8 +172,23 @@ Dict(C::PolyCut2sA) = Dict( "__id__" => "NBodyIPs_PolyCut2sA",
 
 PolyCut2sA(D::Dict) = PolyCut2sA(D["r0"], D["rnn"], D["rc"], D["C"], D["lam"])
 
-decode_dict(::Val{:NBodyIPs_PolyCut2sA}, D::Dict) = PolyCut2sA(D)
+convert(::Val{:NBodyIPs_PolyCut2sA}, D::Dict) = PolyCut2sA(D)
 
+
+
+# -------------- Some General cutoff mechanics
+
+fcut(C::NBCutoff, r::SVector) = prod(fcut.(Ref(C), r))
+
+function fcut_d(C::NBCutoff, r::AbstractVector)
+   fc = fcut.(Ref(C), r)
+   fctot = prod(fc)
+   if fctot == 0
+      return fctot, zero(typeof(r))
+   end
+   fc_d = fcut_d.(Ref(C), r)
+   return fctot, (fctot * fc_d) ./ fc
+end
 
 end
 

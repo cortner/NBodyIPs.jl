@@ -3,19 +3,20 @@ using JuLIP: JVec
 const BAI = BAInvariants
 
 using LinearAlgebra: dot, norm
+using JuLIP: decode_dict
 
 # -------------- IO -------------------
 
 
 BondAngleDesc(transform::String, cutoff::Union{String, Tuple}) =
-         BondAngleDesc(SpaceTransform(transform), Cutoff(cutoff))
+         BondAngleDesc(SpaceTransform(transform), fcut_analyse(cutoff))
 
 Dict(D::BondAngleDesc) = Dict( "__id__"    =>  "BondAngleDesc",
                                 "transform" =>  Dict(D.transform),
                                 "cutoff"    =>  Dict(D.cutoff) )
 
 BondAngleDesc(D::Dict) = BondAngleDesc( SpaceTransform(D["transform"]),
-                                          Cutoff(D["cutoff"]) )
+                                        decode_dict(D["cutoff"]) )
 
 ==(D1::BondAngleDesc, D2::BondAngleDesc) =
       ( (D1.transform == D2.transform) && (D1.cutoff == D2.cutoff) )
