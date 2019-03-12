@@ -44,6 +44,7 @@ include("descriptors.jl")
 
 # evaluating Polynomials of an invariant coordinate system
 include("polys.jl")
+@reexport using NBodyIPs.Polys
 
 # codes to generate basis functions
 include("polybasis.jl")

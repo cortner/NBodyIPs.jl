@@ -46,7 +46,13 @@ B_dict = Dict.(B)
 fname = tempname() * ".json"
 save_json(fname, Dict("B" => B_dict))
 B_dict2 = load_json(fname)["B"]
-B2 = decode_dict.(B_dict2)
-H1 = hash.(Ref(BASIS()), B)
-H2 = hash.(Ref(BASIS()), B2)
-println(@test(H1 == H2))
+run(`rm $fname`)
+Ba = decode_dict.(B_dict2)
+H = hash.(Ref(BASIS()), B)
+Ha = hash.(Ref(BASIS()), Ba)
+println(@test(H == Ha))
+# check that the hashs reproduce the right number of basis functions
+Hu = unique(H)
+println(@test(length(Hu) == 4))
+lens = [length(findall(H .== Hu[n])) for n = 1:4]
+println(@test(sort(lens) == length.([B1, B2, B3, B4])))
