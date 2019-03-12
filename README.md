@@ -34,6 +34,13 @@ These basis-hashs are used to group and combine the basis functions to
 allow for faster assembly.
 
 
+### Reference potential
+
+The `lsqfit` function allows the kw argument `Vref` which can be an arbitrary
+`AbstractCalculator` that can be used as a reference potential from which to
+start the fit. I.e. the final fit will be `Vref + Vfit`. If the
+kwarg `E0` is provided, then `Vref = OneBody(E0)` is used as default.
+Providing both `E0` and `Vref` means that `E0` will be ignored.
 
 
 <!--
