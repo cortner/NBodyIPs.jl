@@ -1,6 +1,6 @@
 using JuLIP: AbstractCalculator
 using JuLIP.Potentials: @pot
-import Base: hash 
+import Base: hash
 
 # ----------- Abstract Supertype for pure NBodyFunctions --------------
 
@@ -116,16 +116,3 @@ struct ClusterBLDesc{TT <: SpaceTransform, TC <: NBCutoff} <: NBClusterDescripto
    transform::TT
    cutoff::TC
 end
-
-
-"""
-`mutable struct OneBody{T}  <: NBodyFunction{1}`
-
-this should not normally be constructed by a user, but instead E0 should be
-passed to the relevant lsq functions, which will construct it.
-"""
-mutable struct OneBody{T} <: NBodyFunction{1, NullDesc}
-   E0::T
-end
-
-@pot OneBody

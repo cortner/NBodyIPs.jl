@@ -27,6 +27,8 @@ include("cutoffs.jl")
 include("common.jl")
 
 # definitions for the one and only 1-body function
+# this imports OneBody from JuLIP and supplies it with extra
+# functionality needed for the NBodyIPs 
 include("onebody.jl")
 
 # the machinery for evaluating the invariants as fast as possible
