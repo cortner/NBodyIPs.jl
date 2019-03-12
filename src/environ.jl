@@ -15,16 +15,17 @@ using NBodyIPs.PolyBasis: nbpolys
 
 import Base:              Dict,
                           ==,
-                          convert
+                          convert,
+                          hash
 import NBodyIPs:          NBodyIP,
                           bodyorder,
                           fast,
                           combinebasis,
                           _decode_dict,
                           descriptor,
-                          combiscriptor,
                           degree,
-                          basisname
+                          basisname,
+                          BASIS
 
 
 export envpolys, info
@@ -86,10 +87,10 @@ bodyorder(V::AbstractEnvIP{N}) where {N} = Int(N)
 
 descriptor(V::EnvIP) = descriptor(V.Vr)
 
-combiscriptor(V::EnvIP) = (EnvIP,
-                           combiscriptor(V.Vr),
-                           V.str_Vn,
-                           V.t)
+hash(::BASIS, V::EnvIP) = hash((EnvIP,
+                                hash(BASIS(), V.Vr),
+                                hash(V.str_Vn),
+                                hash(V.t)))
 
 function degree(V::EnvIP)
    if length(V.Vr) == 1
@@ -171,9 +172,9 @@ EnvPoly(t, Vr, str_Vn::String, cutoff_Vn::AbstractFloat) =
 
 descriptor(V::EnvPoly) = descriptor(V.Vr[1])
 
-combiscriptor(V::EnvPoly) = (EnvPoly,
-                             combiscriptor.(V.Vr),
-                             V.str_Vn)
+hash(::BASIS, V::EnvPoly) = hash(( hash(EnvPoly),
+                                   hash.(Ref(BASIS()), V.Vr),
+                                   hash(V.str_Vn) ))
 
 Vn(V::EnvPoly) = V.Vn
 Vr(V::EnvPoly) = V.Vr

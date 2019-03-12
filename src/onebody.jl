@@ -1,10 +1,10 @@
 import Base: convert, ==
 using JuLIP.Potentials: @pot
-
+export OneBody
 
 descriptor(::OneBody) = NullDesc()
 
-combiscriptor(::OneBody) = (OneBody, )
+hash(::BASIS, ::OneBody) = hash(OneBody)
 
 evaluate(V::OneBody) = V.E0
 site_energies(V::NBodyFunction{1}, at::Atoms) = fill(V(), length(at))

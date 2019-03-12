@@ -28,19 +28,20 @@ using NBodyIPs: NBodyFunction,
                 invariants,
                 edges2bo,
                 bo2edges,
-                ninvariants
+                ninvariants,
+                BASIS 
 
 
 import Base:              length,
                           Dict,
-                          ==
+                          ==,
+                          hash
 import JuLIP:             cutoff
 import JuLIP.Potentials:  @pot
 import NBodyIPs:          fast,
                           degree,
                           combinebasis,
                           descriptor,
-                          combiscriptor,
                           evaluate_many!,
                           evaluate_many_d!,
                           evaluate_I,
@@ -100,7 +101,8 @@ descriptor(V::NBPoly) = V.D
 
 basisname(::NBPoly) = "NBPoly"
 
-combiscriptor(V::NBPoly) = (NBPoly, bodyorder(V), combiscriptor(V.D))
+hash(::BASIS, V::NBPoly) =
+   hash( (hash(NBPoly), hash(bodyorder(V)), hash(BASIS(), V.D)) )
 
 # standard constructor (N can be inferred)
 NBPoly(t::VecTup{K}, c, D) where {K} = NBPoly(t, c, D, Val(edges2bo(K-1)))
@@ -137,7 +139,7 @@ end
 function combinebasis(basis::AbstractVector{TV}, coeffs) where {TV <: NBPoly}
    # assume all basis functions have compatible descriptor
    # as well as compatible polytype, this should have been checked
-   # already via the `combiscriptor`
+   # already via the `hash(::BASIS,...)`
 
    # collect all tuples and coefficients into a long list
    tt = Vector{eltype(basis[1].t)}()

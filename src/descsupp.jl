@@ -41,7 +41,7 @@ Dict(t::SpaceTransform) = Dict( "__id__" => "SpaceTransform",
 
 SpaceTransform(D::Dict) = SpaceTransform(D["defn"])
 
-combiscriptor(t::SpaceTransform) = t.id
+hash(::BASIS, t::SpaceTransform) = hash((SpaceTransform, t.id))
 
 
 # -------------- Cut-off Mechanisms ---------------

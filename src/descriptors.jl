@@ -8,8 +8,8 @@ ninvariants(D::NBodyDescriptor, vN::Val{N}) where {N} = length.(tdegrees(D, vN))
 @inline transform_d(D::NBodyDescriptor, r::Number) = D.transform.f_d(r)
 @inline cutoff(D::NBodyDescriptor) = cutoff(D.cutoff)
 
-combiscriptor(D::NBodyDescriptor) =
-      (combiscriptor(D.transform), combiscriptor(D.cutoff))
+hash(::BASIS, D::NBodyDescriptor) =
+      hash((hash(BASIS(), D.transform), hash(BASIS(), D.cutoff)))
 
 evaluate(V::NBodyFunction, Rs, i, J) =
       evaluate(V, descriptor(V), Rs, i, J)

@@ -80,8 +80,8 @@ function basisname end
 
 """
 `combinebasis`:  if `basis::Vector{AbstractCalculator}` with identical
-`combiscriptor`, then `combinebasis(basis, coeffs)` should return a new calculator
-that combines all basis function into a single IP.
+`hash(::BASIS,...)`, then `combinebasis(basis, coeffs)` should return a new
+calculator that combines all basis function into a single IP.
 """
 function combinebasis end
 
@@ -92,13 +92,6 @@ function invariants_ed end
 
 # prototypes for obtaining the descriptor
 function descriptor end
-
-"""
-`combiscriptor(b) -> Any`: provides any description of the basis functio
-`b` such that, two basis functions `b1, b2` can be combined into one
-if and only if their "combiscriptors" match.
-"""
-function combiscriptor end
 
 function evaluate_I end
 function evaluate_I_d end
@@ -120,7 +113,7 @@ by switching to a different representation.
 fast(IP::NBodyIP) = NBodyIP( fast.(IP.components) )
 
 function unique_components(basis)
-   bods = combiscriptor.(basis)
+   bods = hash.(Ref(BASIS()), basis)
    un = Int[]
    I = Vector{Int}[]
    for i = 1:length(bods)

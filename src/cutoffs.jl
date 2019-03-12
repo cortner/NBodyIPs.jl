@@ -14,8 +14,8 @@ const cutsp_d = JuLIP.Potentials.fcut_d
 
 import JuLIP: decode_dict
 import JuLIP.Potentials: cutoff
-import NBodyIPs: fcut, fcut_d, combiscriptor, NBCutoff
-import Base: Dict, convert
+import NBodyIPs: fcut, fcut_d, NBCutoff
+import Base: Dict, convert 
 
 export CosCut, CosCut2s, PolyCut, PolyCutSym, PolyCut2sA
 

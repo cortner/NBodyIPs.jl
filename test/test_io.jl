@@ -1,7 +1,8 @@
 using Test
 using NBodyIPs
 using NBodyIPs.Polys
-using NBodyIPs: BondLengthDesc, SpaceTransform, OneBody
+using NBodyIPs: BondLengthDesc, SpaceTransform, OneBody, BASIS
+using JuLIP: save_json, load_json, decode_dict
 
 ##
 println("Check (De-)Dictionisation of `BondLengthDesc`")
@@ -9,10 +10,10 @@ D = BondLengthDesc("r -> (2.0/r)^3", "(:cos, 6.0, 9.0)")
 Ds = Dict(D)
 D1 = BondLengthDesc(Ds)
 println(@test D1 == D)
-
+println(@test hash(BASIS(), D) == hash(BASIS(), D1))
 ##
 println("generate some basis functions")
-rcuts = [9.2, 6.2, 4.5]   # 9.2
+rcuts = [9.2, 6.2, 4.5]
 TRANSFORM = "r -> (2.9/r)^3"
 CUTOFF = ["(:cos, $(0.66*rcut), $(rcut))" for rcut in rcuts]
 B1 = [OneBody(1.0)]
@@ -35,3 +36,17 @@ save_ip(fname, IP)
 IP2, _ = load_ip(fname)
 println(@test IP2 == IP)
 run(`rm $fname`)
+
+
+##
+# We can also see what happens if we store a vector of basis functions
+# and then try to recombine them?
+# (and this also tests a bit the storing and loading of basis sets)
+B_dict = Dict.(B)
+fname = tempname() * ".json"
+save_json(fname, Dict("B" => B_dict))
+B_dict2 = load_json(fname)["B"]
+B2 = decode_dict.(B_dict2)
+H1 = hash.(Ref(BASIS()), B)
+H2 = hash.(Ref(BASIS()), B2)
+println(@test(H1 == H2))
