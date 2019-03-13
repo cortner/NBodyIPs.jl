@@ -8,7 +8,7 @@ using JuLIP, Test, StaticArrays
    @testset "Iterators" begin include("test_iterators.jl") end
    @testset "Invariants" begin include("test_invariants.jl") end
    @testset "Cutoffs" begin include("test_cutoffs.jl") end
-   @testset "OneBody" begin include("onebody.jl") end
+   @testset "OneBody" begin include("test_onebody.jl") end
    @testset "Polys" begin include("test_polys.jl") end
    @testset "Static Polys" begin include("test_stpolys.jl") end
    @testset "NBodyIP IO" begin include("test_io.jl") end
