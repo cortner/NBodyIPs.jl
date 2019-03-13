@@ -3,7 +3,6 @@ using JuLIP, Test, StaticArrays
 
 # TODO: * monomials testset
 #       * fast_polys testset
-#       * OneBody
 
 @testset "NBodyIPs" begin
    @testset "Iterators" begin include("test_iterators.jl") end

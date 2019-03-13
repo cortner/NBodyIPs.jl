@@ -1,5 +1,9 @@
 export OneBody
 
+# the type definition of OneBody is in JuLIP to enable its use from
+# IPFitting without having to load NBodyIPs. Here we just extend
+# the functionality so that it can work effectively with NBodyIPs
+
 using JuLIP: Atoms
 import JuLIP.Potentials: OneBody
 import JuLIP: energy, forces, virial
@@ -13,7 +17,7 @@ fast(V::OneBody) = V
 
 hash(::BASIS, ::OneBody) = hash(OneBody)
 
-bodyorder(V::OneBody) = 1 
+bodyorder(V::OneBody) = 1
 
 energy(B::AbstractVector{TB}, at::Atoms{T}) where {TB <: OneBody, T} =
    [ energy(b, at) for b in B ]
