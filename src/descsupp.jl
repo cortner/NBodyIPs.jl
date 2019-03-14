@@ -14,7 +14,7 @@ import Base: Dict,
 
 ==(T1::SpaceTransform, T2::SpaceTransform) = (T1.id == T2.id)
 
-function SpaceTransform(strans::String; fwrap = false)
+function SpaceTransform(strans::String; fwrap = true)
    strans0 = strans
    # if @analytic is a substring then we don't do anything
    if !occursin(r"@analytic", strans)
