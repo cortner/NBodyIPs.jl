@@ -4,8 +4,8 @@
 ninvariants(D::NBodyDescriptor, N::Integer) = ninvariants(D, Val(N))
 ninvariants(D::NBodyDescriptor, vN::Val{N}) where {N} = length.(tdegrees(D, vN))
 
-@inline transform(D::NBodyDescriptor, r::Number) = D.transform.f(r)
-@inline transform_d(D::NBodyDescriptor, r::Number) = D.transform.f_d(r)
+@inline transform(D::NBodyDescriptor, r::Number) = transform(D.transform, r)
+@inline transform_d(D::NBodyDescriptor, r::Number) = transform_d(D.transform, r)
 @inline cutoff(D::NBodyDescriptor) = cutoff(D.cutoff)
 
 hash(::BASIS, D::NBodyDescriptor) =

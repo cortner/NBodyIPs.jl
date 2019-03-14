@@ -11,7 +11,7 @@ nbasis = [0, 10, 50, 100, 300]
 
 println("Setting up the test systems ...")
 r0 = rnn(:Cu)
-TRANSFORM = "r -> exp( - 3 * ((r/$r0) - 1))"
+TRANSFORM = ExpTransform(3, r0)
 at = rattle!(bulk(:Cu, cubic=true) * 2, 0.05)
 rcut3 = 3.1 * r0
 D3 = BondLengthDesc(TRANSFORM, CosCut(0.66*rcut3, rcut3) )

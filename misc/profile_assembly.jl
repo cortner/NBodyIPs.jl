@@ -6,12 +6,12 @@ using NBodyIPs, StaticArrays, BenchmarkTools, JuLIP, Test, Profile
 #                bo2angles, bo2edges
 using NBodyIPs.Polys
 
-TRANSFORM = "r -> (2.9/r)^3"
+TRANSFORM = PolyTransform(3, 2.9) # "r -> (2.9/r)^3"
 DEGREES = [18, 14, 12, 10]
 RCUT = [7.0, 5.80, 4.5, 4.1]
 
 function random_ip(DT)
-   DD = [ DT(TRANSFORM, (:cos, (0.66*rcut), rcut))  for rcut in RCUT ]
+   DD = [ DT(TRANSFORM, CosCut(0.66*rcut, rcut))  for rcut in RCUT ]
 
    # 2-body potential
    B2 = nbpolys(2, DD[1], DEGREES[1])
@@ -48,16 +48,34 @@ at = rattle!(bulk(:W, cubic=true) * 3, 0.01)
 energy(IPf, at)
 forces(IPf, at)
 at = rattle!(bulk(:W, cubic=true) * 10, 0.01)
+@info("Energy")
 @time energy(IPf, at)
 @time energy(IPf, at)
+@info("Forces")
 @time forces(IPf, at)
 @time forces(IPf, at)
 
-@profile forces(IPf, at)
-Profile.print()
+# @profile forces(IPf, at)
+# Profile.print()
 exit()
 
-
+# # NEW
+#   1.172545 seconds (21.05 M allocations: 685.697 MiB, 10.16% gc time)
+#   1.182909 seconds (21.05 M allocations: 685.697 MiB, 9.84% gc time)
+#   1.722956 seconds (33.95 M allocations: 729.967 MiB, 7.34% gc time)
+#   1.799147 seconds (33.95 M allocations: 729.967 MiB, 10.56% gc time)
+#
+# 81c72ac038fc913362498daabd3c10b7c454aead
+#   0.876188 seconds (6.16 M allocations: 458.036 MiB, 7.11% gc time)
+#   1.105670 seconds (4.16 M allocations: 275.011 MiB, 3.40% gc time)
+#
+# a55e5131138868cccd762e4cb5aa4be31cc45ff7
+#   0.892961 seconds (6.16 M allocations: 458.036 MiB, 7.07% gc time)
+#   1.095519 seconds (4.16 M allocations: 275.011 MiB, 3.37% gc time)
+#
+# latest:
+#   1.118373 seconds (21.05 M allocations: 685.331 MiB, 10.20% gc time)
+#  1.709163 seconds (33.95 M allocations: 729.234 MiB, 10.76% gc time)
 
 
 

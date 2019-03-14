@@ -50,14 +50,14 @@ for Desc in [BondLengthDesc, BondAngleDesc]
 
    println("Setting up the test systems ...")
    r0 = rnn(:Cu)
-   TRANSFORM = "r -> exp( - 3 * ((r/$r0) - 1))"
+   TRANSFORM = ExpTransform(3, r0)
    at = rattle!(bulk(:Cu, cubic=true) * 2, 0.05)
    rcut3 = 3.1 * r0
-   D3 = Desc(TRANSFORM, (:cos, 0.66*rcut3, rcut3) )
+   D3 = Desc(TRANSFORM, CosCut(0.66*rcut3, rcut3) )
    rcut4 = 2.1 * r0
-   D4 = Desc(TRANSFORM, (:cos, 0.66*rcut4, rcut4) )
+   D4 = Desc(TRANSFORM, CosCut(0.66*rcut4, rcut4) )
    rcut5 = 1.5 * r0
-   D5 = Desc(TRANSFORM, (:cos, 0.66*rcut5, rcut5) )
+   D5 = Desc(TRANSFORM, CosCut(0.66*rcut5, rcut5) )
    DD = [nothing, D3, D3, D4, D5]
 
    random_nbody(N, ntup) = (

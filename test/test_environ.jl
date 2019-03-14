@@ -12,8 +12,8 @@ println("Setting up the test systems ...")
 r0 = rnn(:Cu)
 rcut3 = 2.1 * r0
 at = rattle!(bulk(:Cu, cubic=true) * 2, 0.02)
-D3 = BondLengthDesc("exp( - 3 * ((r/$r0) - 1))",
-                    "(:cos, $(0.66*rcut3), $rcut3)" )
+D3 = BondLengthDesc(ExpTransform(3, r0),
+                    CosCut(0.66*rcut3, rcut3) )
 
 random_3body(ntup=1) = NBPoly( [tuple( [rand(1:4, 3); 0]... ) for n = 1:ntup],
                                  (0.1.+rand(ntup))/factorial(3), D3 )

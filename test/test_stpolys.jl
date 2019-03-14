@@ -8,8 +8,8 @@ using NBodyIPs.Polys
 using LinearAlgebra
 
 rcut = 7.0
-TRANSFORM = "r -> (2.9/r)^3"
-CUTOFF3 = (:cos, 0.66*rcut, rcut)
+TRANSFORM = PolyTransform(3, 2.9)
+CUTOFF3 = CosCut(0.66*rcut, rcut)
 Dbl = BondLengthDesc(TRANSFORM, CUTOFF3)
 Dba = BondAngleDesc(TRANSFORM, CUTOFF3)
 

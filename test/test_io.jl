@@ -6,7 +6,7 @@ using JuLIP: save_json, load_json, decode_dict
 
 ##
 println("Check (De-)Dictionisation of `BondLengthDesc`")
-D = BondLengthDesc("r -> (2.0/r)^3", "(:cos, 6.0, 9.0)")
+D = BondLengthDesc(PolyTransform(3, 2.0), CosCut(6.0, 9.0))
 Ds = Dict(D)
 D1 = BondLengthDesc(Ds)
 println(@test D1 == D)
@@ -14,8 +14,8 @@ println(@test hash(BASIS(), D) == hash(BASIS(), D1))
 ##
 println("generate some basis functions")
 rcuts = [9.2, 6.2, 4.5]
-TRANSFORM = "r -> (2.9/r)^3"
-CUTOFF = ["(:cos, $(0.66*rcut), $(rcut))" for rcut in rcuts]
+TRANSFORM = PolyTransform(3, 2.9)
+CUTOFF = [CosCut(0.66*rcut, rcut) for rcut in rcuts]
 B1 = [OneBody(1.0)]
 B2 = blpolys(2, TRANSFORM, CUTOFF[1], 12)
 B3 = blpolys(3, TRANSFORM, CUTOFF[2], 10)

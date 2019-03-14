@@ -48,14 +48,14 @@ loop for this case.
 """
 abstract type NBClusterDescriptor <: NBSiteDescriptor end
 
-struct SpaceTransform{FT, FDT, VT}
-   id::String
-   f::FT
-   f_d::FDT
-   valid::VT
-end
 
-SpaceTransform(id, f, f_d) = SpaceTransform(id, f, f_d, Val(Symbol(id)))
+abstract type AbstractTransform end
+
+function transform end
+function transform_d end
+
+include("transforms.jl")
+
 
 abstract type NBCutoff end
 
@@ -96,7 +96,7 @@ end
 
 export BondAngleDesc
 
-struct BondAngleDesc{TT <: SpaceTransform, TC <: NBCutoff} <: NBSiteDescriptor
+struct BondAngleDesc{TT <: AbstractTransform, TC <: NBCutoff} <: NBSiteDescriptor
    transform::TT
    cutoff::TC
 end
@@ -104,7 +104,7 @@ end
 
 export BondLengthDesc
 
-struct BondLengthDesc{TT <: SpaceTransform, TC <: NBCutoff} <: NBSiteDescriptor
+struct BondLengthDesc{TT <: AbstractTransform, TC <: NBCutoff} <: NBSiteDescriptor
    transform::TT
    cutoff::TC
 end
@@ -112,7 +112,7 @@ end
 
 export ClusterBLDesc
 
-struct ClusterBLDesc{TT <: SpaceTransform, TC <: NBCutoff} <: NBClusterDescriptor
+struct ClusterBLDesc{TT <: AbstractTransform, TC <: NBCutoff} <: NBClusterDescriptor
    transform::TT
    cutoff::TC
 end
