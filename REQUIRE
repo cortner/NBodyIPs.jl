@@ -6,4 +6,5 @@ StaticArrays
 JSON
 StaticPolynomials
 KahanSummation
-Roots 
+Roots
+Sobol
