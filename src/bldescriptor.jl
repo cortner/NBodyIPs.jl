@@ -11,7 +11,7 @@ Dict(D::BondLengthDesc) = Dict( "__id__"    =>  "BondLengthDesc",
                                 "transform" =>  Dict(D.transform),
                                 "cutoff"    =>  Dict(D.cutoff) )
 
-BondLengthDesc(D::Dict) = BondLengthDesc( SpaceTransform(D["transform"]),
+BondLengthDesc(D::Dict) = BondLengthDesc( decode_dict(D["transform"]),
                                           decode_dict(D["cutoff"]) )
 
 ==(D1::BondLengthDesc, D2::BondLengthDesc) =
@@ -128,8 +128,8 @@ Dict(D::ClusterBLDesc) = Dict( "__id__"    =>  "ClusterBLDesc",
                                 "transform" =>  Dict(D.transform),
                                 "cutoff"    =>  Dict(D.cutoff) )
 
-ClusterBLDesc(D::Dict) = ClusterBLDesc( SpaceTransform(D["transform"]),
-                                           decode_dict(D["cutoff"]) )
+ClusterBLDesc(D::Dict) = ClusterBLDesc( decode_dict(D["transform"]),
+                                        decode_dict(D["cutoff"]) )
 
 ==(D1::ClusterBLDesc, D2::ClusterBLDesc) =
       ( (D1.transform == D2.transform) && (D1.cutoff == D2.cutoff) )

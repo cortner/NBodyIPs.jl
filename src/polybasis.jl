@@ -125,7 +125,7 @@ generates a basis set of Bond-length many-body functions, with
 
 For more flexibility the kwargs `tuplebound` can be used, use with care.
 """
-blpolys(N::Integer, trans::String, cutoff::String, deg; kwargs...) =
+blpolys(N::Integer, trans, cutoff, deg; kwargs...) =
    nbpolys(N, BondLengthDesc(trans, cutoff), deg; kwargs...)
 
 """
@@ -139,10 +139,10 @@ generates a basis set of Bond-angle many-body functions, with
 
 For more flexibility the kwargs `tuplebound` can be used, use with care.
 """
-bapolys(N::Integer, trans::String, cutoff::String, deg; kwargs...) =
+bapolys(N::Integer, trans, cutoff, deg; kwargs...) =
    nbpolys(N, BondAngleDesc(trans, cutoff), deg; kwargs...)
 
-bapolys(N::Integer, trans::String, cutoff::String,
+bapolys(N::Integer, trans, cutoff,
         degarg1, degarg2; kwargs...) =
    nbpolys(N, BondAngleDesc(trans, cutoff), degarg1, degarg2; kwargs...)
 

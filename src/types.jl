@@ -5,6 +5,17 @@ import Base: hash
 # ----------- Abstract Supertype for pure NBodyFunctions --------------
 
 """
+an artificial type to allow dispatch but our different packages
+don't need to know about it => this avoids a superpackage of abstract
+type definitions.
+
+This `::BASIS` is e.g. used to create hashs of basis functions that
+don't include the parameters but only the basis function class
+"""
+const BASIS = Val{:basis}
+
+
+"""
 `NBodyFunction` : abstract supertype of all "pure" N-body functions.
 concrete subtypes must implement
 
@@ -62,16 +73,6 @@ abstract type NBCutoff end
 # prototypes for cutoffs
 function fcut end
 function fcut_d end
-
-"""
-an artificial type to allow dispatch but our different packages
-don't need to know about it => this avoids a superpackage of abstract
-type definitions.
-
-This `::BASIS` is e.g. used to create hashs of basis functions that
-don't include the parameters but only the basis function class
-"""
-const BASIS = Val{:basis}
 
 """
 `hash(::BASIS, b) -> UInt`: provides a description of the basis function

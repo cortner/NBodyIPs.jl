@@ -59,26 +59,20 @@ at = rattle!(bulk(:W, cubic=true) * 10, 0.01)
 # Profile.print()
 exit()
 
-# # NEW
+# F64WRAP
 #   1.172545 seconds (21.05 M allocations: 685.697 MiB, 10.16% gc time)
 #   1.182909 seconds (21.05 M allocations: 685.697 MiB, 9.84% gc time)
 #   1.722956 seconds (33.95 M allocations: 729.967 MiB, 7.34% gc time)
 #   1.799147 seconds (33.95 M allocations: 729.967 MiB, 10.56% gc time)
-#
+
+# ORIGINAL
 # 81c72ac038fc913362498daabd3c10b7c454aead
 #   0.876188 seconds (6.16 M allocations: 458.036 MiB, 7.11% gc time)
 #   1.105670 seconds (4.16 M allocations: 275.011 MiB, 3.40% gc time)
 #
-# a55e5131138868cccd762e4cb5aa4be31cc45ff7
-#   0.892961 seconds (6.16 M allocations: 458.036 MiB, 7.07% gc time)
-#   1.095519 seconds (4.16 M allocations: 275.011 MiB, 3.37% gc time)
-#
-# latest:
-#   1.118373 seconds (21.05 M allocations: 685.331 MiB, 10.20% gc time)
-#  1.709163 seconds (33.95 M allocations: 729.234 MiB, 10.76% gc time)
-
-
-
+# REWRITE
+#  0.905021 seconds (6.16 M allocations: 458.402 MiB, 7.75% gc time)
+#  1.163815 seconds (4.16 M allocations: 275.378 MiB, 3.88% gc time)
 
 
 # test correctness first

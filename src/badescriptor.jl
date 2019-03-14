@@ -15,7 +15,7 @@ Dict(D::BondAngleDesc) = Dict( "__id__"    =>  "BondAngleDesc",
                                 "transform" =>  Dict(D.transform),
                                 "cutoff"    =>  Dict(D.cutoff) )
 
-BondAngleDesc(D::Dict) = BondAngleDesc( SpaceTransform(D["transform"]),
+BondAngleDesc(D::Dict) = BondAngleDesc( decode_dict(D["transform"]),
                                         decode_dict(D["cutoff"]) )
 
 ==(D1::BondAngleDesc, D2::BondAngleDesc) =
