@@ -29,7 +29,7 @@ using NBodyIPs: NBodyFunction,
                 edges2bo,
                 bo2edges,
                 ninvariants,
-                BASIS 
+                BASIS
 
 
 import Base:              length,

@@ -58,5 +58,7 @@ include("environ.jl")
 
 # regularisation methods specialised for NBodyIPs
 include("sobol.jl")
+include("regularisers.jl")
+@reexport using NBodyIPs.Regularisers
 
 end # module

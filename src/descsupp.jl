@@ -1,5 +1,7 @@
 import JuLIP
 
+# TODO: get rid of this file altogether
+
 using JuLIP.Potentials: @analytic,
                         AnalyticFunction,
                         F64fun
@@ -11,37 +13,6 @@ import Base: Dict,
 
 # -------------- Space Tranformations ---------------
 
-
-==(T1::SpaceTransform, T2::SpaceTransform) = (T1.id == T2.id)
-
-function SpaceTransform(strans::String; fwrap = true)
-   strans0 = strans
-   # if @analytic is a substring then we don't do anything
-   if !occursin(r"@analytic", strans)
-      # but if not, then we next look for ->
-      if !occursin(r"->", strans)
-         # if -> is not a substring then we assume that strans is of the form
-         # "(r0/r)^4" or similar i.e. explicitly uses r as the variable.
-         strans = "@analytic r -> " * strans
-      else
-         # @analytic is not a substring but -> is a substring. e.g.
-         # r -> (r0/r)^3 or s -> (r0/s)^3. we add @analytic to compile it
-         strans = "@analytic " * strans
-      end
-   end
-   ftrans = eval(Meta.parse(strans))
-   if fwrap
-      return SpaceTransform(strans0, F64fun(ftrans.f), F64fun(ftrans.f_d))
-   end
-   return SpaceTransform(strans0, ftrans.f, ftrans.f_d)
-end
-
-Dict(t::SpaceTransform) = Dict( "__id__" => "SpaceTransform",
-                                "defn" => t.id )
-
-SpaceTransform(D::Dict) = SpaceTransform(D["defn"])
-
-hash(::BASIS, t::SpaceTransform) = hash((SpaceTransform, t.id))
 
 
 # -------------- Cut-off Mechanisms ---------------

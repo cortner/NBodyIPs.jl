@@ -1,7 +1,7 @@
 
 using JuLIP: JVec
 const BAI = BAInvariants
-
+import Base: == 
 using LinearAlgebra: dot, norm
 using JuLIP: decode_dict
 

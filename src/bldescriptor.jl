@@ -1,5 +1,5 @@
 using LinearAlgebra: norm
-
+import Base: == 
 const BLI = BLInvariants
 using JuLIP:decode_dict
 

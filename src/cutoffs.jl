@@ -15,7 +15,7 @@ const cutsp_d = JuLIP.Potentials.fcut_d
 import JuLIP: decode_dict
 import JuLIP.Potentials: cutoff
 import NBodyIPs: fcut, fcut_d, NBCutoff
-import Base: Dict, convert 
+import Base: Dict, convert
 
 export CosCut, CosCut2s, PolyCut, PolyCutSym, PolyCut2sA
 
@@ -69,7 +69,7 @@ end
 cutoff(C::CosCut2s) = C.ro2
 fcut(C::CosCut2s, r::Number) = (1-coscut(r, C.ri1, C.ri2)) * coscut(r, C.ro1, C.ro2)
 fcut_d(C::CosCut2s, r::Number) = (- coscut_d(r, C.ri1, C.ri2) * coscut(r, C.ro1, C.ro2)
-                       + (1-coscut(r, C.ri1, C.ri2)) * coscut_d(r, C.ro1, C.ro2))
+   + (1-coscut(r, C.ri1, C.ri2)) * coscut_d(r, C.ro1, C.ro2))
 Dict(C::CosCut2s) = Dict( "__id__" => "NBodyIPs_CosCut2s",
                         "ri1" => C.ri1, "ri2" => C.ri2,
                         "ro1" => C.ro1, "ro2" => C.ro2 )
@@ -96,7 +96,7 @@ struct PolyCut{TI, T} <: NBCutoff
 end
 cutoff(C::PolyCut) = C.rc
 fcut(C::PolyCut, r::Number) = @fastmath((r/C.rc - 1)^C.p * (r < C.rc))
-fcut_d(C::PolyCut, r::Number) = @fastmath(C.p/C.rc * (r/C.rc - 1)^(C.p-1) * (r<C.rc))
+fcut_d(C::PolyCut, r::Number) = @fastmath(C.p/C.rc * (r/C.rc - 1)^(C.p-1) * (r < C.rc))
 Dict(C::PolyCut) = Dict( "__id__" => "NBodyIPs_PolyCut",
                         "p" => C.p, "rc" => C.rc)
 PolyCut(D::Dict) = PolyCut(D["p"], D["rc"])
@@ -178,7 +178,7 @@ convert(::Val{:NBodyIPs_PolyCut2sA}, D::Dict) = PolyCut2sA(D)
 
 # -------------- Some General cutoff mechanics
 
-fcut(C::NBCutoff, r::SVector) = prod(fcut.(Ref(C), r))
+fcut(C::NBCutoff, r::AbstractVector) = prod(fcut.(Ref(C), r))
 
 function fcut_d(C::NBCutoff, r::AbstractVector)
    fc = fcut.(Ref(C), r)
