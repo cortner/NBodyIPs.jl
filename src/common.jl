@@ -203,3 +203,22 @@ function evaluate_d(V::NBodyFunction{N}, rθ::Tuple{SVector{M1}, SVector{M2}}
    Vn, Vn_d = evaluate_I_ed(V, invariants_ed(D, rθ))
    return fc * Vn_d + fc_d * Vn
 end
+
+
+
+"""
+Take a basis and split it into individual basis groups.
+"""
+function split_basis(basis; splitfun = b -> hash(Val{:basis}(), b))
+   # get some basis hashs of the individual basis functions
+   tps = splitfun.(basis)
+   Iord = Vector{Int}[]
+   Bord = Any[]
+   for tp in unique(tps)
+      # find which elements of basis have type `tp`
+      I = findall( [tp == t  for t in tps] )
+      push!(Iord, I)
+      push!(Bord, [b for b in basis[I]])
+   end
+   return Bord, Iord
+end

@@ -71,7 +71,8 @@ end
 # e^{-A (r/r0 - 1)) = x
 # r/r0 - 1 = - (log x) / A
 # r = r0 * (1 - (log x) / A)
-inv_transform(t::ExpTransform, x::Number) = r0 * (1 - log(x) / A)
+# TODO: write a test that checks this inverse
+inv_transform(t::ExpTransform, x::Number) = t.r0 * (1 - log(x) / t.A)
 
 Dict(t::ExpTransform) =
    Dict("__id__" => "NBodyIPs_ExpTransform", "A" => t.A, "r0" => t.r0)
@@ -97,6 +98,10 @@ end
 
 @pure transform(t::PolyTransform, r::Number) = @fastmath((t.r0/r)^t.p)
 @pure transform_d(t::PolyTransform, r::Number) = @fastmath((-t.p/t.r0) * (t.r0/r)^(t.p+1))
+
+# x = (r0/r)^p
+# r x^{1/p} = r0
+inv_transform(t::PolyTransform, r::Number) = t.r0 / x^(1/t.p)
 
 Dict(t::PolyTransform) =
    Dict("__id__" => "NBodyIPs_PolyTransform",

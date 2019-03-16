@@ -35,13 +35,12 @@ module Regularisers
 using StaticArrays
 using JuLIP: AbstractCalculator
 using JuLIP.Potentials: evaluate_d
-using NBodyIPs: bodyorder, transform, evaluate_many_ricoords!, descriptor
+using NBodyIPs: bodyorder, transform, evaluate_many_ricoords!, descriptor,
+                  inv_transform, split_basis
 using NBodyIPs.Polys: NBPoly
 using NBodyIPs.EnvIPs: EnvIP
-# using NBodyIPFitting.Tools: @def
-# using NBodyIPFitting.DB: split_basis
 using LinearAlgebra: I
-using NBodyIPs.Sobol
+using NBodyIPs.Sobol: filtered_sobol, filtered_cart_sobol, bl_is_simplex
 
 import Base: Matrix, Dict
 
@@ -158,7 +157,7 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
    @assert all(descriptor(b) == D  for b in B[Ib])
 
    # scalar inverse transform
-   inv_t = x -> inv_transform(x, reg.r0, reg.r1, D)
+   inv_t = x -> inv_transform(D.transform, x) # , reg.r0, reg.r1, D)
 
    # filter
    if reg isa BLRegulariser
@@ -180,7 +179,7 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
 
    if reg.sequence == :sobol
       # construct a low discrepancy sequence
-      X = filtered_sobol(x0, x1, filter; npoints = 10*reg.npoints, nfiltered=reg.npoints)
+      X = filtered_sobol(x0, x1, filter; npoints=reg.npoints, nfailed=100*reg.npoints)
    elseif reg.sequence == :cart
       error("TODO: implement `sequence == :cart`")
    elseif reg.sequence isa Vector # assume it is a data vector
