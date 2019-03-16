@@ -5,6 +5,8 @@
 #      conversion from ASE???
 # * poly_regularise
 #   that is available for all sub-modules?
+# * a better structure for the descriptors and for the
+#    coordinate transforms
 
 """
 # `NBodyIPs.jl`

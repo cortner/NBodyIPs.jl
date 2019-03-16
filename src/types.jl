@@ -118,3 +118,6 @@ struct ClusterBLDesc{TT <: AbstractTransform, TC <: NBCutoff} <: NBClusterDescri
    transform::TT
    cutoff::TC
 end
+
+transform(D::NBodyDescriptor) = D.transform
+transform(V::NBodyFunction) = transform(descriptor(V))

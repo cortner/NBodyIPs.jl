@@ -122,7 +122,6 @@ Constructor: `CoulombTransform()`
 """
 struct CoulombTransform <: AbstractTransform
 end
-
 @pure transform(t::CoulombTransform, r::Number) = @fastmath(1/r)
 @pure transform_d(t::CoulombTransform, r::Number) = @fastmath(-1/(r*r))
 inv_transform(t::CoulombTransform, x::Number) = 1/x
