@@ -68,6 +68,11 @@ end
 @pure transform(t::ExpTransform, r::Number) = exp( - t.A * (r/t.r0 - 1))
 @pure transform_d(t::ExpTransform, r::Number) = (-t.A/t.r0) * exp( - t.A * (r/t.r0 - 1) )
 
+# e^{-A (r/r0 - 1)) = x
+# r/r0 - 1 = - (log x) / A
+# r = r0 * (1 - (log x) / A)
+inv_transform(t::ExpTransform, x::Number) = r0 * (1 - log(x) / A)
+
 Dict(t::ExpTransform) =
    Dict("__id__" => "NBodyIPs_ExpTransform", "A" => t.A, "r0" => t.r0)
 ExpTransform(D::Dict) = ExpTransform(D["A"], D["r0"])

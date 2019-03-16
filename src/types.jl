@@ -94,6 +94,7 @@ Use `load_ip` to load from a file (normally `jld2` or `json`)
 mutable struct NBodyIP <: AbstractCalculator
    components::Vector{AbstractCalculator}
 end
+export NBodyIP
 
 export BondAngleDesc
 
