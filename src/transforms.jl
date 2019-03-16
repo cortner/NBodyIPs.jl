@@ -1,7 +1,8 @@
 
 using Base:@pure
 
-export SpaceTransform, ExpTransform, PolyTransform
+export SpaceTransform, ExpTransform, PolyTransform,
+       IdTransform, CoulombTransform, MorseTransform
 import Base: convert, Dict, ==
 
 # TODO: rename this AnalyticTransform
@@ -101,7 +102,7 @@ end
 
 # x = (r0/r)^p
 # r x^{1/p} = r0
-inv_transform(t::PolyTransform, r::Number) = t.r0 / x^(1/t.p)
+inv_transform(t::PolyTransform, x::Number) = t.r0 / x^(1/t.p)
 
 Dict(t::PolyTransform) =
    Dict("__id__" => "NBodyIPs_PolyTransform",
@@ -110,3 +111,43 @@ Dict(t::PolyTransform) =
 PolyTransform(D::Dict) = PolyTransform(D["p"], D["r0"])
 convert(::Val{:NBodyIPs_PolyTransform}, D::Dict) = PolyTransform(D)
 hash(::BASIS, t::PolyTransform) = hash(t)
+
+
+"""
+Implements the space transform
+```
+r -> 1/r
+```
+Constructor: `CoulombTransform()`
+"""
+struct CoulombTransform <: AbstractTransform
+end
+
+@pure transform(t::CoulombTransform, r::Number) = @fastmath(1/r)
+@pure transform_d(t::CoulombTransform, r::Number) = @fastmath(-1/(r*r))
+inv_transform(t::CoulombTransform, x::Number) = 1/x
+
+Dict(t::CoulombTransform) = Dict("__id__" => "NBodyIPs_CoulombTransform")
+CoulombTransform(D::Dict) = CoulombTransform()
+convert(::Val{:NBodyIPs_CoulombTransform}, D::Dict) = CoulombTransform(D)
+hash(::BASIS, t::CoulombTransform) = hash(t)
+
+
+"""
+Implements the space transform
+```
+r -> 1/r
+```
+Constructor: `IdTransform()`
+"""
+struct IdTransform <: AbstractTransform
+end
+
+@pure transform(t::IdTransform, r::Number) = r
+@pure transform_d(t::IdTransform, r::Number) = one(typeof(r))
+inv_transform(t::IdTransform, x::Number) = x
+
+Dict(t::IdTransform) = Dict("__id__" => "NBodyIPs_IdTransform")
+IdTransform(D::Dict) = IdTransform()
+convert(::Val{:NBodyIPs_IdTransform}, D::Dict) = IdTransform(D)
+hash(::BASIS, t::IdTransform) = hash(t)
