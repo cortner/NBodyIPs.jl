@@ -135,9 +135,25 @@ end
 
 # construct an NBodyIP from a basis
 function NBodyIP(basis, coeffs)
+   components = AbstractCalculator[]
+   newbasis = AbstractCalculator[]
+   newcoeffs = Float64[]
+   # if the basis contains any NBodyIPs
+   # they should be treated differently
+   for (i, b) in enumerate(basis)
+      if b isa NBodyIP
+         append!(components, b.components)
+      else
+         push!(newbasis, b)
+         push!(newcoeffs, coeffs[i])
+      end
+   end
+   basis, coeffs = newbasis, newcoeffs
+
    I = unique_components(basis)
-   components = AbstractCalculator[ combinebasis([basis[j] for j in J], coeffs[J])
-                                    for J in I ]
+   for J in I
+      push!(components, combinebasis([basis[j] for j in J], coeffs[J]))
+   end
    return NBodyIP(components)
 end
 
