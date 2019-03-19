@@ -4,7 +4,7 @@ const BLI = BLInvariants
 using JuLIP:decode_dict
 
 BondLengthDesc(transform::String, cutoff) =
-         BondLengthDesc(SpaceTransform(transform), fcut_analyse(cutoff))
+         BondLengthDesc(AnalyticTransform(transform), fcut_analyse(cutoff))
 
 # -------------- IO -------------------
 Dict(D::BondLengthDesc) = Dict( "__id__"    =>  "BondLengthDesc",
@@ -121,7 +121,7 @@ end
 
 
 ClusterBLDesc(transform::String, cutoff) =
-         ClusterBLDesc(SpaceTransform(transform), fcut_analyse(cutoff))
+         ClusterBLDesc(AnalyticTransform(transform), fcut_analyse(cutoff))
 
 # -------------- IO -------------------
 Dict(D::ClusterBLDesc) = Dict( "__id__"    =>  "ClusterBLDesc",

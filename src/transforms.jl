@@ -1,26 +1,26 @@
 
 using Base:@pure
 
-export SpaceTransform, ExpTransform, PolyTransform,
+export AnalyticTransform, ExpTransform, PolyTransform,
        IdTransform, CoulombTransform, MorseTransform
 import Base: convert, Dict, ==
 
 # TODO: rename this AnalyticTransform
-struct SpaceTransform{FT, FDT, VT} <: AbstractTransform
+struct AnalyticTransform{FT, FDT, VT} <: SpaceTransform
    id::String
    f::FT
    f_d::FDT
    valid::VT
 end
 
-@pure transform(t::SpaceTransform, r::Number) = t.f(r)
-@pure transform_d(t::SpaceTransform, r::Number) = t.f_d(r)
+@pure transform(t::AnalyticTransform, r::Number) = t.f(r)
+@pure transform_d(t::AnalyticTransform, r::Number) = t.f_d(r)
 
-SpaceTransform(id, f, f_d) = SpaceTransform(id, f, f_d, Val(Symbol(id)))
+AnalyticTransform(id, f, f_d) = AnalyticTransform(id, f, f_d, Val(Symbol(id)))
 
-==(T1::SpaceTransform, T2::SpaceTransform) = (T1.id == T2.id)
+==(T1::AnalyticTransform, T2::AnalyticTransform) = (T1.id == T2.id)
 
-function SpaceTransform(strans::String; fwrap = true)
+function AnalyticTransform(strans::String; fwrap = true)
    strans0 = strans
    # if @analytic is a substring then we don't do anything
    if !occursin(r"@analytic", strans)
@@ -37,16 +37,16 @@ function SpaceTransform(strans::String; fwrap = true)
    end
    ftrans = eval(Meta.parse(strans))
    if fwrap
-      return SpaceTransform(strans0, F64fun(ftrans.f), F64fun(ftrans.f_d))
+      return AnalyticTransform(strans0, F64fun(ftrans.f), F64fun(ftrans.f_d))
    end
-   return SpaceTransform(strans0, ftrans.f, ftrans.f_d)
+   return AnalyticTransform(strans0, ftrans.f, ftrans.f_d)
 end
 
-Dict(t::SpaceTransform) = Dict( "__id__" => "NBodyIPs_SpaceTransform",
+Dict(t::AnalyticTransform) = Dict( "__id__" => "NBodyIPs_AnalyticTransform",
                                 "defn" => t.id )
-SpaceTransform(D::Dict) = SpaceTransform(D["defn"])
-convert(::Val{:NBodyIPs_SpaceTransform}, D::Dict) = SpaceTransform(D)
-hash(::BASIS, t::SpaceTransform) = hash((SpaceTransform, t.id))
+AnalyticTransform(D::Dict) = AnalyticTransform(D["defn"])
+convert(::Val{:NBodyIPs_AnalyticTransform}, D::Dict) = AnalyticTransform(D)
+hash(::BASIS, t::AnalyticTransform) = hash((AnalyticTransform, t.id))
 
 
 
@@ -61,7 +61,7 @@ Constructor:
 ExpTransform(A, r0)
 ```
 """
-struct ExpTransform{TA, T} <: AbstractTransform
+struct ExpTransform{TA, T} <: SpaceTransform
    A::TA
    r0::T
 end
@@ -92,7 +92,7 @@ Constructor:
 PolyTransform(p, r0)
 ```
 """
-struct PolyTransform{TP, T} <: AbstractTransform
+struct PolyTransform{TP, T} <: SpaceTransform
    p::TP
    r0::T
 end
@@ -120,7 +120,7 @@ r -> 1/r
 ```
 Constructor: `CoulombTransform()`
 """
-struct CoulombTransform <: AbstractTransform
+struct CoulombTransform <: SpaceTransform
 end
 @pure transform(t::CoulombTransform, r::Number) = @fastmath(1/r)
 @pure transform_d(t::CoulombTransform, r::Number) = @fastmath(-1/(r*r))
@@ -135,11 +135,11 @@ hash(::BASIS, t::CoulombTransform) = hash(t)
 """
 Implements the space transform
 ```
-r -> 1/r
+r -> r
 ```
 Constructor: `IdTransform()`
 """
-struct IdTransform <: AbstractTransform
+struct IdTransform <: SpaceTransform
 end
 
 @pure transform(t::IdTransform, r::Number) = r

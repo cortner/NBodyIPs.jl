@@ -296,9 +296,9 @@ Nquad(::Val{2}) = 100
 Nquad(::Val{3}) = 1000
 Nquad(::Val{4}) = 10_000
 
-Regulariser(V::NBPoly{N, M, T, TD}, r0, r1, creg; kwargs...
+Regulariser(V::NBPoly{N, M, T, TD}, r0, r1; kwargs...
            ) where {N, M, T} where {TD <: BondLengthDesc} =
-   BLReg(N, r0, r1; creg=creg, npoints = Nquad(Val(N)),
+   BLReg(N, r0, r1; creg=1.0, npoints = Nquad(Val(N)),
                     transform = transform(V), kwargs... )
 
 

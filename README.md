@@ -42,6 +42,44 @@ start the fit. I.e. the final fit will be `Vref + Vfit`. If the
 kwarg `E0` is provided, then `Vref = OneBody(E0)` is used as default.
 Providing both `E0` and `Vref` means that `E0` will be ignored.
 
+## Descriptors
+
+The two main descriptors in `NBodyIPs` are `BondAngleDesc` and `BondLengthDesc`.
+Eacha are defined via a space transform and a cutoff function. Please
+see inline documentation for these.
+
+### Cutoff functions
+
+* CosCut
+* CosCut2s
+* PolyCut
+* PolyCutSym
+* PolyCut2sA
+
+### Space transforms
+
+* ExpTransform : x = exp(- A*(r/rnb - 1)
+* PolyTransform : x = (r0/r)^p
+* IdTransform : x = r
+* CoulombTransform : x = 1/r
+* MorseTransform : c = exp(-r)
+* AnalyticTransform: this used to be called SpaceTransform, use only for experimenting. If a good new transform can be found then it can be implemented into `NBodyIPs` as a separate type.
+
+## Regularisation
+
+Regularisers
+
+
+## More on Descriptors and Basis sets
+
+### Bond-length descriptor
+
+### Bond-angle descriptor
+
+### Environment-dependent N-Body potentials
+
+
+
 
 <!--
 

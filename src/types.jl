@@ -60,7 +60,7 @@ loop for this case.
 abstract type NBClusterDescriptor <: NBSiteDescriptor end
 
 
-abstract type AbstractTransform end
+abstract type SpaceTransform end
 
 function transform end
 function transform_d end
@@ -98,7 +98,7 @@ export NBodyIP
 
 export BondAngleDesc
 
-struct BondAngleDesc{TT <: AbstractTransform, TC <: NBCutoff} <: NBSiteDescriptor
+struct BondAngleDesc{TT <: SpaceTransform, TC <: NBCutoff} <: NBSiteDescriptor
    transform::TT
    cutoff::TC
 end
@@ -106,7 +106,7 @@ end
 
 export BondLengthDesc
 
-struct BondLengthDesc{TT <: AbstractTransform, TC <: NBCutoff} <: NBSiteDescriptor
+struct BondLengthDesc{TT <: SpaceTransform, TC <: NBCutoff} <: NBSiteDescriptor
    transform::TT
    cutoff::TC
 end
@@ -114,7 +114,7 @@ end
 
 export ClusterBLDesc
 
-struct ClusterBLDesc{TT <: AbstractTransform, TC <: NBCutoff} <: NBClusterDescriptor
+struct ClusterBLDesc{TT <: SpaceTransform, TC <: NBCutoff} <: NBClusterDescriptor
    transform::TT
    cutoff::TC
 end

@@ -1,7 +1,7 @@
 using Test
 using NBodyIPs
 using NBodyIPs.Polys
-using NBodyIPs: BondLengthDesc, SpaceTransform, OneBody, BASIS
+using NBodyIPs: BondLengthDesc, AnalyticTransform, OneBody, BASIS
 using JuLIP: save_json, load_json, decode_dict
 
 ##

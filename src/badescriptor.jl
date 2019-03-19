@@ -9,7 +9,7 @@ using JuLIP: decode_dict
 
 
 BondAngleDesc(transform::String, cutoff::Union{String, Tuple}) =
-         BondAngleDesc(SpaceTransform(transform), fcut_analyse(cutoff))
+         BondAngleDesc(AnalyticTransform(transform), fcut_analyse(cutoff))
 
 Dict(D::BondAngleDesc) = Dict( "__id__"    =>  "BondAngleDesc",
                                 "transform" =>  Dict(D.transform),
