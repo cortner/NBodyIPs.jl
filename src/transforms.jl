@@ -131,6 +131,24 @@ CoulombTransform(D::Dict) = CoulombTransform()
 convert(::Val{:NBodyIPs_CoulombTransform}, D::Dict) = CoulombTransform(D)
 hash(::BASIS, t::CoulombTransform) = hash(t)
 
+"""
+Implements the space transform
+```
+r -> exp(-r)
+```
+Constructor: `MorseTransform()`
+"""
+struct MorseTransform <: SpaceTransform
+end
+@pure transform(t::MorseTransform, r::Number) = @fastmath(exp(-r))
+@pure transform_d(t::MorseTransform, r::Number) = @fastmath(-exp(-r))
+inv_transform(t::MorseTransform, x::Number) = - log(x)
+
+Dict(t::MorseTransform) = Dict("__id__" => "NBodyIPs_MorseTransform")
+MorseTransform(D::Dict) = MorseTransform()
+convert(::Val{:NBodyIPs_MorseTransform}, D::Dict) = MorseTransform(D)
+hash(::BASIS, t::MorseTransform) = hash(t)
+
 
 """
 Implements the space transform
