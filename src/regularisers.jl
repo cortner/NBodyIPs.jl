@@ -302,5 +302,15 @@ Regulariser(V::NBPoly{N, M, T, TD}, r0, r1; kwargs...
                     transform = transform(V), kwargs... )
 
 
+# ==================================================================
+
+struct L2Regulariser
+   a::Float64
+end
+
+function Matrix(reg::L2Regulariser, B::Vector{<: AbstractCalculator})
+   return Matrix( a*I, (length(B), length(B)) ), zeros(length(B))
+end
+
 
 end
