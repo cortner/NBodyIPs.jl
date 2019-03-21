@@ -63,4 +63,7 @@ include("sobol.jl")
 include("regularisers.jl")
 @reexport using NBodyIPs.Regularisers
 
+# Some extra functionality to attach a repulsive core to a 2B fit
+include("repulsion.jl")
+
 end # module
