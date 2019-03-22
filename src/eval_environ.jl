@@ -362,3 +362,95 @@ function forces(V::EnvPoly{N}, at::Atoms{T}) where {N, T}
    end
    return F
 end
+
+
+
+
+# =================================================================
+#     Re-Implement from Scratch again for Even Faster `EnvPolys`
+#     with ClusterBLDesc
+# =================================================================
+
+# [!!!EXPERIMENTAL!!!]
+
+using NBodyIPs: ClusterBLDesc
+using NBodyIPs.Polys: NBPoly, StNBPoly
+
+function many_to_sites!(Es, i, j, J, Eloc, Ns)
+   for P = 1:length(Eloc)
+      Es[i] += Ns[i]^(P-1) * Eloc[P]
+      for a in J
+         Es[j[a]] += Ns[j[a]]^(P-1) * Eloc[P]
+      end
+   end
+   return Eloc
+end
+
+function site_energies(V::EnvPoly{N, TVR}, at::Atoms{T}
+         ) where {TVR <: StNBPoly{N,TD}} where {N, T <: AbstractFloat, TD <: ClusterBLDesc}
+
+   Es = zeros(T, length(at))
+   # precompute the environment terms
+   Ns = site_energies(V.Vn, at)
+   # storage
+   Etemp = zeros(T, length(V.Vr))
+
+   rcut = cutoff(V.Vr[1])
+   for (i, j, r, R) in sites(at, rcut)
+      fill!(Etemp, zero(T))
+      eval_site_nbody!(Val(N), i, j, R, rcut, true,
+           (out, R, ii, J, temp) -> many_to_sites!(Es, ii, j, J, evaluate_many!(out, V.Vr, R, ii, J), Ns),
+           Etemp, nothing)
+   end
+
+   return Es
+end
+
+
+# function forces(V::EnvPoly{N}, at::Atoms{T}) where {N, T}
+#    rcut = cutoff(V.Vr[1])
+#    nlist = neighbourlist(at, rcut)
+#    maxneigs = max_neigs(nlist)
+#    nedges = (N*(N-1))÷2
+#    nVr = length(V.Vr)
+#
+#    # forces
+#    F = zeros(JVec{T}, length(at))
+#    # site gradient
+#    dVsite = [ zeros(JVec{T}, maxneigs) for _ = 1:nVr ]
+#
+#    # extras for Env
+#    Etemp = zeros(T, nVr)
+#    out = TempEdV(Etemp, dVsite)
+#
+#    # compute the N-components
+#    Ns = site_energies(V.Vn, at)
+#
+#    for (i, j, r, R) in sites(nlist)
+#       # clear dVsite and Etemp
+#       for n = 1:nVr; fill!(dVsite[n], zero(JVec{T})); end
+#       fill!(Etemp, zero(T))
+#       # fill site energy and dVsite
+#       eval_site_nbody!(Val(N), i, j, R, rcut, false,
+#                        (out, R, ii, J, temp) -> evaluate_many_ed!(out, V.Vr, R, ii, J),
+#                        out, nothing)
+#
+#       # write it into the force vectors
+#       # first for P = 0
+#       for n = 1:length(j)
+#          F[j[n]] -= dVsite[1][n]
+#          F[i] += dVsite[1][n]
+#       end
+#
+#       for P = 2:nVr, n = 1:length(j)
+#          # energy contribution:
+#          #   Es[i] += Ns[i]^(P-1) * Etemp[P]
+#          dVn = 0.5 * evaluate_d(V.Vn, r[n]) * R[n] / r[n]
+#          f = (  Ns[i]^(P-1) * dVsite[P][n]
+#               + (P-1) * Ns[i]^(P-2) * dVn * Etemp[P] )
+#          F[j[n]] -= f
+#          F[i] += f
+#       end
+#    end
+#    return F
+# end

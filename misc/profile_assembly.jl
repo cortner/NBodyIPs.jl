@@ -11,7 +11,7 @@ DEGREES = [18, 14, 12, 10]
 RCUT = [7.0, 5.80, 4.5, 4.1]
 
 function random_ip(DT)
-   DD = [ DT(TRANSFORM, CosCut(0.66*rcut, rcut))  for rcut in RCUT ]
+   DD = [ DT(TRANSFORM, CosCut(rcut-1.0, rcut))  for rcut in RCUT ]
 
    # 2-body potential
    B2 = nbpolys(2, DD[1], DEGREES[1])
@@ -57,7 +57,6 @@ at = rattle!(bulk(:W, cubic=true) * 10, 0.01)
 
 # @profile forces(IPf, at)
 # Profile.print()
-exit()
 
 # F64WRAP
 #   1.172545 seconds (21.05 M allocations: 685.697 MiB, 10.16% gc time)
@@ -104,7 +103,7 @@ for DT in [BondLengthDesc, ClusterBLDesc]
    println(" Testing StaticPolynomials with D = $(DT)")
    println("-----------------------------------------------------------")
 
-   DD = [ DT(TRANSFORM, (:cos, (0.66*rcut), rcut))  for rcut in RCUT ]
+   DD = [ DT(TRANSFORM, CosCut(rcut-1, rcut))  for rcut in RCUT ]
 
    # 2-body potential
    B2 = nbpolys(2, DD[1], DEGREES[1])
