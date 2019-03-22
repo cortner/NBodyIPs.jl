@@ -49,33 +49,6 @@ end
 
 
 
-
-# ---------------------- Regularisation of EnvIPs --------------------------
-
-function regularise(N::Integer, P::Integer, B::Vector, r0, r1; kwargs...)
-   I = find(isa.(B, EnvBL{N, P}))
-   Br = [b.Vr for b in B[I]]
-   Ψr = Polys.regularise(N, Br, r0, r1; kwargs...)
-   Ψ = zeros(size(Ψr, 1), length(B))
-   Ψ[:, I] = Ψr
-   return Ψ
-end
-
-function regularise(N::Integer, B::Vector, r0, r1; kwargs...)
-   # find all EnvBL basis functions with body-order N
-   I = find(isa.(B, EnvBL{N}))
-   max_P = maximum( b.t for b in B[I] )
-   # each polynomial degree p => separate V_Np, hence
-   # compute multiple regularisations
-   Ψ = zeros(0, length(B))
-   for p = 0:max_P
-      Ψp = regularise(N, p, B, r0, r1; kwargs...)
-      Ψ = [Ψ; Ψp]
-   end
-   return Ψ
-end
-
-
 # # =============== Experimental:
 # #   evaluate NBodyIP
 #

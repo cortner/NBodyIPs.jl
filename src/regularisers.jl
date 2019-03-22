@@ -74,6 +74,10 @@ struct BLRegulariser{N, T} <: NBodyRegulariser{N}
    @nbregfields
 end
 
+struct EnvBLRegulariser{N, T} <: NBodyRegulariser{N}
+   @nbregfields
+end
+
 struct BARegulariser{N, T} <: NBodyRegulariser{N}
    @nbregfields
 end
@@ -94,8 +98,9 @@ Dict(reg::NBodyRegulariser) = Dict(
 
 
 const BLReg = BLRegulariser
+const EnvBLReg = EnvBLRegulariser
 const BAReg = BARegulariser
-const EReg = BARegulariser
+
 
 BLRegulariser(N, r0, r1;
              creg = 1.0,
@@ -113,12 +118,15 @@ BARegulariser(N, r0, r1;
              freg = laplace_regulariser) =
    BARegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N))
 
-# TODO: revisit this one!
-# EnergyRegulariser(N, r0, r1;
-#             npoints = Nquad(Val(N)),
-#             creg = 0.1,
-#             sequence = :sobol) =
-#    EnergyRegulariser(N, npoints, creg, r0, r1, sequence, energy_regulariser, Val(N))
+
+EnvBLRegulariser(N, r0, r1;
+             creg = 1.0,
+             npoints = Nquad(Val(N)),
+             sequence = :sobol,
+             transform = IdTransform(),
+             freg = laplace_regulariser) =
+   EnvBLRegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N))
+
 
 
 _bainvt(inv_t, x::StaticVector{1}) =
@@ -136,6 +144,8 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
                 verbose=false
                 ) where {N}
 
+   # TODO: let the regulariser decide which basis functions it can
+   #       be applied to, or let the user adjust it!
    Ib = findall(bodyorder.(B) .== N)
    if isempty(Ib)
       verbose && warn("""Trying to construct a $N-body regulariser, but no basis
@@ -148,12 +158,13 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
    inv_t = x -> inv_transform(reg.transform, x)
 
    # filter
-   if reg isa BLRegulariser
+   if reg isa Union{BLRegulariser, EnvBLRegulariser}
       # vectorial inverse transform
       inv_tv = x -> inv_t.(x)
       filter = x -> bl_is_simplex( inv_tv(x) )
       x0 = transform(reg.transform, reg.r0) * SVector(ones((N*(N-1))÷2)...)
       x1 = transform(reg.transform, reg.r1) * SVector(ones((N*(N-1))÷2)...)
+      if reg is BLRegulariser
    elseif reg isa BARegulariser
       inv_tv = x -> _bainvt(inv_t, x)
       filter = x -> ba_is_simplex( inv_tv(x)... )
@@ -162,7 +173,19 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
       x1 = vcat( transform(reg.transform, reg.r1) * SVector(ones(N-1)...),
                  SVector(ones( ((N-1)*(N-2))÷2 )...) )
    else
-      error("Unknown type of reg: `typeof(reg) == $(typeof(reg))`")
+      @error("Unknown type of reg: `typeof(reg) == $(typeof(reg))`")
+   end
+
+   # choose the sub-basis to evaluate, normally that's just B[Ib], but
+   #
+   if reg isa Union{BLRegulariser, BARegulariser}
+      # we do this in a weird way since the array needs to infer the type
+      # but B[Ib] doesn't for some reason.
+      subB = [b for b in B[Ib]]
+   elseif reg isa EnvBLRegulariser
+      subB = [b.Vr for b in B[Ib]]
+   else
+      @error("Unknown type of reg")
    end
 
    if N == 2
@@ -183,7 +206,7 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
    end
 
    # loop through sobol points and collect the laplacians at each point.
-   Ψreg = reg.creg/length(X) * assemble_reg_matrix(X, [b for b in B[Ib]], length(B),
+   Ψreg = reg.creg/length(X) * assemble_reg_matrix(X, subB, length(B),
                                                    Ib, inv_tv, reg.freg)
    Yreg = zeros(size(Ψreg, 1))
    return Ψreg, Yreg
@@ -199,40 +222,12 @@ regeval_d(b::EnvIP, args...) = evaluate_d(b.Vr, args...)
 _Vr(b::NBPoly) = b
 _Vr(b::EnvIP) = b.Vr
 
-# function regularise_2b(B::Vector, r0::Number, r1::Number, creg, Nquad)
-#    I2 = findall(bodyorder.(B) .== 2)
-#    maxenvdeg = maximum(_envdeg_.(B[I2]))
-#    rr = range(r0, stop=r1, length=Nquad)
-#    Φ = [ zeros(Nquad, length(B))  for _=1:(maxenvdeg+1) ]
-#    h = (r1 - r0) / (Nquad-1)
-#    for (ib, b) in zip(I2, B[I2]), (iq, r) in enumerate(rr)
-#       envdeg = _envdeg_(b)
-#       Φ[envdeg+1][iq, ib] = (regeval_d(b, r+1e-2)-regeval_d(b, r-1e-2))/(2e-2) * sqrt(creg * h)
-#    end
-#    Φall = vcat(Φ...)
-#    return Φall, zeros(size(Φall, 1))
-# end
 
-
-# # B = basis[Ib]
-# # nB = length(basis)
-# function assemble_reg_matrix(X, B, nB, Ib, inv_tv, freg)
-#    @assert length(B) == length(Ib)
-#    envdegs = unique(_envdeg_.(B))
-#    Ψ = [ zeros(length(X), nB)  for _=1:length(envdegs) ]
-#    Ib_deg = [ findall(_envdeg_.(B) .== p) for p in envdegs ]
-#    for (ii, (Ψ_, Ib_, p)) in enumerate(zip(Ψ, Ib_deg, envdegs))
-#       temp = zeros(length(Ib_))
-#       B_ = [_Vr(b) for b in B[Ib_]]
-#       for (ix, x) in enumerate(X)
-#          Ψ_[ix, Ib[Ib_]] = freg(x, B_, temp, inv_tv)
-#       end
-#    end
-#    return vcat(Ψ...)
-# end
-
+# X = Sobol points
 # B = basis[Ib]
 # nB = length(basis)
+# inv_tv = inverse space transform
+# freg = regularisation function (e.g. laplace)
 function assemble_reg_matrix(X, B, nB, Ib, inv_tv, freg)
    @assert length(B) == length(Ib)
    # split the basis into "nice" parts
@@ -280,7 +275,20 @@ function laplace_regulariser(x::SVector{DIM,T}, B::Vector{<: AbstractCalculator}
    return L/h^2
 end
 
-# # TODO: revisit this regulariser!!!
+
+# ==================================================================
+#               ENERGY REGULARISER
+# ==================================================================
+
+# TODO: revisit this one!
+
+# EnergyRegulariser(N, r0, r1;
+#             npoints = Nquad(Val(N)),
+#             creg = 0.1,
+#             sequence = :sobol) =
+#    EnergyRegulariser(N, npoints, creg, r0, r1, sequence, energy_regulariser, Val(N))
+
+
 # function energy_regulariser(x::SVector{DIM,T}, B::Vector{<: AbstractCalculator},
 #                             temp::Vector{T}, inv_tv) where {DIM, T}
 #    evaluate_many_ricoords!(temp, B, r)
