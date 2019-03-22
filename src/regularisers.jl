@@ -45,7 +45,7 @@ using NBodyIPs.Sobol: filtered_sobol, filtered_cart_sobol, bl_is_simplex
 import Base: Matrix, Dict
 
 export BLRegulariser, BLReg, BARegulariser, BAReg,
-       Regulariser
+       Regulariser, EnvBLReg, EnvBLRegulariser
 
 macro def(name, definition)
     return quote
@@ -164,7 +164,6 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
       filter = x -> bl_is_simplex( inv_tv(x) )
       x0 = transform(reg.transform, reg.r0) * SVector(ones((N*(N-1))÷2)...)
       x1 = transform(reg.transform, reg.r1) * SVector(ones((N*(N-1))÷2)...)
-      if reg is BLRegulariser
    elseif reg isa BARegulariser
       inv_tv = x -> _bainvt(inv_t, x)
       filter = x -> ba_is_simplex( inv_tv(x)... )
