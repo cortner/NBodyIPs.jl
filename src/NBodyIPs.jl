@@ -66,4 +66,6 @@ include("regularisers.jl")
 # Some extra functionality to attach a repulsive core to a 2B fit
 include("repulsion.jl")
 
+include("experimental.jl") 
+
 end # module

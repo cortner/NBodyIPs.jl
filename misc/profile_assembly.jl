@@ -55,31 +55,10 @@ at = rattle!(bulk(:W, cubic=true) * 10, 0.01)
 @time forces(IPf, at)
 @time forces(IPf, at)
 
-# @profile forces(IPf, at)
-# Profile.print()
-
-# F64WRAP
-#   1.172545 seconds (21.05 M allocations: 685.697 MiB, 10.16% gc time)
-#   1.182909 seconds (21.05 M allocations: 685.697 MiB, 9.84% gc time)
-#   1.722956 seconds (33.95 M allocations: 729.967 MiB, 7.34% gc time)
-#   1.799147 seconds (33.95 M allocations: 729.967 MiB, 10.56% gc time)
-
-# ORIGINAL
-# 81c72ac038fc913362498daabd3c10b7c454aead
-#   0.876188 seconds (6.16 M allocations: 458.036 MiB, 7.11% gc time)
-#   1.105670 seconds (4.16 M allocations: 275.011 MiB, 3.40% gc time)
-#
-# REWRITE
-#  0.905021 seconds (6.16 M allocations: 458.402 MiB, 7.75% gc time)
-#  1.163815 seconds (4.16 M allocations: 275.378 MiB, 3.88% gc time)
-
 
 # test correctness first
 IP_bl, _ = random_ip(BondLengthDesc)
-IP_cl, _ = random_ip(ClusterBLDesc)
-for (n, (Vbl, Vcl)) in enumerate(zip(IP_bl.components, IP_cl.components))
-   Vcl.c[:] = Vbl.c[:] * (n+1)
-end
+IP_cl = NBodyIPs.Experimental.faster_blpot(IP_bl)
 
 at = rattle!(bulk(:W, cubic=true) * 10, 0.01)
 # set_pbc!(at, false)
@@ -95,7 +74,6 @@ V3_cl = IP_cl.components[2]
 V4_bl = IP_bl.components[3]
 V4_cl = IP_cl.components[3]
 @test energy(V4_bl, at) ≈ energy(V4_cl, at)
-
 
 
 for DT in [BondLengthDesc, ClusterBLDesc]
