@@ -46,6 +46,8 @@ IPff = NBodyIP( [ EnvPoly([v.Vr for v in V2], V2[1].Vn, V2[1].str_Vn),
                   EnvPoly([v.Vr for v in V3], V3[1].Vn, V3[1].str_Vn),
                   EnvPoly([v.Vr for v in V4], V4[1].Vn, V4[1].str_Vn) ] )
 
+IPff2 = NBodyIPs.Experimental.faster_envpot(IP)
+
 V2cl = IPclf.components[1:4]
 V3cl = IPclf.components[5:7]
 V4cl = IPclf.components[8:9]
@@ -59,19 +61,19 @@ at = rattle!(bulk(:W, cubic=true) * 3, 0.02)
 @show energy(IP, at)
 @show energy(IP, at) - energy(IPf, at)
 @show energy(IPff, at) - energy(IPf, at)
+@show energy(IPff2, at) - energy(IPf, at)
 @show energy(IPcl, at)
 @show energy(IPcl, at) - energy(IPclf, at)
-@show energy(IPclff, at) - energy(IPclf, at)
+# @show energy(IPclff, at) - energy(IPclf, at)
 
 @info("Test evaluation time...")
 at = rattle!(bulk(:W, cubic=true) * 8, 0.02)
-GC.enable(false)
 print("nlist : ")
 neighbourlist(at, 3.0); @time begin
       neighbourlist(at, RCUT[1]);
       neighbourlist(at, RCUT[2]);
       neighbourlist(at, RCUT[3])
-end 
+end
 GC.gc()
 print("IP    : ")
 energy(IP, at); @time energy(IP, at); GC.gc()
@@ -79,15 +81,15 @@ print("IPf   : ")
 energy(IPf, at); @time energy(IPf, at);GC.gc()
 print("IPff  : ")
 energy(IPff, at); @time energy(IPff, at);GC.gc()
+print("IPff2 : ")
+energy(IPff2, at); @time energy(IPff, at);GC.gc()
 print("IPcl  : ")
 energy(IPcl, at); @time energy(IPcl, at);GC.gc()
 print("IPclf : ")
 energy(IPclf, at); @time energy(IPclf, at);GC.gc()
 print("IPclff: ")
 energy(IPclff, at); @time energy(IPclff, at);GC.gc()
-GC.enable(true)
 
-exit()
 
 @info("For comparison some simpler potentials:")
 IP0 = NBodyIP( [V2[1], V3[1], V4[1]] )
@@ -100,10 +102,10 @@ energy(IP1, at); @time energy(IP1, at);
 @info("Test Error in Forces")
 @show maximum(norm.(forces(IP, at) - forces(IPf, at)))
 @show maximum(norm.(forces(IPff, at) - forces(IPf, at)))
+@show maximum(norm.(forces(IPff2, at) - forces(IPf, at)))
 
 @info("Test evaluation time for forces...")
 at = rattle!(bulk(:W, cubic=true) * 8, 0.02)
-GC.enable(false)
 print("IP  : ")
 forces(IP, at); @time forces(IP, at);
 GC.gc()
@@ -112,13 +114,14 @@ forces(IPf, at); @time forces(IPf, at);
 GC.gc()
 print("IPff  : ")
 forces(IPff, at); @time forces(IPff, at);
+print("IPff2 : ")
+forces(IPff2, at); @time forces(IPff, at);
 GC.gc()
 print("IP0  : ")
 forces(IP0, at); @time forces(IP0, at);
 GC.gc()
 print("IP1  : ")
 forces(IP1, at); @time forces(IP1, at);
-GC.enable(true)
 
 # BACKUP PROFILING CODE
 # at = rattle!(bulk(:W, cubic=true) * 7, 0.02)
