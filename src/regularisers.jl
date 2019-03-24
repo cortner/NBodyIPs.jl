@@ -39,7 +39,7 @@ using NBodyIPs: bodyorder, transform, evaluate_many_ricoords!, descriptor,
                   inv_transform, split_basis, BondLengthDesc, IdTransform
 using NBodyIPs.Polys: NBPoly
 using NBodyIPs.EnvIPs: EnvIP
-using LinearAlgebra: I
+using LinearAlgebra: I, Diagonal
 using NBodyIPs.Sobol: filtered_sobol, filtered_cart_sobol, bl_is_simplex
 
 import Base: Matrix, Dict
@@ -311,12 +311,48 @@ Regulariser(V::NBPoly{N, M, T, TD}, r0, r1; kwargs...
 
 # ==================================================================
 
+"""
+`struct L2Regulariser`: standard Tikhonov regulariser
+
+## Constructors
+
+```
+L2Regulariser(α::Float64) # => α² Σᵢ xᵢ²
+L2Regulariser(a::Vector)  # => Σᵢ aᵢ² xᵢ²
+L2Regulariser(db, A::Dict)  # see below
+```
+The first constructor is the naive Tikhonov constructor with a constant
+regularisation parameter.  The second constructor gives maximal flexibility
+allowing prescribing an individual parameter to any basis function.
+In the last constructor A[n] is the Tikhonov parameter for basis
+functions withbody-order n. The lsq system stored in `db` is scanned
+for indices of these basis functions and a vector `a` is  then formed
+to call the second constructor.
+"""
 struct L2Regulariser
-   a::Float64
+   a::Vector{Float64}
+   α::Float64
+end
+
+L2Regulariser(α::Float64) = L2Regulariser(Float64[], α)
+
+L2Regulariser(a::Vector) = L2Regulariser(a, 0.0)
+
+function L2Regulariser(db, A::Dict{Int, <: Real})
+   a = zeros(length(db.basis))
+   for (n, α) in keys(A)
+      In = filter_basis(db, b -> bodyorder(b) == n)
+      a[In] = α
+   end
+   return L2Regulariser(a)
 end
 
 function Matrix(reg::L2Regulariser, B::Vector{<: AbstractCalculator})
-   return Matrix( a*I, (length(B), length(B)) ), zeros(length(B))
+   if isempty(reg.a)
+      return Matrix( a*I, (length(B), length(B)) ), zeros(length(B))
+   else
+      return collect(Diagonal(reg.a))
+   end
 end
 
 

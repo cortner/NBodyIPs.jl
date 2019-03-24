@@ -147,8 +147,8 @@ cutoff(C::PolyCut2sA) = C.rc
 function PolyCut2sA(r0, rnn, rc)
    gg = λ -> exp( λ*(rc/rnn - 1) ) + exp( λ*(r0/rnn - 1) ) - 2
    λopt = find_zero(gg, -2.5)
-   if abs(λopt) < 1e-7
-      @error("`Roots` found the *bad* λ parameter.")
+   if abs(λopt) < 1e-5
+      @error("`Roots` found a *bad* λ parameter.")
    end
    C = 1 / (exp( λopt*(rc/rnn - 1) ) - 1)
    return PolyCut2sA(r0, rnn, rc, C, λopt)
