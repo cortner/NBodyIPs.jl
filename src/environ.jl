@@ -103,9 +103,9 @@ basisname(::EnvIP) = "EnvIP"
 
 # ----------------- generate basis / IP / convert ----------------
 
-function envpolys(N::Integer, D::NBodyDescriptor, deg_poly::Integer,
+function envpolys(N::Integer, D::NBodyDescriptor, deg_poly,
                   Vn_descr, deg_n::Integer; kwargs...)
-   B_poly = nbpolys(N, D, deg_poly; kwargs...)
+   B_poly = nbpolys(N, D, deg_poly...; kwargs...)
    B = EnvIP[]
    str_Vn = Vn_descr[1]
    Vn = analyse_Vn(Vn_descr...)
