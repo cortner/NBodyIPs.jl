@@ -4,9 +4,10 @@ module Repulsion
 import NBodyIPs: NBodyFunction, descriptor, evaluate_I, evaluate_I_ed,
                  inv_transform, fcut
 
-import JuLIP: AbstractCalculator, energy, forces, virial
+import JuLIP: AbstractCalculator, energy, forces, virial, decode_dict
 import JuLIP.Potentials: @pot, evaluate, evaluate_d, PairPotential, @D, cutoff,
                          @analytic
+import Base: Dict, convert
 
 struct RepulsiveCore{TV1, TV2, DT} <: NBodyFunction{2, DT}
    Vout::TV1         # the outer pair potential
@@ -24,10 +25,6 @@ function evaluate_I(V::RepulsiveCore, II)
    I1, I2 = II
    @assert length(I1) == 1
    r = inv_transform(V.D.transform, I1[1])
-   @show r, V.ri
-   @show V.Vout(r), V.Vin(r)
-   @show evaluate_I(V.Vout, II)
-   @show I1, I2
    if r > V.ri
       return evaluate_I(V.Vout, II)
    end
@@ -37,12 +34,13 @@ end
 function evaluate_I_ed(V::RepulsiveCore, II)
    I1, I2, dI1, dI2 = II
    @assert length(I1) == 1
-   r = I1[1]
+   r = inv_transform(V.D.transform, I1[1])
    if r > V.ri
-      evaluate_I_ed(V.Vout, II)
+      return evaluate_I_ed(V.Vout, II)
    end
+   eV = V.Vin(r)
    dV = @D V.Vin(r)
-   return dV * dI1[1]
+   return eV, dV
 end
 
 
@@ -73,11 +71,24 @@ function RepulsiveCore(Vout::NBodyFunction{2}, ri)
    Vin = let A = -1 - ri * dv / v, B = v, ri = ri
       @analytic r -> B * exp( - A * (r/ri-1) ) * ri/r
    end
-   @show v, dv
-   @show Vin(ri), (@D Vin(ri))
+   # @show ri
+   # @show Vout(ri), (@D Vout(ri))
+   # @show Vin(ri), (@D Vin(ri))
    # construct the piecewise potential
    return RepulsiveCore(Vout, Vin, ri, descriptor(Vout))
 end
+
+# ----------------------------------------------------
+#  File IO
+# ----------------------------------------------------
+
+Dict(V::RepulsiveCore) = Dict("__id__" => "NBodyIPs_RepulsiveCore",
+                              "Vout" => Dict(V.Vout),
+                              "ri" => V.ri)
+
+RepulsiveCore(D::Dict) = RepulsiveCore(decode_dict(D["Vout"]), D["ri"])
+
+convert(::Val{:NBodyIPs_RepulsiveCore}, D::Dict) = RepulsiveCore(D)
 
 end
 

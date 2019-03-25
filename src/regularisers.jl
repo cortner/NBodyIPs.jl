@@ -36,11 +36,13 @@ using StaticArrays
 using JuLIP: AbstractCalculator
 using JuLIP.Potentials: evaluate_d
 using NBodyIPs: bodyorder, transform, evaluate_many_ricoords!, descriptor,
-                  inv_transform, split_basis, BondLengthDesc, IdTransform
+                  inv_transform, split_basis, BondLengthDesc, IdTransform,
+                  BondAngleDesc
 using NBodyIPs.Polys: NBPoly
 using NBodyIPs.EnvIPs: EnvIP
 using LinearAlgebra: I, Diagonal
-using NBodyIPs.Sobol: filtered_sobol, filtered_cart_sobol, bl_is_simplex
+using NBodyIPs.Sobol: filtered_sobol, filtered_cart_sobol, bl_is_simplex,
+                      ba_is_simplex
 
 import Base: Matrix, Dict
 
@@ -170,7 +172,7 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
       x0 = vcat( transform(reg.transform, reg.r0) * SVector(ones(N-1)...),
                  - SVector(ones( ((N-1)*(N-2))÷2 )...) )
       x1 = vcat( transform(reg.transform, reg.r1) * SVector(ones(N-1)...),
-                 SVector(ones( ((N-1)*(N-2))÷2 )...) )
+                   SVector(ones( ((N-1)*(N-2))÷2 )...) )
    else
       @error("Unknown type of reg: `typeof(reg) == $(typeof(reg))`")
    end
@@ -257,17 +259,17 @@ function laplace_regulariser(x::SVector{DIM,T}, B::Vector{<: AbstractCalculator}
       @warn("laplace_regulariser: `TB` is not a leaf type")
    end
    h = 1e-2
-   r = inv_tv(x)
-   evaluate_many_ricoords!(temp, B, r)
+   rθ = inv_tv(x)
+   evaluate_many_ricoords!(temp, B, rθ)
    L = 2 * DIM * copy(temp)
 
    EE = SMatrix{DIM,DIM}(1.0I)
    for j = 1:DIM
-      rp = inv_tv(x + h * EE[:,j])
-      evaluate_many_ricoords!(temp, B, rp)
+      rθp = inv_tv(x + h * EE[:,j])
+      evaluate_many_ricoords!(temp, B, rθp)
       L -= temp
-      rm = inv_tv(x - h * EE[:,j])
-      evaluate_many_ricoords!(temp, B, rm)
+      rθm = inv_tv(x - h * EE[:,j])
+      evaluate_many_ricoords!(temp, B, rθm)
       L -= temp
    end
 
@@ -306,6 +308,11 @@ Nquad(::Val{4}) = 10_000
 Regulariser(V::NBPoly{N, M, T, TD}, r0, r1; kwargs...
            ) where {N, M, T} where {TD <: BondLengthDesc} =
    BLReg(N, r0, r1; creg=1.0, npoints = Nquad(Val(N)),
+                    transform = transform(V), kwargs... )
+
+Regulariser(V::NBPoly{N, M, T, TD}, r0, r1; kwargs...
+           ) where {N, M, T} where {TD <: BondAngleDesc} =
+   BAReg(N, r0, r1; creg=1.0, npoints = Nquad(Val(N)),
                     transform = transform(V), kwargs... )
 
 
