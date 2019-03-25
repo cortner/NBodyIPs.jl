@@ -143,7 +143,7 @@ function _bainvt_hack(inv_t, x::StaticVector{3})
    r1, r2 = inv_t(x[1]), inv_t(x[2])
    return SVector(r1, r2), SVector(x[3]*r1*r2)
 end
-function _bainvt_hack(inv_t, x::StaticVector{6}) =
+function _bainvt_hack(inv_t, x::StaticVector{6})
    r1, r2, r3 = inv_t(x[1]), inv_t(x[2]), inv_t(x[3])
    return SVector(r1, r2, r3),  SVector(x[4]*r1*r2, x[5]*r1*r3, x[6]*r2*r3)
 end
