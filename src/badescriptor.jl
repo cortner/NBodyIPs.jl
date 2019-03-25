@@ -112,9 +112,9 @@ forces, i.e., into ∇Vsite (where ∇ is the gradient w.r.t. positions)
       idx += 1
       push!(code, :( theta = dot(Rs[J[$n]], Rs[J[$m]]) / (r[$n]*r[$m]) ) )
       push!(code, :( dVsite[J[$n]] += (dV_drθ[$idx]/r[$n]) *
-                                      (Rs[J[$m]] - theta * Rs[J[$n]]) ))
+                                      (Rs[J[$m]]/r[$m] - theta * Rs[J[$n]]/r[$n]) ))
       push!(code, :( dVsite[J[$m]] += (dV_drθ[$idx]/r[$m]) *
-                                      (Rs[J[$n]] - theta * Rs[J[$m]]) ))
+                                      (Rs[J[$n]]/r[$n] - theta * Rs[J[$m]]/r[$m]) ))
    end
    quote
       $(Expr(:meta, :inline))
