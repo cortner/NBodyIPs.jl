@@ -24,7 +24,7 @@ println("-------------------------------------------")
 #       against the MAGMA output
 
 println("[1] Correctness of gradients")
-for dim in [3, 6, 10]
+for dim in [3, 6 ] #, 10]
    r = 1.0 + SVector(rand(dim)...)
    println("---------------")
    println("dim = $dim")
@@ -55,7 +55,7 @@ println()
 
 
 println("[2] Symmetry")
-for dim in [3, 6, 10]
+for dim in [3, 6 ]# , 10]
    for n = 1:3
       r = 1.0 + SVector(rand(dim)...)
       I = all_blinvariants(r)
@@ -69,7 +69,7 @@ println()
 
 
 println("[3] blinvariants_ed")
-for dim in [3, 6, 10]
+for dim in [3, 6 ]# , 10]
    for n = 1:3
       r = 1.0 + SVector(rand(dim)...)
       I1, I2 = blinvariants(r)
@@ -97,7 +97,7 @@ const bainvariants_d = BAI.invariants_d
 const bainvariants_ed = BAI.invariants_ed
 
 println("[1] Correctness of gradients")
-for dim in [3, 6, 10]
+for dim in [3, 6 ] #, 10]
    # r ≡ x
    r = 1.0 + SVector(rand(dim)...)
    println("---------------")
@@ -129,7 +129,7 @@ println()
 
 
 println("[3] all_bainvariants_ed")
-for dim in [3, 6, 10]
+for dim in [3, 6 ] # , 10]
    for n = 1:3
       r = 1.0 + SVector(rand(dim)...)
       I1, I2 = bainvariants(r)

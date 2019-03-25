@@ -1,7 +1,7 @@
 
 using JuLIP: JVec
 const BAI = BAInvariants
-import Base: == 
+import Base: ==
 using LinearAlgebra: dot, norm
 using JuLIP: decode_dict
 
@@ -82,7 +82,7 @@ and convert into an ordered vector of bondlengths and bondangle
    str_θ = "θ = @SVector T[ "
    for n = 1:K-1, m = (n+1):K
       idx += 1
-      str_θ *= "dot(Rs[J[$n]], Rs[J[$m]]), "
+      str_θ *= "dot(Rs[J[$n]], Rs[J[$m]]) / (r[$n] * r[$m]), "
    end
    push_str!(code, str_θ * "]")
    # -----
@@ -107,12 +107,14 @@ forces, i.e., into ∇Vsite (where ∇ is the gradient w.r.t. positions)
       idx += 1   # idx == k of course
       push!(code, :( dVsite[J[$k]] += (dV_drθ[$idx]/r[$k]) * Rs[J[$k]] ))
    end
-   # the remaining ones are dot(R_i,R_j)
+   # the remaining ones are dot(R̂_i,R̂_j) = dot(R_i,R_j)/(r_i r_j)
    for n = 1:K-1, m = (n+1):K
       idx += 1
-      # str_theta *= "dot(R[$n], R[$m]), "
-      push!(code, :( dVsite[J[$n]] += dV_drθ[$idx] * Rs[J[$m]] ))
-      push!(code, :( dVsite[J[$m]] += dV_drθ[$idx] * Rs[J[$n]] ))
+      push!(code, :( theta = dot(Rs[J[$n]], Rs[J[$m]]) / (r[$n]*r[$m]) ) )
+      push!(code, :( dVsite[J[$n]] += (dV_drθ[$idx]/r[$n]) *
+                                      (Rs[J[$m]] - theta * Rs[J[$n]]) ))
+      push!(code, :( dVsite[J[$m]] += (dV_drθ[$idx]/r[$m]) *
+                                      (Rs[J[$n]] - theta * Rs[J[$m]]) ))
    end
    quote
       $(Expr(:meta, :inline))

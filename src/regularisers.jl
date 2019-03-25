@@ -130,6 +130,12 @@ EnvBLRegulariser(N, r0, r1;
    EnvBLRegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N))
 
 
+# ===========================================================
+#       WARNING: Nasty Hack!!!
+#  The Sobol sequence takes the angle variables in [-1,1]
+#  which corresponds to R̂i ⋅ R̂j instead of Ri ⋅ Rj, so we need
+#  to replace the angles with θ ri rj
+# ===========================================================
 
 _bainvt(inv_t, x::StaticVector{1}) =
       inv_t.(x), SVector()
