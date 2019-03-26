@@ -4,3 +4,4 @@
 *.pyc
 *.mem
 src/plottools.pyc
+Manifest.toml
