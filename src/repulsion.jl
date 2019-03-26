@@ -21,7 +21,7 @@ end
 cutoff(V::RepulsiveCore) = cutoff(V.Vout)
 descriptor(V::RepulsiveCore) = V.D
 
-fast(V::RepulsiveCore) = RepulsiveCore(fast(V.Vout), Vin, ri, D)
+fast(V::RepulsiveCore) = RepulsiveCore(fast(V.Vout), V.Vin, V.ri, V.D)
 
 function evaluate_I(V::RepulsiveCore, II)
    I1, I2 = II
