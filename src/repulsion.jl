@@ -2,7 +2,7 @@
 module Repulsion
 
 import NBodyIPs: NBodyFunction, descriptor, evaluate_I, evaluate_I_ed,
-                 inv_transform, fcut
+                 inv_transform, fcut, fast
 
 import JuLIP: AbstractCalculator, energy, forces, virial, decode_dict
 import JuLIP.Potentials: @pot, evaluate, evaluate_d, PairPotential, @D, cutoff,
@@ -20,6 +20,8 @@ end
 
 cutoff(V::RepulsiveCore) = cutoff(V.Vout)
 descriptor(V::RepulsiveCore) = V.D
+
+fast(V::RepulsiveCore) = RepulsiveCore(fast(V.Vout), Vin, ri, D)
 
 function evaluate_I(V::RepulsiveCore, II)
    I1, I2 = II
