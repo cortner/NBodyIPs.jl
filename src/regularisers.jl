@@ -147,7 +147,7 @@ EnvBARegulariser(N, r0, r1;
 #      originals ...
 
 _bainvt(inv_t, x::StaticVector{1}) =
-      inv_t.(x), SVector()
+      inv_t.(x), SVector{0, Float64}()
 _bainvt(inv_t, x::StaticVector{3}) =
       SVector(inv_t(x[1]), inv_t(x[2])), SVector(x[3])
 _bainvt(inv_t, x::StaticVector{6}) =
