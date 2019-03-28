@@ -80,6 +80,10 @@ struct EnvBLRegulariser{N, T} <: NBodyRegulariser{N}
    @nbregfields
 end
 
+struct EnvBARegulariser{N, T} <: NBodyRegulariser{N}
+   @nbregfields
+end
+
 struct BARegulariser{N, T} <: NBodyRegulariser{N}
    @nbregfields
 end
@@ -101,6 +105,7 @@ Dict(reg::NBodyRegulariser) = Dict(
 
 const BLReg = BLRegulariser
 const EnvBLReg = EnvBLRegulariser
+const EnvBAReg = EnvBLRegulariser
 const BAReg = BARegulariser
 
 
@@ -129,24 +134,14 @@ EnvBLRegulariser(N, r0, r1;
              freg = laplace_regulariser) =
    EnvBLRegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N))
 
+EnvBARegulariser(N, r0, r1;
+             creg = 1.0,
+             npoints = Nquad(Val(N)),
+             sequence = :sobol,
+             transform = IdTransform(),
+             freg = laplace_regulariser) =
+   EnvBARegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N))
 
-# ===========================================================
-#       WARNING: Nasty Hack!!!
-#  The Sobol sequence takes the angle variables in [-1,1]
-#  which corresponds to R̂i ⋅ R̂j instead of Ri ⋅ Rj, so we need
-#  to replace the angles with θ ri rj
-# ===========================================================
-
-_bainvt_hack(inv_t, x::StaticVector{1}) =
-      inv_t.(x), SVector()
-function _bainvt_hack(inv_t, x::StaticVector{3})
-   r1, r2 = inv_t(x[1]), inv_t(x[2])
-   return SVector(r1, r2), SVector(x[3]*r1*r2)
-end
-function _bainvt_hack(inv_t, x::StaticVector{6})
-   r1, r2, r3 = inv_t(x[1]), inv_t(x[2]), inv_t(x[3])
-   return SVector(r1, r2, r3),  SVector(x[4]*r1*r2, x[5]*r1*r3, x[6]*r2*r3)
-end
 
 # ===========================================================
 #      originals ...
@@ -186,7 +181,7 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
       filter = x -> bl_is_simplex( inv_tv(x) )
       x0 = transform(reg.transform, reg.r0) * SVector(ones((N*(N-1))÷2)...)
       x1 = transform(reg.transform, reg.r1) * SVector(ones((N*(N-1))÷2)...)
-   elseif reg isa BARegulariser
+   elseif reg isa Union{BARegulariser, EnvBARegulariser}
       inv_tv = x -> _bainvt(inv_t, x)
       filter = x -> ba_is_simplex( inv_tv(x)... )
       x0 = vcat( transform(reg.transform, reg.r0) * SVector(ones(N-1)...),
@@ -203,7 +198,7 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
       # we do this in a weird way since the array needs to infer the type
       # but B[Ib] doesn't for some reason.
       subB = [b for b in B[Ib]]
-   elseif reg isa EnvBLRegulariser
+   elseif reg isa Union{EnvBLRegulariser, EnvBARegulariser}
       subB = [b.Vr for b in B[Ib]]
    else
       @error("Unknown type of reg")
