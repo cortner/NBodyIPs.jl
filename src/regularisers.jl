@@ -184,11 +184,12 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
    elseif reg isa Union{BARegulariser, EnvBARegulariser}
       inv_tv = x -> _bainvt(inv_t, x)
       filter = x -> ba_is_simplex( inv_tv(x)... )
-      x0 = vcat( transform(reg.transform, reg.r0) * SVector(ones(N-1)...),
-                 - SVector(ones( ((N-1)*(N-2))÷2 )...) )
-      x1 = vcat( transform(reg.transform, reg.r1) * SVector(ones(N-1)...),
-                   SVector(ones( ((N-1)*(N-2))÷2 )...) )
+      o1 = SVector(ones(N-1)...)
+      o2 = N > 2 ? SVector(ones( ((N-1)*(N-2))÷2 )...) : SVector{0,Float64}()
+      x0 = vcat( transform(reg.transform, reg.r0) * o1, -o2 )
+      x1 = vcat( transform(reg.transform, reg.r1) * o1, o2 )
    else
+      @show reg
       @error("Unknown type of reg: `typeof(reg) == $(typeof(reg))`")
    end
 
