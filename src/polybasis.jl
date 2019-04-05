@@ -157,9 +157,12 @@ function rt_tuplebound_tensor(α,degr,degt,desc::BondAngleDesc)
    return (dr <= degr)&&(dt <= degt)
 end
 
-function rt_tuplebound_total(α,deg,rtF,desc::BondAngleDesc)
+rt_tuplebound_total(α,deg,rtF,desc::BondAngleDesc) =
+   wtdegree(desc::BondAngleDesc, α, rtF) <= deg
+
+function wtdegree(desc::BondAngleDesc, α, rtF)
    dr,dt = rtdegree(desc, α)
-   return dr + rtF * dt <= deg
+   return dr + rtF * dt
 end
 
 

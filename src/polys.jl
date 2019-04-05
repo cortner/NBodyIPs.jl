@@ -174,6 +174,13 @@ function degree(V::NBPoly)
    error("`degree` is only defined for `NBPoly` basis functions, length == 1")
 end
 
+function wtdegree(V::NBPoly, rtF)
+    if length(V) == 1
+       return NBodyIPs.PolyBasis.wtdegree(descriptor(V), V.t[1], rtF)
+    end
+    error("`degree` is only defined for `NBPoly` basis functions, length == 1")
+end
+
 
 function info(B::Vector{T}; indent = 2) where T <: NBPoly
    ind = repeat(" ", indent)
