@@ -16,7 +16,8 @@ using NBodyIPs.Polys:  Tup,
 
 export blpolys,
        bapolys,
-       nbpolys
+       nbpolys,
+       wtdegree
 
 # # hack to get the correct tdegrees function
 # tdegrees(desc::BondLengthDesc, vN) = NBodyIPs.BLInvariants.tdegrees(vN)
