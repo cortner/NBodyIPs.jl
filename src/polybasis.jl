@@ -168,6 +168,10 @@ function wtdegree(desc::BondAngleDesc, α, rtF)
    return dr + rtF * dt
 end
 
+function wtdegree(desc::BondLengthDesc, α, rtF)
+   degree(desc, α)
+end
+
 
 function gen_tuples_rt(desc::BondAngleDesc, vN::Val{N}, vK::Val{K}, tuplebound
                        ) where {N, K}
