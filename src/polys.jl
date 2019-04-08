@@ -46,7 +46,10 @@ import NBodyIPs:          fast,
                           evaluate_many_d!,
                           evaluate_I,
                           evaluate_I_ed,
-                          basisname
+                          basisname,
+                          wtdegree
+
+
 
 const Tup{M} = NTuple{M, Int}
 const VecTup{M} = Vector{NTuple{M, Int}}
@@ -54,7 +57,6 @@ const VecTup{M} = Vector{NTuple{M, Int}}
 export NBPoly,
        StNBPoly,
        info   # TODO: move info to NBodyIPs and export from there? elsewhere?
-
 
 # ==================================================================
 #           Polynomials of Invariants
@@ -178,7 +180,7 @@ function wtdegree(V::NBPoly, rtF)
     if length(V) == 1
        return NBodyIPs.PolyBasis.wtdegree(descriptor(V), V.t[1], rtF)
     end
-    error("`degree` is only defined for `NBPoly` basis functions, length == 1")
+    error("`wtdegree` is only defined for `NBPoly` basis functions, length == 1")
 end
 
 

@@ -8,7 +8,10 @@ using NBodyIPs:        BondLengthDesc,
                        BondAngleDesc,
                        edges2bo,
                        bo2edges,
-                       tdegrees
+                       tdegrees,
+                       wtdegree
+
+import NBodyIPs: wtdegree
 
 using NBodyIPs.Polys:  Tup,
                        VecTup,
@@ -16,8 +19,7 @@ using NBodyIPs.Polys:  Tup,
 
 export blpolys,
        bapolys,
-       nbpolys,
-       wtdegree
+       nbpolys
 
 # # hack to get the correct tdegrees function
 # tdegrees(desc::BondLengthDesc, vN) = NBodyIPs.BLInvariants.tdegrees(vN)
