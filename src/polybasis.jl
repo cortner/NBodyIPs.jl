@@ -169,7 +169,8 @@ function wtdegree(desc::BondAngleDesc, α, rtF)
 end
 
 function wtdegree(desc::BondLengthDesc, α, rtF)
-   degree(desc, α)
+   @warn("computing wtdegree for bond-length, changing to degree")
+   tdegree(desc, α)
 end
 
 
