@@ -42,11 +42,22 @@ end
 
 @inline skip_simplex(D::BondAngleDesc, rθ) = (maximum(rθ[1]) > cutoff(D.cutoff))
 
-@inline _rθ2x(D, r, θ) = vcat(transform.(Ref(D), r), θ)
-@inline _rθ2x_d(D, r, θ::SVector{K}) where {K} =
+@inline _rθ2x(D::BondAngleDesc, r, θ) = vcat(transform.(Ref(D), r), θ)
+@inline _rθ2x_d(D::BondAngleDesc, r, θ::SVector{K}) where {K} =
    vcat(transform_d.(Ref(D), r), @SVector ones(K))
 
-@inline invariants(D::BondAngleDesc, rθ) = BAI.invariants(_rθ2x(D, rθ...))
+@inline invariants(D::BondAngleDesc, rθ::Tuple) =
+   BAI.invariants(_rθ2x(D, rθ...))
+
+@inline invariants(D::BondAngleDesc, rθ::SVector{1}) =
+   BAI.invariants(_rθ2x(D, rθ[1], (@SVector Float64[])))
+
+@inline invariants(D::BondAngleDesc, rθ::SVector{3}) =
+   BAI.invariants(_rθ2x(D, SVector(rθ[1], rθ[2]), SVector(rθ[3])))
+
+@inline invariants(D::BondAngleDesc, rθ::SVector{4}) =
+   BAI.invariants( _rθ2x(D, SVector(rθ[1], rθ[2], rθ[3]),
+                            SVector(rθ[4], rθ[5], rθ[6])) )
 
 @inline function invariants_ed(D::BondAngleDesc, rθ)
    x = _rθ2x(D, rθ...)
