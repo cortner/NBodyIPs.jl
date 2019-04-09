@@ -71,6 +71,11 @@ is basis-specific
 """
 function degree end
 
+"""
+some measure of degree for bond-angles
+"""
+function wtdegree end
+
 
 """
 `basisname(b) -> String`: returns a short string identifying the kind of
