@@ -165,7 +165,7 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
    #       be applied to, or let the user adjust it!
    Ib = findall(bodyorder.(B) .== N)
    if isempty(Ib)
-      verbose && warn("""Trying to construct a $N-body regulariser, but no basis
+      verbose && @warn("""Trying to construct a $N-body regulariser, but no basis
                          function with bodyorder $N exists.""")
       Ψreg = zeros(0, length(B))
       Yreg = zeros(0, 1)

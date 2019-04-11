@@ -55,7 +55,7 @@ end
 @inline invariants(D::BondAngleDesc, rθ::SVector{3}) =
    BAI.invariants(_rθ2x(D, SVector(rθ[1], rθ[2]), SVector(rθ[3])))
 
-@inline invariants(D::BondAngleDesc, rθ::SVector{4}) =
+@inline invariants(D::BondAngleDesc, rθ::SVector{6}) =
    BAI.invariants( _rθ2x(D, SVector(rθ[1], rθ[2], rθ[3]),
                             SVector(rθ[4], rθ[5], rθ[6])) )
 
