@@ -60,6 +60,9 @@ end
 
 abstract type NBodyRegulariser{N} end
 
+abstract type EnvReg{N} <: NBodyRegulariser{N} end
+
+
 @def nbregfields begin
    N::Int
    npoints::Int
@@ -72,16 +75,19 @@ abstract type NBodyRegulariser{N} end
    valN::Val{N}
 end
 
+
 struct BLRegulariser{N, T} <: NBodyRegulariser{N}
    @nbregfields
 end
 
-struct EnvBLRegulariser{N, T} <: NBodyRegulariser{N}
+struct EnvBLRegulariser{N, T} <: EnvReg{N}
    @nbregfields
+   envdeg::Int
 end
 
-struct EnvBARegulariser{N, T} <: NBodyRegulariser{N}
+struct EnvBARegulariser{N, T} <: EnvReg{N}
    @nbregfields
+   envdeg::Int
 end
 
 struct BARegulariser{N, T} <: NBodyRegulariser{N}
@@ -92,7 +98,7 @@ struct EnergyRegulariser{N, T} <: NBodyRegulariser{N}
    @nbregfields
 end
 
-Dict(reg::NBodyRegulariser) = Dict(
+nbodyreg2dict(reg) = Dict(
    "type" => string(typeof(reg)),
    "N" => reg.N,
    "npoints" => reg.npoints,
@@ -101,6 +107,13 @@ Dict(reg::NBodyRegulariser) = Dict(
    "r1" => reg.r1,
    "sequence" => string(reg.sequence),
    "transform" => Dict(reg.transform) )
+
+Dict(reg::NBodyRegulariser) = nbodyreg2dict(reg)
+
+function Dict(reg::EnvReg)
+   D = nbodyreg2dict(reg)
+   D["envdeg"] = reg.envdeg
+end
 
 
 const BLReg = BLRegulariser
@@ -126,21 +139,21 @@ BARegulariser(N, r0, r1;
    BARegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N))
 
 
-EnvBLRegulariser(N, r0, r1;
+EnvBLRegulariser(N, envdeg, r0, r1;
              creg = 1.0,
              npoints = Nquad(Val(N)),
              sequence = :sobol,
              transform = IdTransform(),
              freg = laplace_regulariser) =
-   EnvBLRegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N))
+   EnvBLRegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N), envdeg)
 
-EnvBARegulariser(N, r0, r1;
+EnvBARegulariser(N, envdeg, r0, r1;
              creg = 1.0,
              npoints = Nquad(Val(N)),
              sequence = :sobol,
              transform = IdTransform(),
              freg = laplace_regulariser) =
-   EnvBARegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N))
+   EnvBARegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N), envdeg)
 
 
 # ===========================================================
@@ -153,6 +166,12 @@ _bainvt(inv_t, x::StaticVector{3}) =
 _bainvt(inv_t, x::StaticVector{6}) =
       SVector(inv_t(x[1]), inv_t(x[2]), inv_t(x[3])),  SVector(x[4], x[5], x[6])
 
+find_sub_basis(reg::NBodyRegulariser{N}, B) where {N} =
+   findall(bodyorder.(B) .== N)
+
+find_sub_basis(reg::EnvReg{N}, B) where {N} =
+   findall( b -> ( (bodyorder(b) == N) && (b.t == reg.envdeg) ), B )
+
 #
 # this converts the Regulariser type information to a matrix that can be
 # attached to the LSQ problem.
@@ -163,7 +182,7 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
 
    # TODO: let the regulariser decide which basis functions it can
    #       be applied to, or let the user adjust it!
-   Ib = findall(bodyorder.(B) .== N)
+   Ib = find_sub_basis(reg, B)
    if isempty(Ib)
       verbose && @warn("""Trying to construct a $N-body regulariser, but no basis
                          function with bodyorder $N exists.""")
@@ -245,6 +264,7 @@ _Vr(b::EnvIP) = b.Vr
 # nB = length(basis)
 # inv_tv = inverse space transform
 # freg = regularisation function (e.g. laplace)
+#
 function assemble_reg_matrix(X, B, nB, Ib, inv_tv, freg)
    @assert length(B) == length(Ib)
    # split the basis into "nice" parts
