@@ -383,20 +383,22 @@ L2Regulariser(a::Vector) = L2Regulariser(a, 0.0)
 
 function L2Regulariser(db, A::Dict{Int, <: Real})
    a = zeros(length(db.basis))
-   for (n, α) in keys(A)
-      In = filter_basis(db, b -> bodyorder(b) == n)
-      a[In] = α
+   for (n, α) in A
+      In = findall(b -> bodyorder(b) == n, db.basis)
+      a[In] .= α
    end
    return L2Regulariser(a)
 end
 
-function Matrix(reg::L2Regulariser, B::Vector{<: AbstractCalculator})
+function Matrix(reg::L2Regulariser, B::Vector{<: AbstractCalculator}; kwargs...)
    if isempty(reg.a)
       return Matrix( a*I, (length(B), length(B)) ), zeros(length(B))
    else
-      return collect(Diagonal(reg.a))
+      return collect(Diagonal(reg.a)), zeros(length(B))
    end
 end
 
+Dict(reg::L2Regulariser) = Dict("__id__" => "L2Regulariser",
+                                "a" => reg.a, "α" => reg.α)
 
 end
