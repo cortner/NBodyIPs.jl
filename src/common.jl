@@ -111,11 +111,15 @@ energy(V::NBodyIP, at::Atoms) = sum( energy(Vn, at)  for Vn in V.components )
 forces(V::NBodyIP, at::Atoms) = sum( forces(Vn, at)  for Vn in V.components )
 virial(V::NBodyIP, at::Atoms) = sum( virial(Vn, at)  for Vn in V.components )
 
+
 """
 turn a potentially slow representation of an IP into a fast one,
 by switching to a different representation.
 """
 fast(IP::NBodyIP) = NBodyIP( fast.(IP.components) )
+
+# fall-back
+fast(V::Any) = V
 
 function unique_components(basis)
    bods = hash.(Ref(BASIS()), basis)

@@ -231,6 +231,15 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
       if reg.sequence == :sobol
          # construct a low discrepancy sequence
          X = filtered_sobol(x0, x1, filter; npoints=reg.npoints, nfailed=100*reg.npoints)
+      if reg.sequence == :cartsobol
+         # construct a low discrepancy sequence
+         @assert reg isa BARegulariser
+         converter = NBodyIPs.Sobol.Cart2BA(N)
+         filter = x -> all( (x0[i] < x[i] < x1[i]) for i = 1:N )
+         X = filtered_cart_sobol(maximum(x1), length(x1), converter,
+                                 R -> true,
+                                 npoints = reg.npoints,
+                                 nfailed = 1000*reg.npoints)
       elseif reg.sequence == :cart
          error("TODO: implement `sequence == :cart`")
       elseif reg.sequence isa Vector

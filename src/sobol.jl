@@ -73,6 +73,11 @@ function _z2cart!(z, R)
    return R
 end
 
+Cart2BA(N) = let J = SVector(collect(1:N)...)
+      return (R -> NBodyIPs.lengths_and_angles(R, J))
+end
+
+
 # function _z2cart_filter!(r0, r1, z, R)
 #    R = _z2cart!(z, R)
 #    r = norm.(R)
@@ -179,8 +184,15 @@ ba_is_simplex(r::SVector{2}, θ::SVector{1}) = true
 ba_is_simplex(rψ::SVector{6}) = ba_is_simplex(SVector(rψ[1], rψ[2], rψ[3]),
                                               SVector(rψ[4], rψ[5], rψ[6]) )
 
-ba_is_simplex(r::SVector{3}, ψ::SVector{3}) =
-   bl_is_simplex(vcat(SVector(1.0,1.0,1.0), sqrt.(2 - 2*ψ)))
+ba_is_simplex(r::SVector{3}, w::SVector{3}) =
+   bl_is_simplex(SVector(r[1], r[2], r[3],
+                         r[1]*r[2]*sqrt(2 - 2*w[1]),
+                         r[1]*r[3]*sqrt(2 - 2*w[2]),
+                         r[2]*r[3]*sqrt(2 - 2*w[3])))
+
+# WHAT IS THIS SUPPOSED TO BE?!?!
+# ba_is_simplex(r::SVector{3}, ψ::SVector{3}) =
+#    bl_is_simplex(vcat(SVector(1.0,1.0,1.0), sqrt.(2 - 2*ψ)))
 
 
 """
