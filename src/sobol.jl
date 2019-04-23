@@ -4,6 +4,7 @@ module Sobol
 using StaticArrays
 using Sobol: SobolSeq, next!
 using LinearAlgebra: det, norm
+using NBodyIPs: lengths_and_angles
 
 """
 * N : body-order
@@ -39,6 +40,7 @@ function _sobol_inner(x0::SVector{DIM, T}, x1::SVector{DIM, T},
          nfl += 1
       end
    end
+   @show npts, nfl
    return X
 end
 
@@ -68,13 +70,15 @@ function _z2cart!(z, R)
    R[2] = SVector(z[1], 0.0, 0.0)
    R[3] = SVector(z[2], z[3], 0.0)
    for n = 4:length(R)
-      R[n] = SVector(z[3*(n-2)+1], z[3*(n-2)+2], z[3*(n-2)+3])
+      # n = 4 :        4, 5, 6
+      # n = 5 :        7, 8, 9
+      R[n] = SVector(z[3*(n-3)+1], z[3*(n-3)+2], z[3*(n-3)+3])
    end
    return R
 end
 
-Cart2BA(N) = let J = SVector(collect(1:N)...)
-      return (R -> NBodyIPs.lengths_and_angles(R, J))
+Cart2BA(N) = let J = SVector(collect(1:N-1)...)
+      return (R -> lengths_and_angles(R[2:end], J))
 end
 
 
@@ -91,7 +95,7 @@ Create a Sobol grid in cartesian space which is then converted into a
 function filtered_cart_sobol(r1, N, converter, filter; npoints=nothing,
                                                            nfailed=nothing)
    R = [ (@SVector zeros(3)) for n = 1:N ]
-   DescType = typeof(converter(R))
+   DescType = typeof(vcat(converter(R)...))
    X = Vector{DescType}()
    dim = 3*N-6
    z1 = r1 * SVector(ones(dim)...)
@@ -115,12 +119,13 @@ function _filtered_cart_sobol_inner(z1::SVector{DIM, T},
       next!(s, t)
       desc = transform(t)
       if filter(desc)
-         push!(Xout, desc)
+         push!(Xout, vcat(desc...))
          npts += 1
       else
          nfl += 1
       end
    end
+   @show npts, nfl
    return Xout
 end
 
@@ -184,11 +189,42 @@ ba_is_simplex(r::SVector{2}, θ::SVector{1}) = true
 ba_is_simplex(rψ::SVector{6}) = ba_is_simplex(SVector(rψ[1], rψ[2], rψ[3]),
                                               SVector(rψ[4], rψ[5], rψ[6]) )
 
+# sqrt(2 - 2*w[1]) = √(2 - 2 * R̂₁ ⋅ R̂₂) = √|R̂₁ - R̂₂|^2 = |R̂₁ - R̂₂|
+# but we want |R₁-R₂|^2 = r₁^2 - 2 R₁⋅R₂ + r₂^2 + r₂^2
+#                       = r₁^2 + r₁^2 - 2 r₁ r₂ w
+_w2r(r1, r2, w) = sqrt(r1^2 + r2^2 - 2*r1*r2*w)
+
 ba_is_simplex(r::SVector{3}, w::SVector{3}) =
    bl_is_simplex(SVector(r[1], r[2], r[3],
-                         r[1]*r[2]*sqrt(2 - 2*w[1]),
-                         r[1]*r[3]*sqrt(2 - 2*w[2]),
-                         r[2]*r[3]*sqrt(2 - 2*w[3])))
+                         _w2r(r[1], r[2], w[1]),
+                         _w2r(r[1], r[3], w[2]),
+                         _w2r(r[2], r[3], w[3])))
+
+"""
+This 5B ba_is_simplex only implements a necessary condition for a 5B cluster
+to be a simplex. I have no idea how close this is to being sharp. Basically,
+this just checks that all 5 4B sub-clusters are simplices.
+"""
+function ba_is_simplex(r::SVector{4}, w::SVector{6})
+   # r = r1, r2, r3, r4
+   # w = w12, w13, w14, w23, w24, w34
+   r1, w1 = SVector(r[1], r[2], r[3]), SVector(w[1], w[2], w[4])
+   r2, w2 = SVector(r[1], r[2], r[4]), SVector(w[1], w[3], w[5])
+   r3, w3 = SVector(r[1], r[3], r[4]), SVector(w[2], w[3], w[6])
+   r4, w4 = SVector(r[2], r[3], r[4]), SVector(w[4], w[5], w[6])
+   # r12, r13, r14, r23, r24, r34 => these make one more tetrahedron
+   r5 = SVector( _w2r(r[1], r[2], w[1]),
+                 _w2r(r[1], r[3], w[2]),
+                 _w2r(r[1], r[4], w[3]),
+                 _w2r(r[2], r[3], w[4]),
+                 _w2r(r[2], r[4], w[5]),
+                 _w2r(r[3], r[4], w[6]) )
+   return ba_is_simplex(r1, w1) &&
+          ba_is_simplex(r2, w2) &&
+          ba_is_simplex(r3, w3) &&
+          ba_is_simplex(r4, w4) &&
+          bl_is_simplex(r5)
+end
 
 # WHAT IS THIS SUPPOSED TO BE?!?!
 # ba_is_simplex(r::SVector{3}, ψ::SVector{3}) =

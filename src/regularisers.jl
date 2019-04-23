@@ -42,7 +42,7 @@ using NBodyIPs.Polys: NBPoly
 using NBodyIPs.EnvIPs: EnvIP
 using LinearAlgebra: I, Diagonal
 using NBodyIPs.Sobol: filtered_sobol, filtered_cart_sobol, bl_is_simplex,
-                      ba_is_simplex
+                      ba_is_simplex, Cart2BA
 
 import Base: Matrix, Dict
 
@@ -165,6 +165,9 @@ _bainvt(inv_t, x::StaticVector{3}) =
       SVector(inv_t(x[1]), inv_t(x[2])), SVector(x[3])
 _bainvt(inv_t, x::StaticVector{6}) =
       SVector(inv_t(x[1]), inv_t(x[2]), inv_t(x[3])),  SVector(x[4], x[5], x[6])
+_bainvt(inv_t, x::StaticVector{10}) =
+      SVector( inv_t(x[1]), inv_t(x[2]), inv_t(x[3]), inv_t(x[4]) ),
+      SVector(x[5], x[6], x[7], x[8], x[9], x[10])
 
 find_sub_basis(reg::NBodyRegulariser{N}, B) where {N} =
    findall(bodyorder.(B) .== N)
@@ -231,13 +234,12 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
       if reg.sequence == :sobol
          # construct a low discrepancy sequence
          X = filtered_sobol(x0, x1, filter; npoints=reg.npoints, nfailed=100*reg.npoints)
-      if reg.sequence == :cartsobol
+      elseif reg.sequence == :cartsobol
          # construct a low discrepancy sequence
          @assert reg isa BARegulariser
-         converter = NBodyIPs.Sobol.Cart2BA(N)
-         filter = x -> all( (x0[i] < x[i] < x1[i]) for i = 1:N )
-         X = filtered_cart_sobol(maximum(x1), length(x1), converter,
-                                 R -> true,
+         converter = Cart2BA(N)
+         filter = x -> all( (x0[i] < x[1][i] < x1[i]) for i = 1:N-1 )
+         X = filtered_cart_sobol(maximum(x1), length(x1), converter, filter,
                                  npoints = reg.npoints,
                                  nfailed = 1000*reg.npoints)
       elseif reg.sequence == :cart
@@ -321,7 +323,11 @@ function laplace_regulariser(x::SVector{DIM,T}, B::Vector{<: AbstractCalculator}
    return L/h^2
 end
 
-
+# laplace_regulariser(::Tuple{StaticArrays.SArray{Tuple{5},Float64,1,5},StaticArrays.SArray{Tuple{10},Float64,1,10}},
+#                     ::Array{NBPoly{5,11,Float64,BondAngleDesc{PolyTransform{Int64,Float64},PolyCut2sA{Float64}}},1},
+#                     ::Array{Float64,1},
+#                     ::getfield(NBodyIPs.Regularisers, Symbol("##11#21"))
+#                  )
 # ==================================================================
 #               ENERGY REGULARISER
 # ==================================================================
