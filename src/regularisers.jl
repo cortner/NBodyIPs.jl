@@ -48,6 +48,7 @@ import Base: Matrix, Dict
 
 export BLRegulariser, BLReg, BARegulariser, BAReg,
        Regulariser, EnvBLReg, EnvBLRegulariser,
+       EnvBAReg, EnvBARegulariser,
        species
 
 macro def(name, definition)
@@ -199,7 +200,6 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
 
    # TODO: let the regulariser decide which basis functions it can
    #       be applied to, or let the user adjust it!
-   @show species(B[1])
    Ib = find_sub_basis(reg, B)
    @show Ib
    if isempty(Ib)
