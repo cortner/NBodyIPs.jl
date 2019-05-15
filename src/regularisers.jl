@@ -47,7 +47,8 @@ using NBodyIPs.Sobol: filtered_sobol, filtered_cart_sobol, bl_is_simplex,
 import Base: Matrix, Dict
 
 export BLRegulariser, BLReg, BARegulariser, BAReg,
-       Regulariser, EnvBLReg, EnvBLRegulariser
+       Regulariser, EnvBLReg, EnvBLRegulariser,
+       species
 
 macro def(name, definition)
     return quote
@@ -83,11 +84,13 @@ end
 struct EnvBLRegulariser{N, T} <: EnvReg{N}
    @nbregfields
    envdeg::Int
+   species::Vector{Int}
 end
 
 struct EnvBARegulariser{N, T} <: EnvReg{N}
    @nbregfields
    envdeg::Int
+   species::Vector{Int}
 end
 
 struct BARegulariser{N, T} <: NBodyRegulariser{N}
@@ -144,16 +147,18 @@ EnvBLRegulariser(N, envdeg, r0, r1;
              npoints = Nquad(Val(N)),
              sequence = :sobol,
              transform = IdTransform(),
-             freg = laplace_regulariser) =
-   EnvBLRegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N), envdeg)
+             freg = laplace_regulariser,
+             species = [] ) =
+   EnvBLRegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N), envdeg, species)
 
 EnvBARegulariser(N, envdeg, r0, r1;
              creg = 1.0,
              npoints = Nquad(Val(N)),
              sequence = :sobol,
              transform = IdTransform(),
-             freg = laplace_regulariser) =
-   EnvBARegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N), envdeg)
+             freg = laplace_regulariser,
+             species = []) =
+   EnvBARegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N), envdeg, species)
 
 
 # ===========================================================
@@ -172,8 +177,17 @@ _bainvt(inv_t, x::StaticVector{10}) =
 find_sub_basis(reg::NBodyRegulariser{N}, B) where {N} =
    findall(bodyorder.(B) .== N)
 
+# find_sub_basis(reg::EnvReg{N}, B) where {N} =
+#    findall( b -> ( (bodyorder(b) == N) && (b.t == reg.envdeg) ), B )
+
 find_sub_basis(reg::EnvReg{N}, B) where {N} =
-   findall( b -> ( (bodyorder(b) == N) && (b.t == reg.envdeg) ), B )
+   findall( b -> ( (bodyorder(b) == N) &&
+                   (b.t == reg.envdeg) &&
+                   (  (reg.species == []) || (species(b) == reg.species) )
+           ), B )
+
+
+species(b::NBPoly) = []
 
 #
 # this converts the Regulariser type information to a matrix that can be
@@ -185,7 +199,9 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
 
    # TODO: let the regulariser decide which basis functions it can
    #       be applied to, or let the user adjust it!
+   @show species(B[1])
    Ib = find_sub_basis(reg, B)
+   @show Ib
    if isempty(Ib)
       verbose && @warn("""Trying to construct a $N-body regulariser, but no basis
                          function with bodyorder $N exists.""")

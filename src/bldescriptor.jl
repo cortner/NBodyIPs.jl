@@ -1,7 +1,7 @@
 using LinearAlgebra: norm
-import Base: == 
+import Base: ==
 const BLI = BLInvariants
-using JuLIP:decode_dict
+using JuLIP: decode_dict
 
 BondLengthDesc(transform::String, cutoff) =
          BondLengthDesc(AnalyticTransform(transform), fcut_analyse(cutoff))

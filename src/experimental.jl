@@ -47,7 +47,7 @@ function faster_envpot(IP)
       end
    end
    envdegs = [V.t for V in envs]           # env degrees
-   @assert maximum(envdegs) <= 4
+   @assert maximum(envdegs) <= 4    # TODO: why?!?!?
    bos = [bodyorder(V.Vr) for V in envs]   #
    for bo = 2:4  # loop over body-orders
       ibo = findall(bos .== bo)  # find the relevant subset
