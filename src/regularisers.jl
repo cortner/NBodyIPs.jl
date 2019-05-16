@@ -48,8 +48,7 @@ import Base: Matrix, Dict
 
 export BLRegulariser, BLReg, BARegulariser, BAReg,
        Regulariser, EnvBLReg, EnvBLRegulariser,
-       EnvBAReg, EnvBARegulariser,
-       species
+       EnvBAReg, EnvBARegulariser
 
 macro def(name, definition)
     return quote
@@ -201,7 +200,6 @@ function Matrix(reg::NBodyRegulariser{N}, B::Vector{<: AbstractCalculator};
    # TODO: let the regulariser decide which basis functions it can
    #       be applied to, or let the user adjust it!
    Ib = find_sub_basis(reg, B)
-   @show Ib
    if isempty(Ib)
       verbose && @warn("""Trying to construct a $N-body regulariser, but no basis
                          function with bodyorder $N exists.""")
