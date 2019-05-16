@@ -122,7 +122,7 @@ end
 
 const BLReg = BLRegulariser
 const EnvBLReg = EnvBLRegulariser
-const EnvBAReg = EnvBLRegulariser
+const EnvBAReg = EnvBARegulariser
 const BAReg = BARegulariser
 
 
