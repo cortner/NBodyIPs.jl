@@ -15,8 +15,17 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StaticPolynomials = "62e018b1-6e46-5407-a5a7-97d4fbcae734"
 
 [compat]
-ASE = "≥0.3"
-JuLIP = "≥0.6"
-NeighbourLists = "≥0.3"
-PyCall = "≥1.90"
-julia = "≥0.7"
+ASE = "0.3"
+JuLIP = "0.6"
+NeighbourLists = "0.3"
+PyCall = "1.90"
+julia = "1"
+
+[extras]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test", "ForwardDiff", "Combinatorics", "BenchmarkTools"]
