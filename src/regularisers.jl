@@ -79,6 +79,7 @@ end
 
 struct BLRegulariser{N, T} <: NBodyRegulariser{N}
    @nbregfields
+   species::Vector{Int}
 end
 
 struct EnvBLRegulariser{N, T} <: EnvReg{N}
@@ -95,10 +96,12 @@ end
 
 struct BARegulariser{N, T} <: NBodyRegulariser{N}
    @nbregfields
+   species::Vector{Int}
 end
 
 struct EnergyRegulariser{N, T} <: NBodyRegulariser{N}
    @nbregfields
+   species::Vector{Int}
 end
 
 nbodyreg2dict(reg) = Dict(
@@ -130,16 +133,20 @@ BLRegulariser(N, r0, r1;
              npoints = Nquad(Val(N)),
              sequence = :sobol,
              transform = IdTransform(),
-             freg = laplace_regulariser) =
-   BLRegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N))
+             freg = laplace_regulariser,
+             species = []) =
+   BLRegulariser(N, npoints, creg, r0, r1,
+                 transform, sequence, freg, Val(N), species)
 
 BARegulariser(N, r0, r1;
              npoints = Nquad(Val(N)),
              creg = 1.0,
              transform = IdTransform(),
              sequence = :sobol,
-             freg = laplace_regulariser) =
-   BARegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N))
+             freg = laplace_regulariser,
+             species = []) =
+   BARegulariser(N, npoints, creg, r0, r1,
+                 transform, sequence, freg, Val(N), species)
 
 
 EnvBLRegulariser(N, envdeg, r0, r1;
@@ -149,7 +156,8 @@ EnvBLRegulariser(N, envdeg, r0, r1;
              transform = IdTransform(),
              freg = laplace_regulariser,
              species = [] ) =
-   EnvBLRegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N), envdeg, species)
+   EnvBLRegulariser(N, npoints, creg, r0, r1,
+                    transform, sequence, freg, Val(N), envdeg, species)
 
 EnvBARegulariser(N, envdeg, r0, r1;
              creg = 1.0,
@@ -158,7 +166,8 @@ EnvBARegulariser(N, envdeg, r0, r1;
              transform = IdTransform(),
              freg = laplace_regulariser,
              species = []) =
-   EnvBARegulariser(N, npoints, creg, r0, r1, transform, sequence, freg, Val(N), envdeg, species)
+   EnvBARegulariser(N, npoints, creg, r0, r1,
+                    transform, sequence, freg, Val(N), envdeg, species)
 
 
 # ===========================================================
@@ -175,7 +184,9 @@ _bainvt(inv_t, x::StaticVector{10}) =
       SVector(x[5], x[6], x[7], x[8], x[9], x[10])
 
 find_sub_basis(reg::NBodyRegulariser{N}, B) where {N} =
-   findall(bodyorder.(B) .== N)
+   findall(b -> ( (bodyorder(b) .== N) &&
+          ((reg.species == []) || (species(b) == reg.species))
+          ), B)
 
 # find_sub_basis(reg::EnvReg{N}, B) where {N} =
 #    findall( b -> ( (bodyorder(b) == N) && (b.t == reg.envdeg) ), B )
